@@ -26,5 +26,25 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
     return null;
   }
 
-  return safeJsonParse<MarketAnalysisReport>(raw);
+  const parsed = safeJsonParse<Partial<MarketAnalysisReport>>(raw);
+
+  if (!parsed || !parsed.query || !parsed.serpData || !parsed.classification || !parsed.strategy) {
+    return null;
+  }
+
+  return {
+    query: parsed.query,
+    serpData: parsed.serpData,
+    clusters: parsed.clusters ?? { clusters: [] },
+    confidence: parsed.confidence ?? {
+      confidence_score: "N/A",
+      reason: "This report was generated before confidence scoring was added."
+    },
+    classification: parsed.classification,
+    strategy: {
+      ...parsed.strategy,
+      offer_positioning: parsed.strategy.offer_positioning ?? ""
+    },
+    generatedAt: parsed.generatedAt ?? new Date().toISOString()
+  };
 }

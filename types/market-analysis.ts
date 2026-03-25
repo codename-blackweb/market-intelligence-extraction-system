@@ -17,11 +17,28 @@ export type MarketStrategy = {
   objections: string[];
   acquisition_angle: string;
   messaging: string;
+  offer_positioning: string;
+};
+
+export type DemandCluster = {
+  theme: string;
+  queries: string[];
+};
+
+export type MarketClusters = {
+  clusters: DemandCluster[];
+};
+
+export type MarketConfidence = {
+  confidence_score: string;
+  reason: string;
 };
 
 export type MarketAnalysisReport = {
   query: string;
   serpData: string[];
+  clusters: MarketClusters;
+  confidence: MarketConfidence;
   classification: MarketClassification;
   strategy: MarketStrategy;
   generatedAt: string;
@@ -31,6 +48,8 @@ export type MarketAnalysisSuccessResponse = {
   success: true;
   query: string;
   serpData: string[];
+  clusters: MarketClusters;
+  confidence: MarketConfidence;
   classification: MarketClassification;
   strategy: MarketStrategy;
   generatedAt: string;

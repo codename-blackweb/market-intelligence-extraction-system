@@ -42,7 +42,7 @@ export default function IntakeForm() {
         );
       }
 
-      setStatus("Running classification and synthesis...");
+      setStatus("Running clustering, classification, and synthesis...");
 
       const analysisResponse = await fetch("/api/analyze", {
         method: "POST",
@@ -67,6 +67,8 @@ export default function IntakeForm() {
       saveReport(reportId, {
         query: analysisPayload.query,
         serpData: analysisPayload.serpData,
+        clusters: analysisPayload.clusters,
+        confidence: analysisPayload.confidence,
         classification: analysisPayload.classification,
         strategy: analysisPayload.strategy,
         generatedAt: analysisPayload.generatedAt
@@ -90,7 +92,8 @@ export default function IntakeForm() {
         <h2>Run the deployable two-pass market analysis.</h2>
         <p>
           Enter one real query. The app normalizes SerpAPI demand signals into a flat array, then
-          runs a classification pass followed by a synthesis pass.
+          runs clustering, classification, confidence scoring, and synthesis without stripping the
+          final report structure down to raw JSON.
         </p>
       </header>
 

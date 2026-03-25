@@ -4,11 +4,14 @@ import SectionCard from "@/components/report/SectionCard";
 import type { MarketAnalysisReport } from "@/types/market-analysis";
 
 const sidebarItems = [
+  { id: "confidence", label: "Confidence" },
+  { id: "clusters", label: "Demand Clusters" },
   { id: "breakdown", label: "Market Breakdown" },
   { id: "constraint", label: "Core Constraint" },
   { id: "pains", label: "Customer Pains" },
   { id: "objections", label: "Hidden Objections" },
   { id: "acquisition", label: "Acquisition Angle" },
+  { id: "offer-positioning", label: "Offer Positioning" },
   { id: "messaging", label: "Messaging Direction" },
   { id: "signals", label: "Source Queries" }
 ];
@@ -39,6 +42,46 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
         <ReportSidebar items={sidebarItems} />
 
         <div className="report-main">
+          <SectionCard
+            id="confidence"
+            title="Confidence Score"
+            description="A validation layer showing how strong the inferred market read is from the query set."
+          >
+            <div className="two-column-grid">
+              <article className="metric-card">
+                <p className="metric-label">Score</p>
+                <p className="metric-value">{report.confidence.confidence_score || "N/A"}</p>
+              </article>
+              <article className="list-card">
+                <h3>Reason</h3>
+                <p>{report.confidence.reason || "No reason returned."}</p>
+              </article>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            id="clusters"
+            title="Demand Clusters"
+            description="The visible patterns in the normalized demand set before strategy synthesis."
+          >
+            <div className="stack">
+              {report.clusters.clusters.length ? (
+                report.clusters.clusters.map((cluster) => (
+                  <article className="list-card" key={cluster.theme}>
+                    <h3>{cluster.theme}</h3>
+                    <ul className="bullet-list">
+                      {cluster.queries.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))
+              ) : (
+                <div className="info-banner">No demand clusters were returned.</div>
+              )}
+            </div>
+          </SectionCard>
+
           <SectionCard
             id="breakdown"
             title="Market Breakdown"
@@ -95,6 +138,16 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
           >
             <div className="message-item">
               <p>{report.strategy.acquisition_angle}</p>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            id="offer-positioning"
+            title="Offer Positioning"
+            description="How the offer should be framed against the market dynamics and demand pattern."
+          >
+            <div className="message-item">
+              <p>{report.strategy.offer_positioning || "No offer positioning returned."}</p>
             </div>
           </SectionCard>
 

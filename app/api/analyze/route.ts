@@ -1,8 +1,11 @@
 import OpenAI from "openai";
 import { compactUnique } from "@/lib/utils";
+import { buildNormalizedSerpData } from "@/lib/serpapi";
 import type {
   MarketAnalysisResponse,
+  MarketClusters,
   MarketClassification,
+  MarketConfidence,
   MarketStrategy
 } from "@/types/market-analysis";
 
@@ -65,10 +68,6 @@ function normalizePayload(body: unknown) {
     50
   );
 
-  if (!serpData.length) {
-    throw new Error("serpData is required.");
-  }
-
   return {
     query,
     serpData
@@ -102,7 +101,14 @@ function getRuntimeConfig() {
 export async function POST(request: Request) {
   try {
     const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
-    const { query, serpData } = normalizePayload(await request.json());
+    const { query, serpData: providedSerpData } = normalizePayload(await request.json());
+    const serpData = providedSerpData.length
+      ? providedSerpData
+      : await buildNormalizedSerpData(query);
+
+    if (!serpData.length) {
+      throw new Error("serpData is required.");
+    }
 
     const client = new OpenAI({
       apiKey: openAiApiKey
@@ -149,6 +155,53 @@ Rules:
       throw new Error("Analysis model returned invalid JSON.");
     }
 
+    const clusteringPrompt = `
+You are a market intelligence clustering system.
+
+Group these real user search queries into demand clusters.
+
+Return ONLY JSON in this format:
+{
+  "clusters": [
+    {
+      "theme": "",
+      "queries": []
+    }
+  ]
+}
+
+Queries:
+${JSON.stringify(serpData)}
+
+Rules:
+- Group by actual thematic similarity
+- Use concise theme names
+- Keep the original query wording
+- Put every query into the best-fit cluster
+- No explanations
+`;
+
+    const confidencePrompt = `
+You are a market intelligence validator.
+
+Given this classification:
+${JSON.stringify(classification, null, 2)}
+
+And these queries:
+${JSON.stringify(serpData)}
+
+Return ONLY JSON in this format:
+{
+  "confidence_score": "",
+  "reason": ""
+}
+
+Rules:
+- confidence_score should be one of: High, Medium, Low
+- reason should be short, direct, and evidence-based
+- No explanations outside JSON
+`;
+
     const synthesisPrompt = `
 You are a senior growth strategist.
 
@@ -165,6 +218,7 @@ Generate:
 3. Hidden Objections
 4. Recommended Acquisition Angle
 5. Messaging Direction
+6. Offer Positioning
 
 Return clean JSON:
 {
@@ -172,14 +226,39 @@ Return clean JSON:
   "pains": [],
   "objections": [],
   "acquisition_angle": "",
-  "messaging": ""
+  "messaging": "",
+  "offer_positioning": ""
 }
 `;
 
-    const synthesisRes = await client.responses.create({
-      model: synthesisModel,
-      input: synthesisPrompt
-    });
+    const [clusteringRes, confidenceRes, synthesisRes] = await Promise.all([
+      client.responses.create({
+        model: analysisModel,
+        input: clusteringPrompt
+      }),
+      client.responses.create({
+        model: analysisModel,
+        input: confidencePrompt
+      }),
+      client.responses.create({
+        model: synthesisModel,
+        input: synthesisPrompt
+      })
+    ]);
+
+    const clusteringText = extractOutputText(clusteringRes);
+    const clusters = safeParse<MarketClusters>(clusteringText);
+
+    if (!clusters) {
+      throw new Error("Clustering model returned invalid JSON.");
+    }
+
+    const confidenceText = extractOutputText(confidenceRes);
+    const confidence = safeParse<MarketConfidence>(confidenceText);
+
+    if (!confidence) {
+      throw new Error("Confidence model returned invalid JSON.");
+    }
 
     const synthesisText = extractOutputText(synthesisRes);
     const strategy = safeParse<MarketStrategy>(synthesisText);
@@ -192,6 +271,8 @@ Return clean JSON:
       success: true,
       query,
       serpData,
+      clusters,
+      confidence,
       classification,
       strategy,
       generatedAt: new Date().toISOString()
