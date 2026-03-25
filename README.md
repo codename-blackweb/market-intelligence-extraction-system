@@ -42,6 +42,24 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## Netlify
+
+This project is deployable on Netlify as a Next.js app.
+
+- Base directory: leave blank
+- Build command: `npm run build`
+- Publish directory: `.next`
+- Production branch: `main`
+
+Set runtime environment variables in the Netlify UI:
+
+- `OPENAI_API_KEY`
+- `SERPAPI_KEY`
+- `OPENAI_ANALYSIS_MODEL`
+- `OPENAI_SYNTHESIS_MODEL`
+
+If your site uses variable scopes, make sure the API keys include the `Functions` scope because the analysis runs in a server-side route handler.
+
 ## Input notes
 
 - `Competitor brands`: one per line or comma-separated.
