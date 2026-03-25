@@ -7,10 +7,10 @@ import PrintButton from "@/components/report/PrintButton";
 import ReportView from "@/components/report/ReportView";
 import { loadReport } from "@/lib/report-store";
 import { slugify } from "@/lib/utils";
-import type { FinalReport } from "@/types/report";
+import type { MarketAnalysisReport } from "@/types/market-analysis";
 
 export default function ReportPageClient({ reportId }: { reportId: string }) {
-  const [report, setReport] = useState<FinalReport | null>(null);
+  const [report, setReport] = useState<MarketAnalysisReport | null>(null);
   const [isReady, setIsReady] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -19,7 +19,7 @@ export default function ReportPageClient({ reportId }: { reportId: string }) {
     setIsReady(true);
   }, [reportId]);
 
-  const fileName = `${slugify(report?.seed_query || "market-intelligence")}-report.pdf`;
+  const fileName = `${slugify(report?.query || "market-analysis")}-report.pdf`;
 
   if (!isReady) {
     return (
@@ -53,7 +53,7 @@ export default function ReportPageClient({ reportId }: { reportId: string }) {
       <div className="toolbar-panel no-print">
         <div>
           <p className="toolbar-title">Market Intelligence Engine</p>
-          <p className="toolbar-subtitle">Structured report export and print view</p>
+          <p className="toolbar-subtitle">Classification, strategy, and PDF export</p>
         </div>
 
         <div className="toolbar-actions">
@@ -65,10 +65,9 @@ export default function ReportPageClient({ reportId }: { reportId: string }) {
         </div>
       </div>
 
-      <div ref={reportRef}>
+      <div id="report" ref={reportRef}>
         <ReportView report={report} />
       </div>
     </main>
   );
 }
-

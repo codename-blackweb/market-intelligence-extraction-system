@@ -132,3 +132,18 @@ export function normalizeCompetitorBlocks(
     .slice(0, 6);
 }
 
+export async function buildNormalizedSerpData(query: string) {
+  const [autocompleteRaw, searchRaw] = await Promise.all([
+    fetchAutocomplete(query),
+    fetchGoogleSearchIntel(query)
+  ]);
+
+  return compactUnique(
+    [
+      ...normalizeAutocomplete(autocompleteRaw),
+      ...normalizePeopleAlsoAsk(searchRaw),
+      ...normalizeRelatedSearches(searchRaw)
+    ],
+    50
+  );
+}

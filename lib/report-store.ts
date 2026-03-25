@@ -1,4 +1,4 @@
-import type { FinalReport } from "@/types/report";
+import type { MarketAnalysisReport } from "@/types/market-analysis";
 import { safeJsonParse, slugify } from "@/lib/utils";
 
 const STORAGE_PREFIX = "market-intel-report:";
@@ -7,7 +7,7 @@ export function createReportId(seedQuery: string) {
   return `${slugify(seedQuery) || "market-report"}-${Date.now().toString(36)}`;
 }
 
-export function saveReport(reportId: string, report: FinalReport) {
+export function saveReport(reportId: string, report: MarketAnalysisReport) {
   if (typeof window === "undefined") {
     return;
   }
@@ -15,7 +15,7 @@ export function saveReport(reportId: string, report: FinalReport) {
   window.localStorage.setItem(`${STORAGE_PREFIX}${reportId}`, JSON.stringify(report));
 }
 
-export function loadReport(reportId: string): FinalReport | null {
+export function loadReport(reportId: string): MarketAnalysisReport | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -26,6 +26,5 @@ export function loadReport(reportId: string): FinalReport | null {
     return null;
   }
 
-  return safeJsonParse<FinalReport>(raw);
+  return safeJsonParse<MarketAnalysisReport>(raw);
 }
-

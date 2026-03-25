@@ -1,12 +1,12 @@
 import IntakeForm from "@/components/intake/IntakeForm";
 
 const modules = [
-  "Search intelligence",
-  "Reddit voice-of-customer",
-  "Competitor messaging",
-  "Landing page teardown",
-  "Review synthesis",
-  "Strategic report"
+  "Autocomplete",
+  "People Also Ask",
+  "Related searches",
+  "Classification pass",
+  "Synthesis pass",
+  "PDF report"
 ];
 
 export default function HomePage() {
@@ -15,11 +15,11 @@ export default function HomePage() {
       <section className="landing-hero">
         <div className="hero-copy">
           <p className="eyebrow">Market Intelligence Engine</p>
-          <h1>Turn a seed query into a demand map, language bank, and strategy brief.</h1>
+          <h1>Turn one query into a classified market read and messaging direction.</h1>
           <p className="hero-body">
-            This MVP pulls search demand, Reddit signal, competitor positioning, landing-page
-            patterns, and reviews into one operator-grade report. The intake stays lean. The
-            synthesis is the product.
+            This deployable pass stays narrow on purpose: normalize live search demand, classify
+            market dynamics, then synthesize acquisition and messaging direction into a clean
+            report.
           </p>
 
           <div className="pill-list">
@@ -34,15 +34,15 @@ export default function HomePage() {
         <aside className="glass-card hero-aside">
           <p className="aside-label">What comes out</p>
           <ul className="feature-list">
-            <li>Core problems with evidence</li>
-            <li>Emotional language and direct quotes</li>
-            <li>Keyword clusters by intent</li>
-            <li>Competitor angles and whitespace</li>
-            <li>Messaging, funnel, and strategy direction</li>
+            <li>Market classification</li>
+            <li>Core growth constraint</li>
+            <li>Top customer pains</li>
+            <li>Hidden objections</li>
+            <li>Acquisition angle and messaging direction</li>
           </ul>
 
           <div className="status-note">
-            <strong>Required keys:</strong> `OPENAI_API_KEY` and `SERPAPI_KEY`
+            <strong>Required keys:</strong> OpenAI key, SerpAPI key, and both model env vars
           </div>
         </aside>
       </section>
@@ -56,23 +56,24 @@ export default function HomePage() {
           <article className="support-card">
             <p className="aside-label">Pipeline</p>
             <ol className="ordered-list">
-              <li>Collect Google autocomplete, People Also Ask, and related searches.</li>
-              <li>Mine Reddit threads and comments with engagement-weighted prioritization.</li>
-              <li>Inspect competitor search/positioning signals if competitor brands are supplied.</li>
-              <li>Scrape provided landing pages into structural conversion notes.</li>
-              <li>Group reviews into triggers, objections, pain points, and trust signals.</li>
-              <li>Synthesize everything into one structured report screen.</li>
+              <li>Fetch autocomplete, People Also Ask, and related searches from SerpAPI.</li>
+              <li>Flatten everything into one clean string array.</li>
+              <li>Run the classification pass with the analysis model.</li>
+              <li>Run the strategy pass with the synthesis model.</li>
+              <li>Render the output into a simple report screen.</li>
+              <li>Export the report to PDF from the browser.</li>
             </ol>
           </article>
 
           <article className="support-card">
-            <p className="aside-label">Review upload format</p>
+            <p className="aside-label">Route contract</p>
             <p className="support-copy">
-              Upload `.json` or `.csv`. For CSV, use columns `source`, `rating`, `title`, and
-              `body`.
+              `/api/serp` returns normalized `serpData`. `/api/analyze` receives `query` plus that
+              array and returns classification and strategy JSON.
             </p>
             <p className="support-copy">
-              Supported sources: `trustpilot`, `google`, `amazon`, or `other`.
+              The active path is intentionally lean so it can be deployed quickly without extra
+              moving parts.
             </p>
           </article>
         </div>
@@ -80,4 +81,3 @@ export default function HomePage() {
     </main>
   );
 }
-

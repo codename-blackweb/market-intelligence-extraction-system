@@ -1,16 +1,15 @@
 # Market Intelligence Engine
 
-Lean Next.js MVP for turning a seed query into a structured market-intelligence report.
+Lean Next.js MVP for turning a single market query into a classified market breakdown and strategy report.
 
 ## What it does
 
-- Pulls Google demand signals through SerpAPI.
-- Mines Reddit threads and comments for voice-of-customer language.
-- Derives competitor messaging blocks from search results.
-- Scrapes supplied landing pages for conversion structure.
-- Accepts uploaded review data from JSON or CSV.
-- Synthesizes everything into a report with problems, language, keywords, gaps, and strategy.
-- Supports browser print-to-PDF and `html2canvas` / `jsPDF` export.
+- Pulls Google autocomplete, People Also Ask, and related searches through SerpAPI.
+- Normalizes those signals into one flat string array.
+- Runs an analysis pass with `OPENAI_ANALYSIS_MODEL`.
+- Runs a synthesis pass with `OPENAI_SYNTHESIS_MODEL`.
+- Renders a simple report with classification, pains, objections, acquisition angle, and messaging direction.
+- Exports the report to PDF with `html2pdf.js`.
 
 ## Stack
 
@@ -18,9 +17,8 @@ Lean Next.js MVP for turning a seed query into a structured market-intelligence 
 - TypeScript
 - OpenAI Responses API
 - SerpAPI
-- Cheerio
-- html2canvas
-- jsPDF
+- OpenAI Node SDK
+- html2pdf.js
 
 ## Environment
 
@@ -60,18 +58,15 @@ Set runtime environment variables in the Netlify UI:
 
 If your site uses variable scopes, make sure the API keys include the `Functions` scope because the analysis runs in a server-side route handler.
 
-## Input notes
+## API flow
 
-- `Competitor brands`: one per line or comma-separated.
-- `Landing page URLs`: one per line or comma-separated.
-- `Subreddits`: one per line or comma-separated.
-- Reviews upload accepts:
-  - `.json`: array of `{ source, rating, title?, body }`
-  - `.csv`: columns `source,rating,title,body`
+1. `POST /api/serp` with `{ query }`
+2. Receive `{ query, serpData }`
+3. `POST /api/analyze` with `{ query, serpData }`
+4. Receive classification + strategy JSON
 
 ## Current MVP limitations
 
 - Reports are stored in browser local storage, not a database.
-- Competitor intelligence is derived from search-result messaging rather than direct ad-library integrations.
-- External page fetches can fail on aggressive anti-bot setups.
-- Live analysis requires valid OpenAI and SerpAPI keys.
+- The active deploy path is intentionally narrow: one query, SERP normalization, analysis pass, synthesis pass.
+- Live analysis requires valid OpenAI and SerpAPI keys plus both model env vars.

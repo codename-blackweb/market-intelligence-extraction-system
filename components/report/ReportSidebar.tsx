@@ -1,14 +1,8 @@
-const items = [
-  { id: "overview", label: "Overview" },
-  { id: "problems", label: "Problems" },
-  { id: "language", label: "Language" },
-  { id: "keywords", label: "Keywords" },
-  { id: "angles", label: "Competitor Angles" },
-  { id: "gaps", label: "Gaps" },
-  { id: "strategy", label: "Strategy" }
-];
-
-export default function ReportSidebar() {
+export default function ReportSidebar({
+  items
+}: {
+  items: Array<{ id: string; label: string }>;
+}) {
   return (
     <aside className="report-sidebar">
       <p className="aside-label">Sections</p>
@@ -22,4 +16,3 @@ export default function ReportSidebar() {
     </aside>
   );
 }
-

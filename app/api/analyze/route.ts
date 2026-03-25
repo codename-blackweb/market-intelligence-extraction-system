@@ -1,93 +1,77 @@
-import { runPipeline } from "@/lib/pipeline";
+import OpenAI from "openai";
 import { compactUnique } from "@/lib/utils";
-import type { AnalyzePayload, MarketType, ReviewInput, ReviewSource } from "@/types/intake";
+import type {
+  MarketAnalysisResponse,
+  MarketClassification,
+  MarketStrategy
+} from "@/types/market-analysis";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 120;
 
-function normalizeMarketType(value: unknown): MarketType {
-  const candidate = typeof value === "string" ? value.toLowerCase() : "";
-
-  if (
-    candidate === "service" ||
-    candidate === "saas" ||
-    candidate === "ecommerce" ||
-    candidate === "product" ||
-    candidate === "other"
-  ) {
-    return candidate;
+function safeParse<T>(text: string) {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
   }
-
-  return "service";
 }
 
-function normalizeReviewSource(value: unknown): ReviewSource {
-  const candidate = typeof value === "string" ? value.toLowerCase() : "";
-
-  if (
-    candidate === "trustpilot" ||
-    candidate === "google" ||
-    candidate === "amazon" ||
-    candidate === "other"
-  ) {
-    return candidate;
+function extractOutputText(payload: unknown) {
+  if (!payload || typeof payload !== "object") {
+    return "";
   }
 
-  return "other";
+  const response = payload as {
+    output_text?: string;
+    output?: Array<{
+      content?: Array<{
+        type?: string;
+        text?: string;
+      }>;
+    }>;
+  };
+
+  if (typeof response.output_text === "string" && response.output_text.trim()) {
+    return response.output_text.trim();
+  }
+
+  return (
+    response.output
+      ?.flatMap((item) => item.content ?? [])
+      .filter((item) => item.type === "output_text" || item.type === "text")
+      .map((item) => item.text ?? "")
+      .join("\n")
+      .trim() ?? ""
+  );
 }
 
-function normalizeReviews(value: unknown): ReviewInput[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const reviews: ReviewInput[] = [];
-
-  for (const review of value) {
-    if (!review || typeof review !== "object") {
-      continue;
-    }
-
-    const item = review as Record<string, unknown>;
-    const body = typeof item.body === "string" ? item.body.trim() : "";
-
-    if (!body) {
-      continue;
-    }
-
-    reviews.push({
-      source: normalizeReviewSource(item.source),
-      rating: Number(item.rating ?? 0),
-      title: typeof item.title === "string" ? item.title : undefined,
-      body
-    });
-  }
-
-  return reviews;
-}
-
-function normalizePayload(body: unknown): AnalyzePayload {
+function normalizePayload(body: unknown) {
   if (!body || typeof body !== "object") {
     throw new Error("Request body must be a JSON object.");
   }
 
   const payload = body as Record<string, unknown>;
-  const seedQuery = typeof payload.seedQuery === "string" ? payload.seedQuery.trim() : "";
+  const query = typeof payload.query === "string" ? payload.query.trim() : "";
 
-  if (!seedQuery) {
-    throw new Error("Seed query is required.");
+  if (!query) {
+    throw new Error("Query is required.");
   }
 
-  const asStringArray = (value: unknown) =>
-    compactUnique(Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []);
+  const serpData = compactUnique(
+    Array.isArray(payload.serpData)
+      ? payload.serpData.filter((item): item is string => typeof item === "string")
+      : [],
+    50
+  );
+
+  if (!serpData.length) {
+    throw new Error("serpData is required.");
+  }
 
   return {
-    seedQuery,
-    competitors: asStringArray(payload.competitors),
-    landingPageUrls: asStringArray(payload.landingPageUrls),
-    subreddits: asStringArray(payload.subreddits),
-    marketType: normalizeMarketType(payload.marketType),
-    reviews: normalizeReviews(payload.reviews)
+    query,
+    serpData
   };
 }
 
@@ -109,6 +93,7 @@ function getRuntimeConfig() {
   }
 
   return {
+    openAiApiKey: openAiApiKey!,
     analysisModel: analysisModel!,
     synthesisModel: synthesisModel!
   };
@@ -116,16 +101,113 @@ function getRuntimeConfig() {
 
 export async function POST(request: Request) {
   try {
-    const { analysisModel, synthesisModel } = getRuntimeConfig();
-    const payload = normalizePayload(await request.json());
-    const report = await runPipeline(payload, {
-      analysisModel,
-      synthesisModel
+    const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
+    const { query, serpData } = normalizePayload(await request.json());
+
+    const client = new OpenAI({
+      apiKey: openAiApiKey
     });
-    return Response.json(report);
+
+    const analysisPrompt = `
+You are a market intelligence system.
+
+Given real user search queries, classify the market dynamics.
+
+Return ONLY JSON in this format:
+
+{
+  "core_type": "",
+  "business_model": "",
+  "customer_type": "",
+  "intent_stage": "",
+  "purchase_behavior": "",
+  "acquisition_channel": "",
+  "value_complexity": "",
+  "risk_level": "",
+  "market_maturity": "",
+  "competitive_structure": ""
+}
+
+Queries:
+${JSON.stringify(serpData)}
+
+Rules:
+- Infer from patterns
+- Be decisive
+- No explanations
+`;
+
+    const analysisRes = await client.responses.create({
+      model: analysisModel,
+      input: analysisPrompt
+    });
+
+    const classificationText = extractOutputText(analysisRes);
+    const classification = safeParse<MarketClassification>(classificationText);
+
+    if (!classification) {
+      throw new Error("Analysis model returned invalid JSON.");
+    }
+
+    const synthesisPrompt = `
+You are a senior growth strategist.
+
+Given this classification:
+${JSON.stringify(classification, null, 2)}
+
+And these queries:
+${JSON.stringify(serpData)}
+
+Generate:
+
+1. Core Growth Constraint
+2. Top 3 Customer Pains
+3. Hidden Objections
+4. Recommended Acquisition Angle
+5. Messaging Direction
+
+Return clean JSON:
+{
+  "core_constraint": "",
+  "pains": [],
+  "objections": [],
+  "acquisition_angle": "",
+  "messaging": ""
+}
+`;
+
+    const synthesisRes = await client.responses.create({
+      model: synthesisModel,
+      input: synthesisPrompt
+    });
+
+    const synthesisText = extractOutputText(synthesisRes);
+    const strategy = safeParse<MarketStrategy>(synthesisText);
+
+    if (!strategy) {
+      throw new Error("Synthesis model returned invalid JSON.");
+    }
+
+    const response: MarketAnalysisResponse = {
+      success: true,
+      query,
+      serpData,
+      classification,
+      strategy,
+      generatedAt: new Date().toISOString()
+    };
+
+    return Response.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to analyze market data.";
-    const status = message === "Seed query is required." ? 400 : 500;
-    return Response.json({ error: message }, { status });
+    const status = message === "Query is required." || message === "serpData is required." ? 400 : 500;
+
+    return Response.json(
+      {
+        success: false,
+        error: message
+      } satisfies MarketAnalysisResponse,
+      { status }
+    );
   }
 }
