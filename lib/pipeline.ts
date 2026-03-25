@@ -45,6 +45,11 @@ import type {
   RedditVoiceAnalysis
 } from "@/types/report";
 
+type PipelineModels = {
+  analysisModel: string;
+  synthesisModel: string;
+};
+
 const EMPTY_GOOGLE: GoogleDemandAnalysis = {
   problem_clusters: [],
   global_patterns: [],
@@ -141,7 +146,10 @@ function finalizeReport(
   };
 }
 
-export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport> {
+export async function runPipeline(
+  payload: AnalyzePayload,
+  models: PipelineModels
+): Promise<FinalReport> {
   const warnings: string[] = [];
   const modulesRun: string[] = [];
 
@@ -232,6 +240,7 @@ export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport>
           relatedSearches: googleRaw.relatedSearches,
           organicSnippets: googleRaw.organicSnippets
         }),
+        model: models.analysisModel,
         maxOutputTokens: 2400
       })
     : Promise.resolve(EMPTY_GOOGLE);
@@ -258,6 +267,7 @@ export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport>
             score: comment.score
           }))
         }),
+        model: models.analysisModel,
         maxOutputTokens: 2600
       })
     : Promise.resolve(EMPTY_REDDIT);
@@ -272,6 +282,7 @@ export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport>
           marketType: payload.marketType,
           competitorBlocks
         }),
+        model: models.analysisModel,
         maxOutputTokens: 2200
       })
     : Promise.resolve(EMPTY_COMPETITOR);
@@ -293,6 +304,7 @@ export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport>
               buttons: page.buttons,
               text: page.text
             }),
+            model: models.analysisModel,
             maxOutputTokens: 2200
           });
 
@@ -314,6 +326,7 @@ export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport>
           marketType: payload.marketType,
           reviews
         }),
+        model: models.analysisModel,
         maxOutputTokens: 2200
       })
     : Promise.resolve(EMPTY_REVIEWS);
@@ -340,7 +353,7 @@ export async function runPipeline(payload: AnalyzePayload): Promise<FinalReport>
       landingIntel: landingAnalysis ?? [],
       reviewsIntel: reviewsAnalysis ?? EMPTY_REVIEWS
     }),
-    model: process.env.OPENAI_SYNTHESIS_MODEL ?? "gpt-5",
+    model: models.synthesisModel,
     maxOutputTokens: 4200
   });
 

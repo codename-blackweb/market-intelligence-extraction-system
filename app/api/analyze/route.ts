@@ -91,10 +91,37 @@ function normalizePayload(body: unknown): AnalyzePayload {
   };
 }
 
+function getRuntimeConfig() {
+  const openAiApiKey = process.env.OPENAI_API_KEY;
+  const serpApiKey = process.env.SERPAPI_KEY;
+  const analysisModel = process.env.OPENAI_ANALYSIS_MODEL;
+  const synthesisModel = process.env.OPENAI_SYNTHESIS_MODEL;
+
+  const missing = [
+    !openAiApiKey ? "OPENAI_API_KEY" : null,
+    !serpApiKey ? "SERPAPI_KEY" : null,
+    !analysisModel ? "OPENAI_ANALYSIS_MODEL" : null,
+    !synthesisModel ? "OPENAI_SYNTHESIS_MODEL" : null
+  ].filter((value): value is string => Boolean(value));
+
+  if (missing.length) {
+    throw new Error(`Missing required environment variables: ${missing.join(", ")}.`);
+  }
+
+  return {
+    analysisModel: analysisModel!,
+    synthesisModel: synthesisModel!
+  };
+}
+
 export async function POST(request: Request) {
   try {
+    const { analysisModel, synthesisModel } = getRuntimeConfig();
     const payload = normalizePayload(await request.json());
-    const report = await runPipeline(payload);
+    const report = await runPipeline(payload, {
+      analysisModel,
+      synthesisModel
+    });
     return Response.json(report);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to analyze market data.";
