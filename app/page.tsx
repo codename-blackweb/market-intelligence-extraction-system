@@ -30,11 +30,11 @@ const classificationRows = [
 ] as const;
 
 const pipeline = [
-  "Collect search demand signals from the seed query.",
-  "Cluster visible demand into interpretable themes.",
-  "Classify the market across model, customer, intent, and risk.",
-  "Synthesize pains, objections, acquisition angle, and messaging direction.",
-  "Package the output into an exportable intelligence report."
+  "Collects search demand signals from the seed query.",
+  "Clusters visible demand into interpretable themes.",
+  "Classifies the market across models, customers, intent, and risk.",
+  "Synthesizes pains, objections, acquisition angles, and messaging direction.",
+  "Packages the output into an exportable intelligence report."
 ];
 
 const outputs = [
@@ -118,7 +118,7 @@ export default function Home() {
               src="/assets/gradient-video.mp4"
               className="hero-subtitle-video mx-auto w-full max-w-[980px]"
               fontSize="clamp(1.22rem, 1.95vw, 1.62rem)"
-              fontWeight={500}
+              fontWeight={600}
               fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
               textAnchor="middle"
               dominantBaseline="middle"
@@ -186,7 +186,7 @@ export default function Home() {
               src="/assets/gradient-video.mp4"
               className="button-video-text button-video-text-run"
               fontSize="1rem"
-              fontWeight={500}
+              fontWeight={700}
               fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
               textAnchor="middle"
               dominantBaseline="middle"
@@ -316,7 +316,7 @@ export default function Home() {
                 src="/assets/gradient-video.mp4"
                 className="button-video-text button-video-text-pipeline"
                 fontSize="1rem"
-                fontWeight={500}
+                fontWeight={700}
                 fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
                 textAnchor="middle"
                 dominantBaseline="middle"
@@ -325,7 +325,7 @@ export default function Home() {
                 loop
                 preload="auto"
               >
-                View Intelligence Pipeline
+                How It Works
               </VideoText>
             </DrawerTrigger>
 
@@ -337,7 +337,7 @@ export default function Home() {
                     src="/assets/gradient-video.mp4"
                     className="drawer-video-heading drawer-video-heading-pipeline"
                     fontSize="clamp(1.2rem, 1.8vw, 1.45rem)"
-                    fontWeight={500}
+                    fontWeight={700}
                     fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
                     textAnchor="middle"
                     dominantBaseline="middle"
@@ -361,7 +361,7 @@ export default function Home() {
                     src="/assets/gradient-video.mp4"
                     className="drawer-video-heading drawer-video-heading-output"
                     fontSize="clamp(1.2rem, 1.8vw, 1.45rem)"
-                    fontWeight={500}
+                    fontWeight={700}
                     fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
                     textAnchor="middle"
                     dominantBaseline="middle"
