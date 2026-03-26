@@ -51,12 +51,12 @@ export default function Home() {
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
   const [data, setData] = useState<MarketAnalysisResponse | null>(null);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const runAnalysis = async () => {
     setLoading(true);
-    setAnalysisError(null);
+    setError("");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -76,7 +76,7 @@ export default function Home() {
 
       if (!json.success) {
         console.error("analyze error", json.error);
-        setAnalysisError(json.error);
+        setError(json.error || "Something went wrong.");
         setData(null);
         return;
       }
@@ -85,7 +85,7 @@ export default function Home() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("analyze error", message);
-      setAnalysisError(message);
+      setError(message || "Something went wrong.");
       setData(null);
     } finally {
       setLoading(false);
@@ -215,9 +215,9 @@ export default function Home() {
             </VideoText>
           </button>
 
-          {analysisError ? (
+          {error ? (
             <p className="field-copy result-copy" role="alert">
-              Error: {analysisError}
+              Error: {error}
             </p>
           ) : null}
         </section>

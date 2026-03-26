@@ -64,7 +64,7 @@ export type MarketSynthesis = {
 };
 
 export type MarketConfidence = {
-  confidence_score: string;
+  confidence_score: string | number;
   reason: string;
 };
 
