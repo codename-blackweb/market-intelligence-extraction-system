@@ -51,10 +51,12 @@ export default function Home() {
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
   const [data, setData] = useState<MarketAnalysisResponse | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const runAnalysis = async () => {
     setLoading(true);
+    setAnalysisError(null);
 
     try {
       const res = await fetch("/api/analyze", {
@@ -70,7 +72,21 @@ export default function Home() {
       });
 
       const json = (await res.json()) as MarketAnalysisResponse;
+      console.log("analyze response", json);
+
+      if (!json.success) {
+        console.error("analyze error", json.error);
+        setAnalysisError(json.error);
+        setData(null);
+        return;
+      }
+
       setData(json);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error("analyze error", message);
+      setAnalysisError(message);
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -198,6 +214,12 @@ export default function Home() {
               Run Intelligence
             </VideoText>
           </button>
+
+          {analysisError ? (
+            <p className="field-copy result-copy" role="alert">
+              Error: {analysisError}
+            </p>
+          ) : null}
         </section>
       </ScrollReveal>
 
@@ -212,6 +234,138 @@ export default function Home() {
               </div>
 
               <div className="space-y-12" id="report">
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <p className="card-label">Dominant Narrative</p>
+                    <p className="dominant-narrative-copy">{data.dominant_narrative}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Market Diagnosis</h2>
+                    <div className="result-grid diagnosis-grid">
+                      <div className="subcard">
+                        <h3>Type</h3>
+                        <p>{data.market_diagnosis.market_type}</p>
+                      </div>
+                      <div className="subcard">
+                        <h3>Demand</h3>
+                        <p>{data.market_diagnosis.demand_state}</p>
+                      </div>
+                      <div className="subcard">
+                        <h3>Intent</h3>
+                        <p>{data.market_diagnosis.intent_level}</p>
+                      </div>
+                      <div className="subcard">
+                        <h3>Risk</h3>
+                        <p>{data.market_diagnosis.risk_level}</p>
+                      </div>
+                    </div>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Signal Strength</h2>
+                    <div className="result-grid breakdown-grid">
+                      <div className="subcard">
+                        <h3>Strength</h3>
+                        <p>{data.signal_strength.strength}</p>
+                      </div>
+                      <div className="subcard">
+                        <h3>Confidence</h3>
+                        <p>{data.signal_strength.confidence_score}%</p>
+                      </div>
+                      <div className="subcard">
+                        <h3>Pattern</h3>
+                        <p>{data.signal_strength.pattern_consistency}</p>
+                      </div>
+                    </div>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Demand Clusters</h2>
+                    <div className="stack">
+                      {data.clusters.clusters.map((cluster) => (
+                        <div className="subcard" key={cluster.theme}>
+                          <h3>
+                            {cluster.theme} ({cluster.frequency})
+                          </h3>
+                          <ul className="result-list">
+                            {cluster.queries.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Market Gaps</h2>
+                    <ul className="result-list">
+                      {data.market_gaps.map((gap) => (
+                        <li key={gap}>{gap}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Positioning Strategy</h2>
+                    <div className="result-grid breakdown-grid">
+                      <div className="subcard">
+                        <h3>Emphasize</h3>
+                        <ul className="result-list">
+                          {data.positioning_strategy.emphasize.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="subcard">
+                        <h3>Avoid</h3>
+                        <ul className="result-list">
+                          {data.positioning_strategy.avoid.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="subcard">
+                        <h3>Blindspots</h3>
+                        <ul className="result-list">
+                          {data.positioning_strategy.competitor_blindspots.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6 recommended-move-card">
+                    <h2>Recommended Move</h2>
+                    <p className="recommended-move-copy">{data.recommended_move}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Executive Summary</h2>
+                    <ul className="result-list">
+                      {data.executive_summary.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </ScrollReveal>
+
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Confidence Score</h2>

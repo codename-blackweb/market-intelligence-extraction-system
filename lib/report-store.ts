@@ -36,6 +36,26 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
     query: parsed.query,
     serpData: parsed.serpData,
     clusters: parsed.clusters ?? { clusters: [] },
+    dominant_narrative: parsed.dominant_narrative ?? "",
+    market_diagnosis: parsed.market_diagnosis ?? {
+      market_type: "",
+      demand_state: "",
+      intent_level: "",
+      risk_level: ""
+    },
+    signal_strength: parsed.signal_strength ?? {
+      strength: "",
+      confidence_score: 0,
+      pattern_consistency: ""
+    },
+    market_gaps: parsed.market_gaps ?? [],
+    positioning_strategy: parsed.positioning_strategy ?? {
+      emphasize: [],
+      avoid: [],
+      competitor_blindspots: []
+    },
+    recommended_move: parsed.recommended_move ?? "",
+    executive_summary: parsed.executive_summary ?? [],
     confidence: parsed.confidence ?? {
       confidence_score: "N/A",
       reason: "This report was generated before confidence scoring was added."

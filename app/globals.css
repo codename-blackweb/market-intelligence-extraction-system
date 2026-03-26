@@ -805,6 +805,28 @@ select {
   font-weight: 700;
 }
 
+.dominant-narrative-copy {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.recommended-move-card {
+  border: 2px solid rgba(14, 14, 14, 0.88);
+}
+
+:root[data-theme="dark"] .recommended-move-card {
+  border-color: rgba(255, 255, 255, 0.88);
+}
+
+.recommended-move-copy {
+  margin: 0.75rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
 .surface-input {
   width: 100%;
   padding: 0.95rem 1rem;

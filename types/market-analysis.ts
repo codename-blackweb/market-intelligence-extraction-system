@@ -22,11 +22,45 @@ export type MarketStrategy = {
 
 export type DemandCluster = {
   theme: string;
+  frequency: number;
   queries: string[];
 };
 
 export type MarketClusters = {
   clusters: DemandCluster[];
+};
+
+export type MarketDiagnosis = {
+  market_type: string;
+  demand_state: string;
+  intent_level: string;
+  risk_level: string;
+};
+
+export type MarketSignalStrength = {
+  strength: string;
+  confidence_score: number;
+  pattern_consistency: string;
+};
+
+export type MarketPositioningStrategy = {
+  emphasize: string[];
+  avoid: string[];
+  competitor_blindspots: string[];
+};
+
+export type MarketSynthesis = {
+  dominant_narrative: string;
+  market_diagnosis: MarketDiagnosis;
+  signal_strength: MarketSignalStrength;
+  clusters: DemandCluster[];
+  core_constraint: string;
+  pains: string[];
+  objections: string[];
+  market_gaps: string[];
+  positioning_strategy: MarketPositioningStrategy;
+  recommended_move: string;
+  executive_summary: string[];
 };
 
 export type MarketConfidence = {
@@ -38,6 +72,13 @@ export type MarketAnalysisReport = {
   query: string;
   serpData: string[];
   clusters: MarketClusters;
+  dominant_narrative: string;
+  market_diagnosis: MarketDiagnosis;
+  signal_strength: MarketSignalStrength;
+  market_gaps: string[];
+  positioning_strategy: MarketPositioningStrategy;
+  recommended_move: string;
+  executive_summary: string[];
   confidence: MarketConfidence;
   classification: MarketClassification;
   strategy: MarketStrategy;
@@ -49,6 +90,13 @@ export type MarketAnalysisSuccessResponse = {
   query: string;
   serpData: string[];
   clusters: MarketClusters;
+  dominant_narrative: string;
+  market_diagnosis: MarketDiagnosis;
+  signal_strength: MarketSignalStrength;
+  market_gaps: string[];
+  positioning_strategy: MarketPositioningStrategy;
+  recommended_move: string;
+  executive_summary: string[];
   confidence: MarketConfidence;
   classification: MarketClassification;
   strategy: MarketStrategy;
