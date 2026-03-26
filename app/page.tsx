@@ -130,7 +130,7 @@ export default function Home() {
           </div>
           <div className="hero-subtitle-video-wrap mx-auto flex justify-center px-6">
             <VideoText
-              as="p"
+              as="div"
               src="/assets/gradient-video.mp4"
               className="hero-subtitle-video mx-auto w-full max-w-[980px]"
               fontSize="clamp(1.22rem, 1.95vw, 1.62rem)"
