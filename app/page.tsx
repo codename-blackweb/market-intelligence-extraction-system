@@ -117,7 +117,7 @@ export default function Home() {
               as="p"
               src="/assets/gradient-video.mp4"
               className="hero-subtitle-video mx-auto w-full max-w-[980px]"
-              fontSize="clamp(1rem, 1.45vw, 1.3rem)"
+              fontSize="clamp(1.12rem, 1.75vw, 1.48rem)"
               fontWeight={500}
               fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
               textAnchor="middle"
