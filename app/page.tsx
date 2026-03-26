@@ -117,7 +117,7 @@ export default function Home() {
               as="p"
               src="/assets/gradient-video.mp4"
               className="hero-subtitle-video mx-auto w-full max-w-[980px]"
-              fontSize="clamp(1.12rem, 1.75vw, 1.48rem)"
+              fontSize="clamp(1.22rem, 1.95vw, 1.62rem)"
               fontWeight={500}
               fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
               textAnchor="middle"
@@ -130,7 +130,9 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: "easeOut" }}
             >
-              {"Extract real demand.\nDecode intent.\nBuild positioning that converts."}
+              {motionPolicy.isMobile
+                ? "Extract real demand.\nDecode intent.\nBuild positioning that converts."
+                : "Extract real demand. Decode intent. Build positioning that converts."}
             </VideoText>
           </div>
         </div>
