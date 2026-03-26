@@ -110,14 +110,18 @@ export default function Home() {
         <div className="text-center space-y-10 hero-stack">
           <AuroraTextEffect className="bg-transparent dark:bg-transparent" text="Market Intelligence Engine" />
           <div className="hero-orbiter">
-            <BeamCircle size={400} />
+            <BeamCircle size={motionPolicy.isMobile ? 320 : 400} />
           </div>
           <div className="hero-subtitle-video-wrap mx-auto flex justify-center px-6">
             <VideoText
               as="p"
               src="/assets/gradient-video.mp4"
               className="hero-subtitle-video mx-auto w-full max-w-[980px]"
-              fontSize="clamp(1rem, 1.45vw, 1.3rem)"
+              fontSize={
+                motionPolicy.isMobile
+                  ? "clamp(0.92rem, 3.6vw, 1.08rem)"
+                  : "clamp(1rem, 1.45vw, 1.3rem)"
+              }
               fontWeight={500}
               fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
               textAnchor="middle"

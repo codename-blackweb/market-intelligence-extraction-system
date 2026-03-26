@@ -660,6 +660,9 @@ select {
 
 .hero-orbiter {
   margin-top: -1.15rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .hero-subtitle {
@@ -1057,6 +1060,7 @@ select {
 .beam-circle-stage {
   position: relative;
   max-width: min(100%, 28rem);
+  margin-inline: auto;
 }
 
 .beam-circle-line {
