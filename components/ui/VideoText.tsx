@@ -41,6 +41,28 @@ export function VideoText({
 
   useEffect(() => {
     const responsiveFontSize = typeof fontSize === "number" ? `${fontSize}vw` : fontSize;
+    const lines = content
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+
+    const lineMarkup =
+      lines.length > 1
+        ? lines
+            .map((line, index) => {
+              const dy = index === 0 ? `${-0.6 * (lines.length - 1)}em` : "1.2em";
+              return `<tspan x='50%' dy='${dy}'>${escapeXml(line)}</tspan>`;
+            })
+            .join("")
+        : escapeXml(content);
 
     const newSvgMask = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'>
       <text x='50%' y='50%'
@@ -49,7 +71,7 @@ export function VideoText({
             text-anchor='${textAnchor}'
             dominant-baseline='${dominantBaseline}'
             font-family='${fontFamily}'
-            fill='black'>${content}</text>
+            fill='black'>${lineMarkup}</text>
     </svg>`;
     setSvgMask(newSvgMask);
   }, [content, fontSize, fontWeight, textAnchor, dominantBaseline, fontFamily]);

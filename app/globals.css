@@ -675,7 +675,7 @@ select {
 }
 
 .hero-subtitle-video {
-  height: 56px;
+  height: 88px;
   overflow: hidden;
 }
 
@@ -2172,7 +2172,7 @@ select {
 
 @media (max-width: 768px) {
   .hero-subtitle-video {
-    height: 48px;
+    height: 84px;
   }
 
   .button-video-text-run {
