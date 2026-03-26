@@ -232,7 +232,7 @@ const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps>(
 
               <button
                 aria-label="Close drawer"
-                className="absolute right-4 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+                className="drawer-close-button absolute right-4 top-6 opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none"
                 onClick={() => setOpen(false)}
                 type="button"
               >

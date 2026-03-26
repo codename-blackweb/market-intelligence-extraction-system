@@ -332,7 +332,22 @@ export default function Home() {
             <DrawerContent>
               <div className="drawer-grid-shell p-4">
                 <div className="card p-6">
-                  <h2>Pipeline</h2>
+                  <VideoText
+                    as="h2"
+                    src="/assets/gradient-video.mp4"
+                    className="drawer-video-heading drawer-video-heading-pipeline"
+                    fontSize="clamp(1.2rem, 1.8vw, 1.45rem)"
+                    fontWeight={500}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    Pipeline
+                  </VideoText>
                   <ol className="result-list numbered-list">
                     {pipeline.map((step) => (
                       <li key={step}>{step}</li>
@@ -341,7 +356,22 @@ export default function Home() {
                 </div>
 
                 <div className="card p-6">
-                  <h2>Intelligence Output</h2>
+                  <VideoText
+                    as="h2"
+                    src="/assets/gradient-video.mp4"
+                    className="drawer-video-heading drawer-video-heading-output"
+                    fontSize="clamp(1.2rem, 1.8vw, 1.45rem)"
+                    fontWeight={500}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    Intelligence Output
+                  </VideoText>
                   <ul className="result-list">
                     {outputs.map((item) => (
                       <li key={item}>{item}</li>

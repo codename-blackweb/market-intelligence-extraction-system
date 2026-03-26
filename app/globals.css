@@ -679,6 +679,41 @@ select {
   overflow: hidden;
 }
 
+.drawer-close-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.drawer-close-button:hover,
+.drawer-close-button:focus,
+.drawer-close-button:focus-visible,
+.drawer-close-button:active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.drawer-video-heading {
+  display: block;
+  height: 40px;
+  margin: 0 0 0.85rem;
+  overflow: hidden;
+}
+
+.drawer-video-heading-pipeline {
+  width: min(100%, 176px);
+}
+
+.drawer-video-heading-output {
+  width: min(100%, 278px);
+}
+
 .button-video-text {
   display: block;
   overflow: hidden;
