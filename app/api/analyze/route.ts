@@ -56,6 +56,10 @@ function normalizePayload(body: unknown) {
 
   const payload = body as Record<string, unknown>;
   const query = typeof payload.query === "string" ? payload.query.trim() : "";
+  const marketType = typeof payload.marketType === "string" ? payload.marketType.trim() : "";
+  const depthCandidate = typeof payload.depth === "string" ? payload.depth.trim() : "";
+  const depth =
+    depthCandidate === "deep" || depthCandidate === "aggressive" ? depthCandidate : "standard";
 
   if (!query) {
     throw new Error("Query is required.");
@@ -70,6 +74,8 @@ function normalizePayload(body: unknown) {
 
   return {
     query,
+    marketType,
+    depth,
     serpData
   };
 }
@@ -101,7 +107,9 @@ function getRuntimeConfig() {
 export async function POST(request: Request) {
   try {
     const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
-    const { query, serpData: providedSerpData } = normalizePayload(await request.json());
+    const { query, marketType, depth, serpData: providedSerpData } = normalizePayload(
+      await request.json()
+    );
     const serpData = providedSerpData.length
       ? providedSerpData
       : await buildNormalizedSerpData(query);
@@ -136,6 +144,12 @@ Return ONLY JSON in this format:
 
 Queries:
 ${JSON.stringify(serpData)}
+
+Market Type:
+${marketType || "unspecified"}
+
+Analysis Depth:
+${depth}
 
 Rules:
 - Infer from patterns
@@ -173,6 +187,12 @@ Return ONLY JSON in this format:
 Queries:
 ${JSON.stringify(serpData)}
 
+Market Type:
+${marketType || "unspecified"}
+
+Analysis Depth:
+${depth}
+
 Rules:
 - Group by actual thematic similarity
 - Use concise theme names
@@ -189,6 +209,12 @@ ${JSON.stringify(classification, null, 2)}
 
 And these queries:
 ${JSON.stringify(serpData)}
+
+Market Type:
+${marketType || "unspecified"}
+
+Analysis Depth:
+${depth}
 
 Return ONLY JSON in this format:
 {
@@ -210,6 +236,12 @@ ${JSON.stringify(classification, null, 2)}
 
 And these queries:
 ${JSON.stringify(serpData)}
+
+Market Type:
+${marketType || "unspecified"}
+
+Analysis Depth:
+${depth}
 
 Generate:
 
