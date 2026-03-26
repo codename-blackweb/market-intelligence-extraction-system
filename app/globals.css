@@ -680,6 +680,15 @@ select {
 }
 
 .drawer-close-button {
+  top: 0.35rem;
+  right: 0.45rem;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  min-width: auto;
   padding: 0;
   border: 0;
   background: transparent;
@@ -697,6 +706,13 @@ select {
   border-color: transparent;
   box-shadow: none;
   outline: none;
+}
+
+.drawer-close-video {
+  display: block;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
 }
 
 .drawer-video-heading {
@@ -1310,10 +1326,6 @@ select {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 1rem;
-}
-
-.drawer-close-button {
-  min-width: 6rem;
 }
 
 @keyframes auroraShift {
@@ -2206,6 +2218,11 @@ select {
 }
 
 @media (max-width: 768px) {
+  .drawer-close-button {
+    top: 0.15rem;
+    right: 0.3rem;
+  }
+
   .hero-subtitle-video {
     height: 108px;
   }
@@ -2218,6 +2235,20 @@ select {
   .button-video-text-pipeline {
     width: 206px;
     height: 22px;
+  }
+}
+
+@media (min-width: 769px) {
+  .drawer-close-button {
+    top: 0.12rem;
+    right: 0.25rem;
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .drawer-close-video {
+    width: 14px;
+    height: 14px;
   }
 }
 

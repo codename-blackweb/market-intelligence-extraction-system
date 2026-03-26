@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { VideoText } from "@/components/ui/VideoText";
 import { cn } from "@/lib/utils";
 
 interface DrawerContextValue {
@@ -232,11 +232,26 @@ const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps>(
 
               <button
                 aria-label="Close drawer"
-                className="drawer-close-button absolute right-4 top-6 opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none"
+                className="drawer-close-button absolute opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none"
                 onClick={() => setOpen(false)}
                 type="button"
               >
-                <X className="h-4 w-4 lg:h-8 lg:w-8 z-999" />
+                <VideoText
+                  as="span"
+                  src="/assets/gradient-video.mp4"
+                  className="drawer-close-video"
+                  fontSize="1rem"
+                  fontWeight={500}
+                  fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  autoPlay
+                  muted
+                  loop
+                  preload="auto"
+                >
+                  X
+                </VideoText>
                 <span className="sr-only">Close drawer</span>
               </button>
             </motion.div>
