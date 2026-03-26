@@ -1,9 +1,52 @@
 "use client";
 
 import { useState } from "react";
+import { Brain } from "lucide-react";
+import { AuroraTextEffect } from "@/components/lightswind/aurora-text-effect";
+import { BeamCircle } from "@/components/ui/beam-circle";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger
+} from "@/components/lightswind/drawer";
+import RippleLoader from "@/components/ui/RippleLoader";
+import ScrollReveal from "@/components/ui/ScrollReveal";
+import { ToggleTheme } from "@/components/ui/toggle-theme";
+import { VideoText } from "@/components/ui/VideoText";
+import { useMotionPolicy } from "@/lib/motion-policy";
 import type { MarketAnalysisResponse } from "@/types/market-analysis";
 
+const classificationRows = [
+  ["Type", "core_type"],
+  ["Model", "business_model"],
+  ["Customer", "customer_type"],
+  ["Intent", "intent_stage"],
+  ["Behavior", "purchase_behavior"],
+  ["Channel", "acquisition_channel"],
+  ["Complexity", "value_complexity"],
+  ["Risk", "risk_level"],
+  ["Maturity", "market_maturity"],
+  ["Competition", "competitive_structure"]
+] as const;
+
+const pipeline = [
+  "Collect search demand signals from the seed query.",
+  "Cluster visible demand into interpretable themes.",
+  "Classify the market across model, customer, intent, and risk.",
+  "Synthesize pains, objections, acquisition angle, and messaging direction.",
+  "Package the output into an exportable intelligence report."
+];
+
+const outputs = [
+  "Structured demand map",
+  "Emotional language bank",
+  "Competitor positioning",
+  "Conversion insights",
+  "Strategic recommendations"
+];
+
 export default function Home() {
+  const motionPolicy = useMotionPolicy();
   const [query, setQuery] = useState("");
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
@@ -47,132 +90,267 @@ export default function Home() {
   };
 
   return (
-    <main style={{ padding: 40 }}>
-      <h1>Market Intelligence Engine</h1>
+    <main className="page-shell">
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-white flex items-center justify-center loader-overlay">
+          <RippleLoader
+            duration={motionPolicy.loaderDuration}
+            icon={<Brain />}
+            logoColor="black"
+            size={motionPolicy.loaderSize}
+          />
+        </div>
+      )}
 
-      <div style={{ marginBottom: 20 }}>
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Enter seed query"
-          style={{ width: "100%", padding: 10 }}
-        />
+      <div className="fixed top-6 right-6 z-50">
+        <ToggleTheme animationType="circle-spread" />
       </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <select
-          value={marketType}
-          onChange={(event) => setMarketType(event.target.value)}
-          style={{ padding: 10, width: "100%" }}
-        >
-          <option value="">Select Market Type</option>
-          <option value="service">Service</option>
-          <option value="saas">SaaS</option>
-          <option value="ecommerce">E-commerce</option>
-          <option value="product">Product</option>
-          <option value="marketplace">Marketplace</option>
-          <option value="media">Media</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
+      <section className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-10 hero-stack">
+          <AuroraTextEffect className="bg-transparent dark:bg-transparent" text="Market Intelligence Engine" />
+          <div className="hero-orbiter">
+            <BeamCircle size={400} />
+          </div>
+          <div className="hero-subtitle-video-wrap mx-auto flex justify-center px-6">
+            <VideoText
+              as="p"
+              src="/assets/gradient-video.mp4"
+              className="hero-subtitle-video mx-auto w-full max-w-[980px]"
+              fontSize="clamp(1rem, 1.45vw, 1.3rem)"
+              fontWeight={500}
+              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+              textAnchor="middle"
+              dominantBaseline="middle"
+              autoPlay
+              muted
+              loop
+              preload="auto"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            >
+              Extract real demand. Decode intent. Build positioning that converts.
+            </VideoText>
+          </div>
+        </div>
+      </section>
 
-      <div style={{ marginBottom: 20 }}>
-        <select
-          value={depth}
-          onChange={(event) => setDepth(event.target.value)}
-          style={{ padding: 10, width: "100%" }}
-        >
-          <option value="standard">Standard Analysis</option>
-          <option value="deep">Deep Analysis</option>
-          <option value="aggressive">Aggressive (Max Insights)</option>
-        </select>
-      </div>
+      <ScrollReveal>
+        <section className="max-w-7xl mx-auto px-6 py-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card p-6">
+              <input
+                className="surface-input"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Enter seed query"
+              />
+            </div>
 
-      <button onClick={runAnalysis} disabled={loading}>
-        {loading ? "Analyzing..." : "Run Analysis"}
-      </button>
+            <div className="card p-6">
+              <select
+                className="surface-input"
+                value={marketType}
+                onChange={(event) => setMarketType(event.target.value)}
+              >
+                <option value="">Select Market Type</option>
+                <option value="service">Service</option>
+                <option value="saas">SaaS</option>
+                <option value="ecommerce">E-commerce</option>
+                <option value="product">Product</option>
+                <option value="marketplace">Marketplace</option>
+                <option value="media">Media</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div className="card p-6">
+              <select
+                className="surface-input"
+                value={depth}
+                onChange={(event) => setDepth(event.target.value)}
+              >
+                <option value="standard">Standard Analysis</option>
+                <option value="deep">Deep Analysis</option>
+                <option value="aggressive">Aggressive (Max Insights)</option>
+              </select>
+            </div>
+          </div>
+
+          <button className="btn-primary mt-10" disabled={loading} onClick={runAnalysis} type="button">
+            <VideoText
+              as="span"
+              src="/assets/gradient-video.mp4"
+              className="button-video-text button-video-text-run"
+              fontSize="1rem"
+              fontWeight={500}
+              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+              textAnchor="middle"
+              dominantBaseline="middle"
+              autoPlay
+              muted
+              loop
+              preload="auto"
+            >
+              Run Intelligence
+            </VideoText>
+          </button>
+        </section>
+      </ScrollReveal>
 
       {data && data.success && (
         <>
-          <button onClick={exportPDF} style={{ marginTop: 20 }}>
-            Export PDF
-          </button>
+          <ScrollReveal eager>
+            <section className="max-w-5xl mx-auto py-20 space-y-12">
+              <div className="results-toolbar">
+                <button className="btn-secondary" onClick={exportPDF} type="button">
+                  Export PDF
+                </button>
+              </div>
 
-          <div id="report" style={{ marginTop: 40 }}>
-            <section>
-              <h2>Confidence Score</h2>
-              <p>{data.confidence?.confidence_score || "N/A"}</p>
-              <p>{data.confidence?.reason}</p>
+              <div className="space-y-12" id="report">
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Confidence Score</h2>
+                    <p>{data.confidence?.confidence_score || "N/A"}</p>
+                    <p>{data.confidence?.reason}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Demand Clusters</h2>
+                    <div className="result-grid single-column-results">
+                      {data.clusters?.clusters?.map((cluster) => (
+                        <div className="subcard" key={cluster.theme}>
+                          <h3>{cluster.theme}</h3>
+                          <ul className="result-list">
+                            {cluster.queries.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Market Breakdown</h2>
+                    <div className="result-grid breakdown-grid">
+                      {classificationRows.map(([label, key]) => (
+                        <div className="subcard" key={key}>
+                          <h3>{label}</h3>
+                          <p>{data.classification?.[key]}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Core Constraint</h2>
+                    <p>{data.strategy?.core_constraint}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Customer Pains</h2>
+                    <ul className="result-list">
+                      {data.strategy?.pains?.map((pain) => (
+                        <li key={pain}>{pain}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Hidden Objections</h2>
+                    <ul className="result-list">
+                      {data.strategy?.objections?.map((objection) => (
+                        <li key={objection}>{objection}</li>
+                      ))}
+                    </ul>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Acquisition Angle</h2>
+                    <p>{data.strategy?.acquisition_angle}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Messaging Direction</h2>
+                    <p>{data.strategy?.messaging}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <h2>Offer Positioning</h2>
+                    <p>{data.strategy?.offer_positioning}</p>
+                  </section>
+                </ScrollReveal>
+              </div>
             </section>
+          </ScrollReveal>
+        </>
+      )}
 
-            <section>
-              <h2>Demand Clusters</h2>
-              {data.clusters?.clusters?.map((cluster) => (
-                <div key={cluster.theme}>
-                  <h3>{cluster.theme}</h3>
-                  <ul>
-                    {cluster.queries.map((item) => (
+      <ScrollReveal eager>
+        <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
+          <Drawer>
+            <DrawerTrigger className="btn-primary" type="button">
+              <VideoText
+                as="span"
+                src="/assets/gradient-video.mp4"
+                className="button-video-text button-video-text-pipeline"
+                fontSize="1rem"
+                fontWeight={500}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                View Intelligence Pipeline
+              </VideoText>
+            </DrawerTrigger>
+
+            <DrawerContent>
+              <div className="drawer-grid-shell p-4">
+                <div className="card p-6">
+                  <h2>Pipeline</h2>
+                  <ol className="result-list numbered-list">
+                    {pipeline.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="card p-6">
+                  <h2>Intelligence Output</h2>
+                  <ul className="result-list">
+                    {outputs.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
                 </div>
-              ))}
-            </section>
-
-            <section>
-              <h2>Market Breakdown</h2>
-              <p>Type: {data.classification?.core_type}</p>
-              <p>Model: {data.classification?.business_model}</p>
-              <p>Customer: {data.classification?.customer_type}</p>
-              <p>Intent: {data.classification?.intent_stage}</p>
-              <p>Behavior: {data.classification?.purchase_behavior}</p>
-              <p>Channel: {data.classification?.acquisition_channel}</p>
-              <p>Complexity: {data.classification?.value_complexity}</p>
-              <p>Risk: {data.classification?.risk_level}</p>
-              <p>Maturity: {data.classification?.market_maturity}</p>
-              <p>Competition: {data.classification?.competitive_structure}</p>
-            </section>
-
-            <section>
-              <h2>Core Constraint</h2>
-              <p>{data.strategy?.core_constraint}</p>
-            </section>
-
-            <section>
-              <h2>Customer Pains</h2>
-              <ul>
-                {data.strategy?.pains?.map((pain) => (
-                  <li key={pain}>{pain}</li>
-                ))}
-              </ul>
-            </section>
-
-            <section>
-              <h2>Hidden Objections</h2>
-              <ul>
-                {data.strategy?.objections?.map((objection) => (
-                  <li key={objection}>{objection}</li>
-                ))}
-              </ul>
-            </section>
-
-            <section>
-              <h2>Acquisition Angle</h2>
-              <p>{data.strategy?.acquisition_angle}</p>
-            </section>
-
-            <section>
-              <h2>Messaging Direction</h2>
-              <p>{data.strategy?.messaging}</p>
-            </section>
-
-            <section>
-              <h2>Offer Positioning</h2>
-              <p>{data.strategy?.offer_positioning}</p>
-            </section>
-          </div>
-        </>
-      )}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </section>
+      </ScrollReveal>
     </main>
   );
 }

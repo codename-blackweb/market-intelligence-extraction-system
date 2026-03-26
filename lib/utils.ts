@@ -1,9 +1,13 @@
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
 export function compactUnique(values: Array<string | null | undefined>, limit = 50): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
 
   for (const value of values) {
     const normalized = value?.trim();
+
     if (!normalized) {
       continue;
     }
@@ -85,3 +89,6 @@ export function maybeArray<T>(value: T | T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}

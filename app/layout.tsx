@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import SmokeyCursor from "@/components/ui/smokey-cursor";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,8 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-white text-black">
+        <SmokeyCursor intensity={0.6} />
+        {children}
+      </body>
     </html>
   );
 }
-
