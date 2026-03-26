@@ -91,7 +91,7 @@ function normalizePayload(body: unknown) {
 
 function createMockAnalysisResponse(
   query: string,
-  marketType: string
+  _marketType: string
 ): Extract<MarketAnalysisResponse, { success: true }> {
   const mockClusters = {
     clusters: [
@@ -101,32 +101,14 @@ function createMockAnalysisResponse(
         queries: [
           "why is my business not growing",
           "how to get more customers",
-          "how to grow a small business faster"
-        ]
-      },
-      {
-        theme: "Lead inconsistency",
-        frequency: 3,
-        queries: [
-          "why am i not getting leads",
-          "how to get consistent leads",
-          "why are my leads low quality"
-        ]
-      },
-      {
-        theme: "Trust and cost resistance",
-        frequency: 3,
-        queries: [
-          "is marketing worth the money",
-          "why do agencies overpromise",
-          "how do i know if marketing is working"
+          "stuck at same revenue"
         ]
       }
     ]
   } satisfies MarketClusters;
 
   const classification = {
-    core_type: marketType || "Service",
+    core_type: "Service",
     business_model: "Lead Generation",
     customer_type: "SMB",
     intent_stage: "Problem-Aware",
@@ -139,29 +121,17 @@ function createMockAnalysisResponse(
   } satisfies MarketClassification;
 
   const strategy = {
-    core_constraint:
-      "The market is not lacking demand. It is lacking confidence in predictable acquisition.",
-    pains: [
-      "Inconsistent customer flow",
-      "Wasted spend without clear attribution",
-      "Uncertainty around what channel actually works"
-    ],
-    objections: [
-      "This will be expensive",
-      "I have tried marketing before and it did not work",
-      "I do not trust agencies or generic growth advice"
-    ],
-    acquisition_angle:
-      "Position the offer around predictable acquisition clarity, not vague growth promises.",
-    messaging:
-      "Lead with certainty, signal visibility, and practical outcomes instead of hype.",
-    offer_positioning:
-      "A market intelligence and positioning system that turns messy search demand into usable strategy."
+    core_constraint: "Lack of predictable acquisition",
+    pains: ["inconsistent leads"],
+    objections: ["too expensive"],
+    acquisition_angle: "predictability",
+    messaging: "clarity over hype",
+    offer_positioning: "intelligence-driven growth"
   } satisfies MarketStrategy;
 
   const confidence = {
     confidence_score: 84,
-    reason: "Strong signal concentration across repeated problem-aware demand patterns."
+    reason: "Mock data (DEV mode)"
   } satisfies MarketConfidence;
 
   return {
@@ -170,47 +140,47 @@ function createMockAnalysisResponse(
     serpData: mockClusters.clusters.flatMap((cluster) => cluster.queries),
     clusters: mockClusters,
     dominant_narrative:
-      "Search demand is concentrated around stalled growth, inconsistent lead flow, and distrust of vague marketing promises.",
+      "Demand is clustering around stalled growth and the need for predictable acquisition.",
     market_diagnosis: {
       market_type: classification.core_type,
-      demand_state: "Active but skeptical",
+      demand_state: "Active",
       intent_level: "Problem-Aware",
       risk_level: "Medium"
     },
     signal_strength: {
       strength: "High",
       confidence_score: 84,
-      pattern_consistency: "Strong signal concentration across repeated problem-aware demand patterns."
+      pattern_consistency: "Mock data (DEV mode)"
     },
     market_gaps: [
-      "Few offers frame growth as an attribution clarity problem instead of a traffic problem.",
-      "Competitors over-index on hype instead of trust-building proof and signal visibility.",
-      "Search demand shows a gap for practical guidance tied to predictable lead quality."
+      "Most offers do not frame growth around predictable acquisition systems.",
+      "Search demand suggests a gap for practical clarity instead of hype-led messaging.",
+      "There is room for an offer centered on intelligence-driven growth decisions."
     ],
     positioning_strategy: {
       emphasize: [
-        "Predictable acquisition clarity",
-        "Visible attribution and channel certainty",
-        "Practical outcomes over hype"
+        "Predictable acquisition",
+        "Operational clarity",
+        "Measured growth decisions"
       ],
       avoid: [
-        "Generic growth language",
-        "Big claims without proof",
-        "Agency-style overpromising"
+        "Generic growth claims",
+        "Vague promises",
+        "Agency hype"
       ],
       competitor_blindspots: [
-        "Most competitors do not directly address trust erosion from failed past marketing.",
-        "Most positioning ignores low-quality lead frustration as a central decision driver.",
-        "Most offers fail to connect search-demand signals to a usable growth system."
+        "Most competitors underplay predictability as the core purchase driver.",
+        "Most messaging ignores trust erosion from inconsistent results.",
+        "Most offers do not translate search demand into actionable strategy."
       ]
     },
     recommended_move:
-      "Position the product as the fastest path to acquisition clarity for skeptical SMB buyers who have demand but do not trust current marketing options.",
+      "Position the product around predictable acquisition and clarity over hype.",
     executive_summary: [
-      "Demand is present, but buyers are skeptical of vague marketing promises.",
-      "The dominant tension is not traffic scarcity, but confidence in predictable acquisition.",
-      "Trust, attribution, and lead quality are the strongest repeated decision drivers.",
-      "Winning positioning should stress clarity, evidence, and channel-level certainty."
+      "Demand exists, but buyers want more predictability.",
+      "Growth stagnation is the dominant visible query cluster.",
+      "Trust is fragile when outcomes feel inconsistent.",
+      "Positioning should center on clarity and intelligence-driven decisions."
     ],
     confidence,
     classification,
@@ -378,6 +348,7 @@ function getRuntimeConfig() {
 
 export async function POST(request: NextRequest) {
   try {
+    const MODE = process.env.MODE || "DEV";
     const body = await request.json();
     const rawPayload = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
     const query = typeof rawPayload.query === "string" ? rawPayload.query.trim() : "";
@@ -386,12 +357,12 @@ export async function POST(request: NextRequest) {
       typeof rawPayload.marketType === "string" ? rawPayload.marketType.trim() : "";
     const depth = typeof rawPayload.depth === "string" ? rawPayload.depth.trim() : "";
 
-    console.log("DEV_MODE:", process.env.DEV_MODE);
+    console.log("MODE:", MODE);
     console.log("analyze request:", { query, seedQuery, marketType, depth });
 
     const { query: finalQuery, serpData: providedSerpData } = normalizePayload(body);
 
-    if (process.env.DEV_MODE === "true") {
+    if (MODE === "DEV") {
       await new Promise((resolve) => setTimeout(resolve, DEV_MODE_DELAY_MS));
       return NextResponse.json(createMockAnalysisResponse(finalQuery, marketType));
     }
