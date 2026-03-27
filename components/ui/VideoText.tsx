@@ -18,6 +18,7 @@ export interface VideoTextProps {
   textX?: string;
   dominantBaseline?: string;
   fontFamily?: string;
+  fontStyle?: string;
   maskPosition?: string;
   as?: "div" | "span" | "section" | "article" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 }
@@ -36,6 +37,7 @@ export function VideoText({
   textX = "50%",
   dominantBaseline = "middle",
   fontFamily = "sans-serif",
+  fontStyle = "normal",
   maskPosition = "center",
   as = "div",
   ...motionProps
@@ -75,10 +77,11 @@ export function VideoText({
             text-anchor='${textAnchor}'
             dominant-baseline='${dominantBaseline}'
             font-family='${fontFamily}'
+            font-style='${fontStyle}'
             fill='black'>${lineMarkup}</text>
     </svg>`;
     setSvgMask(newSvgMask);
-  }, [content, fontSize, fontWeight, textAnchor, textX, dominantBaseline, fontFamily]);
+  }, [content, fontSize, fontWeight, textAnchor, textX, dominantBaseline, fontFamily, fontStyle]);
 
   const validTags = ["div", "span", "section", "article", "p", "h1", "h2", "h3", "h4", "h5", "h6"] as const;
 

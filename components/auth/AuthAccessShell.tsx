@@ -12,6 +12,9 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
 type AuthView = "signin" | "magic" | "recovery" | "verify";
 
@@ -39,6 +42,9 @@ export default function AuthAccessShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setSession } = useAuth();
+  const requestedPlan = searchParams.get("plan");
+  const upgradePlan =
+    requestedPlan === "pro" || requestedPlan === "agency" ? requestedPlan : null;
   const [view, setView] = useState<AuthView>(getInitialView(searchParams.get("view")));
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
@@ -49,11 +55,13 @@ export default function AuthAccessShell() {
   const [success, setSuccess] = useState("");
   const passkeySupported = false;
   const inputClassName =
-    "h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-10 text-xs font-bold text-zinc-900 outline-none transition-all focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100";
+    "h-11 pl-10 text-xs font-bold";
   const primaryButtonClassName =
-    "w-full h-11 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-black rounded-xl shadow-lg transition-all hover:brightness-110 active:scale-[0.98] uppercase tracking-[0.2em]";
+    "w-full h-11 text-[10px] uppercase tracking-[0.2em]";
   const secondaryButtonClassName =
-    "h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all font-black text-[9px] uppercase tracking-widest";
+    "h-10 rounded-xl font-black text-[9px] uppercase tracking-widest";
+  const planLabel =
+    upgradePlan === "pro" ? "Unlocking Pro" : upgradePlan === "agency" ? "Unlocking Agency" : null;
 
   const hint = useMemo(() => {
     switch (view) {
@@ -82,6 +90,16 @@ export default function AuthAccessShell() {
         };
     }
   }, [view]);
+
+  const hintCopy =
+    planLabel && view === "signin"
+      ? `${hint.copy} Continue to unlock ${upgradePlan === "agency" ? "Agency" : "Pro"}.`
+      : hint.copy;
+
+  const handleProviderClick = (provider: "GitHub" | "Google") => {
+    setSuccess("");
+    setError(`${provider} sign-in is not configured yet. Continue with email access for now.`);
+  };
 
   const handlePasswordSignIn = async () => {
     setLoading(true);
@@ -230,16 +248,27 @@ export default function AuthAccessShell() {
   };
 
   return (
-    <section className="min-h-screen w-full flex items-center justify-center p-4 bg-white dark:bg-zinc-950">
+    <section className="relative min-h-screen w-full overflow-hidden bg-white p-4 dark:bg-zinc-950">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-20 h-72 w-72 -translate-x-[140%] rounded-full bg-zinc-900/6 blur-3xl dark:bg-white/6" />
+        <div className="absolute bottom-16 left-1/2 h-80 w-80 translate-x-[10%] rounded-full bg-zinc-900/7 blur-3xl dark:bg-white/5" />
+      </div>
+
+      <div className="flex min-h-screen items-center justify-center">
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-sm"
+        className="relative z-10 w-full max-w-sm"
       >
         <div className="relative">
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-xl backdrop-blur-sm">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-xl backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950">
             <div className="text-center mb-8">
+              {planLabel ? (
+                <div className="mb-4 inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                  {planLabel}
+                </div>
+              ) : null}
               <motion.div
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
@@ -254,11 +283,11 @@ export default function AuthAccessShell() {
                   <Lock className="w-5 h-5 text-white dark:text-zinc-900" />
                 )}
               </motion.div>
-              <h1 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+              <h1 className="text-xl font-black uppercase italic tracking-tight text-zinc-900 dark:text-zinc-100">
                 {hint.title}
               </h1>
-              <p className="text-[10px] font-bold text-zinc-400 mt-2 uppercase tracking-widest leading-relaxed">
-                {hint.copy}
+              <p className="mt-3 text-[12px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+                {hintCopy}
               </p>
             </div>
 
@@ -294,7 +323,7 @@ export default function AuthAccessShell() {
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
-                    <input
+                    <Input
                       id="auth-email"
                       type="email"
                       placeholder="user@workspace.com"
@@ -326,7 +355,7 @@ export default function AuthAccessShell() {
                     </div>
                     <div className="relative">
                       <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
-                      <input
+                      <Input
                         id="auth-password"
                         type="password"
                         placeholder="••••••••"
@@ -338,12 +367,11 @@ export default function AuthAccessShell() {
                   </div>
 
                   <div className="flex items-center space-x-2 px-1">
-                    <input
+                    <Checkbox
                       id="remember"
                       checked={rememberSession}
-                      className="h-4 w-4 rounded border border-zinc-300 bg-transparent accent-zinc-900 dark:border-zinc-700 dark:accent-zinc-100"
+                      className="rounded"
                       onChange={(event) => setRememberSession(event.target.checked)}
-                      type="checkbox"
                     />
                     <label
                       htmlFor="remember"
@@ -353,29 +381,27 @@ export default function AuthAccessShell() {
                     </label>
                   </div>
 
-                  <button
+                  <Button
                     className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handlePasswordSignIn}
-                    type="button"
                   >
                     {loading ? "Continuing..." : "Continue"}
                     <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
-                  </button>
+                  </Button>
                 </>
               ) : null}
 
               {view === "magic" ? (
                 <>
-                  <button
+                  <Button
                     className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handleMagicAccess}
-                    type="button"
                   >
                     {loading ? "Sending..." : "Send Magic Access"}
                     <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
-                  </button>
+                  </Button>
                   <p className="text-center text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                     No password required • Secure access flow
                   </p>
@@ -384,15 +410,14 @@ export default function AuthAccessShell() {
 
               {view === "recovery" ? (
                 <>
-                  <button
+                  <Button
                     className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handleRecovery}
-                    type="button"
                   >
                     {loading ? "Sending..." : "Send Recovery Link"}
                     <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
-                  </button>
+                  </Button>
                   {success === "Recovery Link Sent" ? (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
                       <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">
@@ -415,9 +440,9 @@ export default function AuthAccessShell() {
                     >
                       Verification Code
                     </label>
-                    <input
+                    <Input
                       id="verification-code"
-                      className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-center text-lg font-black tracking-[0.4em] text-zinc-900 outline-none transition-all focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
+                      className="h-11 px-4 text-center text-lg font-black tracking-[0.4em]"
                       maxLength={6}
                       onChange={(event) => setVerificationCode(event.target.value)}
                       placeholder="123456"
@@ -425,14 +450,13 @@ export default function AuthAccessShell() {
                       value={verificationCode}
                     />
                   </div>
-                  <button
+                  <Button
                     className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handleVerification}
-                    type="button"
                   >
                     {loading ? "Verifying..." : "Verify and Continue"}
-                  </button>
+                  </Button>
                   <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.14em] text-zinc-400">
                     <button onClick={() => setView("magic")} type="button">
                       Resend Code
@@ -465,13 +489,18 @@ export default function AuthAccessShell() {
               </div>
               <div className="relative flex justify-center text-[8px] uppercase font-black tracking-[0.3em]">
                 <span className="bg-white dark:bg-zinc-950 px-4 text-zinc-400 translate-y-[1px]">
-                  Connected Providers
+                  Workspace Providers
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <button className={secondaryButtonClassName} type="button">
+              <Button
+                className={secondaryButtonClassName}
+                onClick={() => handleProviderClick("GitHub")}
+                type="button"
+                variant="outline"
+              >
                 <span className="inline-flex items-center justify-center">
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
@@ -481,8 +510,13 @@ export default function AuthAccessShell() {
                   </svg>
                   GitHub
                 </span>
-              </button>
-              <button className={secondaryButtonClassName} type="button">
+              </Button>
+              <Button
+                className={secondaryButtonClassName}
+                onClick={() => handleProviderClick("Google")}
+                type="button"
+                variant="outline"
+              >
                 <span className="inline-flex items-center justify-center">
                   <svg className="mr-2 h-3.5 w-3.5" viewBox="0 0 24 24" aria-hidden="true">
                     <path
@@ -507,18 +541,22 @@ export default function AuthAccessShell() {
                   </svg>
                   Google
                 </span>
-              </button>
+              </Button>
             </div>
 
             <p className="text-center mt-7 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
               New here?{" "}
-              <Link href="/onboarding" className="font-black text-zinc-900 dark:text-zinc-100 hover:underline">
+              <Link
+                href={upgradePlan ? `/onboarding?plan=${upgradePlan}` : "/onboarding"}
+                className="font-black text-zinc-900 dark:text-zinc-100 hover:underline"
+              >
                 Create your account
               </Link>
             </p>
           </div>
         </div>
       </motion.div>
+      </div>
     </section>
   );
 }

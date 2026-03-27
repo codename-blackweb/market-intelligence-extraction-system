@@ -1103,7 +1103,66 @@ export default function Home() {
 
       <section className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-10 hero-stack">
-          <AuroraTextEffect className="bg-transparent dark:bg-transparent" text="Market Intelligence Engine" />
+          <div className="hero-brand-stack">
+            <VideoText
+              as="div"
+              src="/assets/gradient-video.mp4"
+              className="hero-brand-video hero-brand-video-name"
+              fontSize="clamp(1.3rem, 2vw, 1.9rem)"
+              fontWeight={700}
+              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+              textAnchor="middle"
+              dominantBaseline="middle"
+              autoPlay
+              muted
+              loop
+              preload="auto"
+            >
+              IntentEngine
+            </VideoText>
+
+            <VideoText
+              as="div"
+              src="/assets/gradient-video.mp4"
+              className="hero-brand-video hero-brand-video-tagline"
+              fontSize="clamp(1rem, 1.5vw, 1.18rem)"
+              fontWeight={600}
+              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+              textAnchor="middle"
+              dominantBaseline="middle"
+              autoPlay
+              muted
+              loop
+              preload="auto"
+            >
+              {motionPolicy.isMobile
+                ? "Find buyers before your\ncompetitors know they exist."
+                : "Find buyers before your competitors know they exist."}
+            </VideoText>
+
+            <VideoText
+              as="div"
+              src="/assets/gradient-video.mp4"
+              className="hero-brand-video hero-brand-video-powered"
+              fontSize="clamp(0.88rem, 1.12vw, 0.98rem)"
+              fontWeight={500}
+              fontStyle="italic"
+              fontFamily='"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+              textAnchor="middle"
+              dominantBaseline="middle"
+              autoPlay
+              muted
+              loop
+              preload="auto"
+            >
+              Powered by SignalForge intelligence.
+            </VideoText>
+          </div>
+
+          <AuroraTextEffect
+            className="bg-transparent dark:bg-transparent"
+            text="A Market Intelligence Engine"
+          />
           <div className="hero-orbiter">
             <BeamCircle size={motionPolicy.isMobile ? 320 : 400} />
           </div>
@@ -1847,10 +1906,10 @@ export default function Home() {
         </>
       )}
 
-      <section className="mt-24" id="pricing">
+      <section className="mt-24" id="pricing" ref={pricingSectionRef}>
         {showInlinePricing ? (
           <ScrollReveal eager>
-            <section className="max-w-5xl mx-auto px-6 pb-8" ref={pricingSectionRef}>
+            <section className="max-w-5xl mx-auto px-6 pb-8">
               <div className="card p-6 pricing-section-shell">
                 <AnimatedPricingSection
                   currentPlan={usageState.plan}
