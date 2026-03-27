@@ -1909,6 +1909,7 @@ select {
   width: 100%;
   display: flex;
   justify-content: flex-start;
+  margin-top: 1rem;
 }
 
 .faq-title-video {
@@ -3689,6 +3690,10 @@ select {
 
   .faq-copy {
     max-width: none;
+  }
+
+  .faq-title-video-wrap {
+    margin-top: 0.55rem;
   }
 
   .faq-title-video {
