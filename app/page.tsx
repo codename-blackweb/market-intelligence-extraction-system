@@ -1103,68 +1103,6 @@ export default function Home() {
 
       <section className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-10 hero-stack">
-          <div className="hero-brand-stack">
-            <div className="hero-brand-line hero-brand-line-name">
-              <VideoText
-                as="div"
-                src="/assets/gradient-video.mp4"
-                className="hero-brand-video hero-brand-video-name"
-                fontSize="clamp(1.3rem, 2vw, 1.9rem)"
-                fontWeight={700}
-                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                textAnchor="middle"
-                dominantBaseline="middle"
-                autoPlay
-                muted
-                loop
-                preload="auto"
-              >
-                IntentEngine
-              </VideoText>
-            </div>
-
-            <div className="hero-brand-line hero-brand-line-tagline">
-              <VideoText
-                as="div"
-                src="/assets/gradient-video.mp4"
-                className="hero-brand-video hero-brand-video-tagline"
-                fontSize="clamp(1rem, 1.5vw, 1.18rem)"
-                fontWeight={600}
-                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                textAnchor="middle"
-                dominantBaseline="middle"
-                autoPlay
-                muted
-                loop
-                preload="auto"
-              >
-                {motionPolicy.isMobile
-                  ? "Find buyers before your\ncompetitors know they exist."
-                  : "Find buyers before your competitors know they exist."}
-              </VideoText>
-            </div>
-
-            <div className="hero-brand-line hero-brand-line-powered">
-              <VideoText
-                as="div"
-                src="/assets/gradient-video.mp4"
-                className="hero-brand-video hero-brand-video-powered"
-                fontSize="clamp(0.88rem, 1.12vw, 0.98rem)"
-                fontWeight={500}
-                fontStyle="italic"
-                fontFamily='"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
-                textAnchor="middle"
-                dominantBaseline="middle"
-                autoPlay
-                muted
-                loop
-                preload="auto"
-              >
-                Powered by SignalForge intelligence.
-              </VideoText>
-            </div>
-          </div>
-
           <AuroraTextEffect
             className="bg-transparent dark:bg-transparent"
             text="A Market Intelligence Engine"
