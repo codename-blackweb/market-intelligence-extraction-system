@@ -68,7 +68,9 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
               {report.clusters.clusters.length ? (
                 report.clusters.clusters.map((cluster) => (
                   <article className="list-card" key={cluster.theme}>
-                    <h3>{cluster.theme}</h3>
+                    <h3>
+                      {cluster.theme} — {cluster.frequency} signals
+                    </h3>
                     <ul className="bullet-list">
                       {cluster.queries.map((item) => (
                         <li key={item}>{item}</li>

@@ -78,6 +78,7 @@ export default function IntakeForm() {
         confidence: analysisPayload.confidence,
         classification: analysisPayload.classification,
         strategy: analysisPayload.strategy,
+        source_meta: analysisPayload.source_meta,
         generatedAt: analysisPayload.generatedAt
       });
 

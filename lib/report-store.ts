@@ -35,7 +35,14 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
   return {
     query: parsed.query,
     serpData: parsed.serpData,
-    clusters: parsed.clusters ?? { clusters: [] },
+    clusters: {
+      clusters:
+        parsed.clusters?.clusters?.map((cluster) => ({
+          theme: cluster.theme ?? "",
+          frequency: cluster.frequency ?? cluster.queries?.length ?? 0,
+          queries: cluster.queries ?? []
+        })) ?? []
+    },
     dominant_narrative: parsed.dominant_narrative ?? "",
     market_diagnosis: parsed.market_diagnosis ?? {
       market_type: "",
@@ -64,6 +71,12 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
     strategy: {
       ...parsed.strategy,
       offer_positioning: parsed.strategy.offer_positioning ?? ""
+    },
+    source_meta: parsed.source_meta ?? {
+      mode: "LIVE",
+      used_google: true,
+      used_reddit: false,
+      used_openai: true
     },
     generatedAt: parsed.generatedAt ?? new Date().toISOString()
   };

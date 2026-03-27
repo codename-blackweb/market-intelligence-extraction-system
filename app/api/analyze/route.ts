@@ -11,7 +11,8 @@ import type {
   MarketStrategy,
   MarketSynthesis,
   DemandCluster,
-  MarketSignalStrength
+  MarketSignalStrength,
+  MarketSourceMeta
 } from "@/types/market-analysis";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,34 @@ export const maxDuration = 120;
 
 const DEV_MODE_DELAY_MS = 900;
 const HYBRID_SUBREDDITS = ["marketing", "smallbusiness", "entrepreneur", "startups", "sales"];
+
+function buildSourceMeta(mode: MarketSourceMeta["mode"], overrides?: Partial<MarketSourceMeta>) {
+  const defaults: Record<MarketSourceMeta["mode"], MarketSourceMeta> = {
+    DEV: {
+      mode: "DEV",
+      used_google: false,
+      used_reddit: false,
+      used_openai: false
+    },
+    HYBRID: {
+      mode: "HYBRID",
+      used_google: true,
+      used_reddit: true,
+      used_openai: false
+    },
+    LIVE: {
+      mode: "LIVE",
+      used_google: true,
+      used_reddit: false,
+      used_openai: true
+    }
+  };
+
+  return {
+    ...defaults[mode],
+    ...overrides
+  };
+}
 
 function safeParse<T>(text: string) {
   try {
@@ -118,7 +147,7 @@ function createMockAnalysisResponse(
     signal_strength: {
       strength: "High",
       confidence_score: 84,
-      pattern_consistency: "Mock data (DEV mode)"
+      pattern_consistency: "Strong"
     },
     market_gaps: [
       "Most offers do not frame growth around predictable acquisition systems.",
@@ -153,6 +182,7 @@ function createMockAnalysisResponse(
     confidence,
     classification,
     strategy,
+    source_meta: buildSourceMeta("DEV"),
     generatedAt: new Date().toISOString()
   };
 }
@@ -364,6 +394,9 @@ function createHybridAnalysisResponse(
     },
     classification,
     strategy,
+    source_meta: buildSourceMeta("HYBRID", {
+      used_reddit: redditSignals.length > 0
+    }),
     generatedAt: new Date().toISOString()
   };
 }
@@ -393,6 +426,36 @@ function toNumber(value: unknown) {
   }
 
   return 0;
+}
+
+function normalizeStrengthLabel(value: unknown): MarketSignalStrength["strength"] {
+  const normalized = toCleanString(value).toLowerCase();
+
+  if (normalized === "high") {
+    return "High";
+  }
+
+  if (normalized === "low") {
+    return "Low";
+  }
+
+  return "Medium";
+}
+
+function normalizePatternConsistencyLabel(
+  value: unknown
+): MarketSignalStrength["pattern_consistency"] {
+  const normalized = toCleanString(value).toLowerCase();
+
+  if (normalized === "strong") {
+    return "Strong";
+  }
+
+  if (normalized === "fragmented") {
+    return "Fragmented";
+  }
+
+  return "Moderate";
 }
 
 function normalizeCluster(value: unknown): DemandCluster | null {
@@ -456,9 +519,11 @@ function normalizeSynthesis(
       risk_level: toCleanString(diagnosis.risk_level) || classification.risk_level
     },
     signal_strength: {
-      strength: toCleanString(signalStrength.strength),
+      strength: normalizeStrengthLabel(signalStrength.strength),
       confidence_score: toNumber(signalStrength.confidence_score),
-      pattern_consistency: toCleanString(signalStrength.pattern_consistency)
+      pattern_consistency: normalizePatternConsistencyLabel(
+        signalStrength.pattern_consistency
+      )
     },
     clusters: synthesizedClusters.clusters.length ? synthesizedClusters.clusters : fallbackClusters.clusters,
     core_constraint: toCleanString(synthesis.core_constraint),
@@ -791,6 +856,7 @@ ${JSON.stringify(classification, null, 2)}
       confidence,
       classification,
       strategy,
+      source_meta: buildSourceMeta("LIVE"),
       generatedAt: new Date().toISOString()
     };
 

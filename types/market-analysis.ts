@@ -43,6 +43,13 @@ export type MarketSignalStrength = {
   pattern_consistency: string;
 };
 
+export type MarketSourceMeta = {
+  mode: "DEV" | "HYBRID" | "LIVE";
+  used_google: boolean;
+  used_reddit: boolean;
+  used_openai: boolean;
+};
+
 export type MarketPositioningStrategy = {
   emphasize: string[];
   avoid: string[];
@@ -82,6 +89,7 @@ export type MarketAnalysisReport = {
   confidence: MarketConfidence;
   classification: MarketClassification;
   strategy: MarketStrategy;
+  source_meta: MarketSourceMeta;
   generatedAt: string;
 };
 
@@ -100,6 +108,7 @@ export type MarketAnalysisSuccessResponse = {
   confidence: MarketConfidence;
   classification: MarketClassification;
   strategy: MarketStrategy;
+  source_meta: MarketSourceMeta;
   generatedAt: string;
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Brain } from "lucide-react";
 import { AuroraTextEffect } from "@/components/lightswind/aurora-text-effect";
 import { BeamCircle } from "@/components/ui/beam-circle";
@@ -45,14 +45,100 @@ const outputs = [
   "Strategic recommendations"
 ];
 
+const RECENT_ANALYSES_STORAGE_KEY = "market-intelligence:recent-analyses:v1";
+const MAX_SAVED_RUNS = 10;
+
+type SuccessfulAnalysisResponse = Extract<MarketAnalysisResponse, { success: true }>;
+
+type SavedAnalysisRun = {
+  id: string;
+  query: string;
+  marketType: string;
+  depth: string;
+  createdAt: number;
+  result: SuccessfulAnalysisResponse;
+};
+
+function isSuccessfulAnalysisResponse(value: unknown): value is SuccessfulAnalysisResponse {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      (value as { success?: boolean }).success === true &&
+      typeof (value as { query?: unknown }).query === "string" &&
+      typeof (value as { generatedAt?: unknown }).generatedAt === "string"
+  );
+}
+
+function loadSavedRuns() {
+  if (typeof window === "undefined") {
+    return [] as SavedAnalysisRun[];
+  }
+
+  const raw = window.localStorage.getItem(RECENT_ANALYSES_STORAGE_KEY);
+
+  if (!raw) {
+    return [] as SavedAnalysisRun[];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [] as SavedAnalysisRun[];
+    }
+
+    return parsed
+      .filter(
+        (item): item is SavedAnalysisRun =>
+          Boolean(
+            item &&
+              typeof item === "object" &&
+              typeof (item as { id?: unknown }).id === "string" &&
+              typeof (item as { query?: unknown }).query === "string" &&
+              typeof (item as { marketType?: unknown }).marketType === "string" &&
+              typeof (item as { depth?: unknown }).depth === "string" &&
+              typeof (item as { createdAt?: unknown }).createdAt === "number" &&
+              isSuccessfulAnalysisResponse((item as { result?: unknown }).result)
+          )
+      )
+      .slice(0, MAX_SAVED_RUNS);
+  } catch {
+    return [] as SavedAnalysisRun[];
+  }
+}
+
+function persistSavedRuns(runs: SavedAnalysisRun[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    RECENT_ANALYSES_STORAGE_KEY,
+    JSON.stringify(runs.slice(0, MAX_SAVED_RUNS))
+  );
+}
+
 export default function Home() {
   const motionPolicy = useMotionPolicy();
   const [query, setQuery] = useState("");
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
   const [data, setData] = useState<MarketAnalysisResponse | null>(null);
+  const [savedRuns, setSavedRuns] = useState<SavedAnalysisRun[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setSavedRuns(loadSavedRuns());
+  }, []);
+
+  const restoreSavedRun = (savedRun: SavedAnalysisRun) => {
+    setQuery(savedRun.query);
+    setMarketType(savedRun.marketType);
+    setDepth(savedRun.depth);
+    setError("");
+    setData(savedRun.result);
+  };
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -82,6 +168,21 @@ export default function Home() {
       }
 
       setData(json);
+
+      const savedRun: SavedAnalysisRun = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        query: json.query,
+        marketType,
+        depth,
+        createdAt: Date.now(),
+        result: json
+      };
+
+      setSavedRuns((currentRuns) => {
+        const nextRuns = [savedRun, ...currentRuns].slice(0, MAX_SAVED_RUNS);
+        persistSavedRuns(nextRuns);
+        return nextRuns;
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("analyze error", message);
@@ -223,6 +324,34 @@ export default function Home() {
         </section>
       </ScrollReveal>
 
+      {savedRuns.length ? (
+        <ScrollReveal eager>
+          <section className="max-w-7xl mx-auto px-6 pb-8 recent-analyses-shell">
+            <div className="card p-6">
+              <div className="recent-analyses-header">
+                <p className="card-label">Recent Analyses</p>
+              </div>
+              <div className="recent-analyses-list">
+                {savedRuns.map((savedRun) => (
+                  <button
+                    className="recent-analysis-button"
+                    key={savedRun.id}
+                    onClick={() => restoreSavedRun(savedRun)}
+                    type="button"
+                  >
+                    <span className="recent-analysis-query">{savedRun.query}</span>
+                    <span className="recent-analysis-meta">
+                      {savedRun.result.source_meta.mode} •{" "}
+                      {new Date(savedRun.createdAt).toLocaleString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </ScrollReveal>
+      ) : null}
+
       {data && data.success && (
         <>
           <ScrollReveal eager>
@@ -234,6 +363,35 @@ export default function Home() {
               </div>
 
               <div className="space-y-12" id="report">
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <p className="card-label">Source Activity</p>
+                    <div className="source-activity-strip" aria-label="Source activity">
+                      <span
+                        className={`source-activity-item ${
+                          data.source_meta.used_google ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        Google <span aria-hidden="true">{data.source_meta.used_google ? "●" : "○"}</span>
+                      </span>
+                      <span
+                        className={`source-activity-item ${
+                          data.source_meta.used_reddit ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        Reddit <span aria-hidden="true">{data.source_meta.used_reddit ? "●" : "○"}</span>
+                      </span>
+                      <span
+                        className={`source-activity-item ${
+                          data.source_meta.used_openai ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        OpenAI <span aria-hidden="true">{data.source_meta.used_openai ? "●" : "○"}</span>
+                      </span>
+                    </div>
+                  </section>
+                </ScrollReveal>
+
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <p className="card-label">Dominant Narrative</p>
@@ -268,6 +426,15 @@ export default function Home() {
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Signal Strength</h2>
+                    <div
+                      aria-hidden="true"
+                      className="signal-strength-meter"
+                    >
+                      <span
+                        className="signal-strength-meter-bar"
+                        style={{ width: `${Math.max(0, Math.min(100, data.signal_strength.confidence_score))}%` }}
+                      />
+                    </div>
                     <div className="result-grid breakdown-grid">
                       <div className="subcard">
                         <h3>Strength</h3>
@@ -282,6 +449,7 @@ export default function Home() {
                         <p>{data.signal_strength.pattern_consistency}</p>
                       </div>
                     </div>
+                    <p className="field-copy result-copy">{data.confidence?.reason}</p>
                   </section>
                 </ScrollReveal>
 
@@ -292,7 +460,7 @@ export default function Home() {
                       {data.clusters.clusters.map((cluster) => (
                         <div className="subcard" key={cluster.theme}>
                           <h3>
-                            {cluster.theme} ({cluster.frequency})
+                            {cluster.theme} — {cluster.frequency} signals
                           </h3>
                           <ul className="result-list">
                             {cluster.queries.map((item) => (
@@ -380,7 +548,9 @@ export default function Home() {
                     <div className="result-grid single-column-results">
                       {data.clusters?.clusters?.map((cluster) => (
                         <div className="subcard" key={cluster.theme}>
-                          <h3>{cluster.theme}</h3>
+                          <h3>
+                            {cluster.theme} — {cluster.frequency} signals
+                          </h3>
                           <ul className="result-list">
                             {cluster.queries.map((item) => (
                               <li key={item}>{item}</li>
