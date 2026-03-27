@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { collectRedditCorpus } from "@/lib/reddit";
-import { compactUnique } from "@/lib/utils";
-import { buildNormalizedSerpData } from "@/lib/serpapi";
+import { collectGoogleSignalBundle } from "@/lib/serpapi";
+import { compactUnique, normalizeUrl, splitListInput } from "@/lib/utils";
 import type {
+  CompetitorContext,
+  DemandCluster,
   MarketAnalysisResponse,
-  MarketClusters,
+  MarketAnalysisSuccessResponse,
   MarketClassification,
+  MarketClusters,
   MarketConfidence,
+  MarketSignalStrength,
+  MarketSourceMeta,
   MarketStrategy,
   MarketSynthesis,
-  DemandCluster,
-  MarketSignalStrength,
-  MarketSourceMeta
+  SignalOriginEntry,
+  SignalSourceTag
 } from "@/types/market-analysis";
 
 export const dynamic = "force-dynamic";
@@ -21,25 +25,55 @@ export const maxDuration = 120;
 const DEV_MODE_DELAY_MS = 900;
 const HYBRID_SUBREDDITS = ["marketing", "smallbusiness", "entrepreneur", "startups", "sales"];
 
-function buildSourceMeta(mode: MarketSourceMeta["mode"], overrides?: Partial<MarketSourceMeta>) {
+type AnalyzeBody = {
+  query?: string;
+  seedQuery?: string;
+  marketType?: string;
+  depth?: string;
+  serpData?: unknown;
+  competitorNames?: unknown;
+  competitorUrls?: unknown;
+  niche?: unknown;
+};
+
+type DeterministicAnalysisOptions = {
+  mode: MarketSourceMeta["mode"];
+  query: string;
+  marketType: string;
+  googleSignals: Awaited<ReturnType<typeof collectGoogleSignalBundle>>;
+  redditSignals: string[];
+  competitorContext: CompetitorContext;
+  fallbackUsed?: boolean;
+};
+
+function buildSourceMeta(
+  mode: MarketSourceMeta["mode"],
+  overrides?: Partial<MarketSourceMeta>
+): MarketSourceMeta {
   const defaults: Record<MarketSourceMeta["mode"], MarketSourceMeta> = {
     DEV: {
       mode: "DEV",
-      used_google: false,
-      used_reddit: false,
-      used_openai: false
+      used_google: true,
+      used_reddit: true,
+      used_openai: false,
+      google_signal_count: 0,
+      reddit_signal_count: 0
     },
     HYBRID: {
       mode: "HYBRID",
       used_google: true,
       used_reddit: true,
-      used_openai: false
+      used_openai: false,
+      google_signal_count: 0,
+      reddit_signal_count: 0
     },
     LIVE: {
       mode: "LIVE",
       used_google: true,
-      used_reddit: false,
-      used_openai: true
+      used_reddit: true,
+      used_openai: true,
+      google_signal_count: 0,
+      reddit_signal_count: 0
     }
   };
 
@@ -86,60 +120,158 @@ function extractOutputText(payload: unknown) {
   );
 }
 
+function mergeSignalOrigins(entries: SignalOriginEntry[]) {
+  const originMap = new Map<
+    string,
+    {
+      text: string;
+      sources: Set<SignalSourceTag>;
+    }
+  >();
+
+  for (const entry of entries) {
+    const text = entry.text.trim();
+
+    if (!text) {
+      continue;
+    }
+
+    const key = text.toLowerCase();
+    const current = originMap.get(key) ?? {
+      text,
+      sources: new Set<SignalSourceTag>()
+    };
+
+    for (const source of entry.sources) {
+      current.sources.add(source);
+    }
+
+    originMap.set(key, current);
+  }
+
+  return Array.from(originMap.values()).map(({ text, sources }) => ({
+    text,
+    sources: Array.from(sources)
+  }));
+}
+
+function buildSignalOriginEntries(values: string[], source: SignalSourceTag) {
+  return values.map((text) => ({
+    text,
+    sources: [source]
+  })) satisfies SignalOriginEntry[];
+}
+
+function normalizeCompetitorContext(body: AnalyzeBody): CompetitorContext {
+  const competitorNames =
+    typeof body.competitorNames === "string"
+      ? splitListInput(body.competitorNames)
+      : Array.isArray(body.competitorNames)
+        ? compactUnique(
+            body.competitorNames.filter((item): item is string => typeof item === "string"),
+            12
+          )
+        : [];
+
+  const competitorUrls =
+    typeof body.competitorUrls === "string"
+      ? compactUnique(
+          splitListInput(body.competitorUrls)
+            .map((value) => normalizeUrl(value))
+            .filter((value): value is string => Boolean(value)),
+          12
+        )
+      : Array.isArray(body.competitorUrls)
+        ? compactUnique(
+            body.competitorUrls
+              .filter((item): item is string => typeof item === "string")
+              .map((value) => normalizeUrl(value))
+              .filter((value): value is string => Boolean(value)),
+            12
+          )
+        : [];
+
+  return {
+    competitor_names: competitorNames,
+    competitor_urls: competitorUrls,
+    niche: typeof body.niche === "string" ? body.niche.trim() : ""
+  };
+}
+
 function createMockAnalysisResponse(
   query: string,
-  _marketType: string
-): Extract<MarketAnalysisResponse, { success: true }> {
-  const mockClusters = {
-    clusters: [
-      {
-        theme: "Growth stagnation",
-        frequency: 3,
-        queries: [
-          "why is my business not growing",
-          "how to get more customers",
-          "stuck at same revenue"
-        ]
-      }
-    ]
-  } satisfies MarketClusters;
-
-  const classification = {
-    core_type: "Service",
-    business_model: "Lead Generation",
-    customer_type: "SMB",
-    intent_stage: "Problem-Aware",
-    purchase_behavior: "Considered",
-    acquisition_channel: "Search",
-    value_complexity: "Moderate",
-    risk_level: "Medium",
-    market_maturity: "Saturated",
-    competitive_structure: "Fragmented"
-  } satisfies MarketClassification;
-
-  const strategy = {
-    core_constraint: "Lack of predictable acquisition",
-    pains: ["inconsistent leads"],
-    objections: ["too expensive"],
-    acquisition_angle: "predictability",
-    messaging: "clarity over hype",
-    offer_positioning: "intelligence-driven growth"
-  } satisfies MarketStrategy;
-
-  const confidence = {
-    confidence_score: 84,
-    reason: "Mock data (DEV mode)"
-  } satisfies MarketConfidence;
+  marketType: string,
+  competitorContext: CompetitorContext
+): MarketAnalysisSuccessResponse {
+  const googleSignals = [
+    "why is my business not growing",
+    "how to get more customers",
+    "stuck at same revenue",
+    "how to get consistent leads",
+    "how do i know if marketing is working"
+  ];
+  const redditSignals = [
+    "marketing agency promises but no results",
+    "small business lead gen feels unpredictable"
+  ];
+  const signalOrigins = mergeSignalOrigins([
+    ...buildSignalOriginEntries(
+      ["why is my business not growing", "how to get more customers"],
+      "Autocomplete"
+    ),
+    ...buildSignalOriginEntries(
+      ["stuck at same revenue", "how to get consistent leads"],
+      "PAA"
+    ),
+    ...buildSignalOriginEntries(["how do i know if marketing is working"], "Related Searches"),
+    ...buildSignalOriginEntries(redditSignals, "Reddit")
+  ]);
+  const competitiveGap =
+    competitorContext.competitor_names[0] || competitorContext.competitor_urls[0]
+      ? `There is whitespace to differentiate against ${
+          competitorContext.competitor_names[0] ||
+          new URL(competitorContext.competitor_urls[0]).hostname
+        } with clearer acquisition proof.`
+      : "There is whitespace to position around proof and predictability instead of abstract growth promises.";
 
   return {
     success: true,
     query,
-    serpData: mockClusters.clusters.flatMap((cluster) => cluster.queries),
-    clusters: mockClusters,
+    serpData: compactUnique([...googleSignals, ...redditSignals], 50),
+    signal_origins: signalOrigins,
+    clusters: {
+      clusters: [
+        {
+          theme: "Growth stagnation",
+          frequency: 3,
+          queries: [
+            "why is my business not growing",
+            "how to get more customers",
+            "stuck at same revenue"
+          ]
+        },
+        {
+          theme: "Lead inconsistency",
+          frequency: 2,
+          queries: [
+            "how to get consistent leads",
+            "small business lead gen feels unpredictable"
+          ]
+        },
+        {
+          theme: "Trust and cost resistance",
+          frequency: 2,
+          queries: [
+            "how do i know if marketing is working",
+            "marketing agency promises but no results"
+          ]
+        }
+      ]
+    },
     dominant_narrative:
-      "Demand is clustering around stalled growth and the need for predictable acquisition.",
+      "Demand is real, but buyers are screening for proof that growth can become predictable before they spend again.",
     market_diagnosis: {
-      market_type: classification.core_type,
+      market_type: toDisplayMarketType(marketType),
       demand_state: "Active",
       intent_level: "Problem-Aware",
       risk_level: "Medium"
@@ -150,39 +282,69 @@ function createMockAnalysisResponse(
       pattern_consistency: "Strong"
     },
     market_gaps: [
-      "Most offers do not frame growth around predictable acquisition systems.",
-      "Search demand suggests a gap for practical clarity instead of hype-led messaging.",
-      "There is room for an offer centered on intelligence-driven growth decisions."
+      "Most offers still promise growth without showing the operating system behind it.",
+      "Very few competitors frame acquisition reliability as the real buying driver.",
+      competitiveGap
     ],
     positioning_strategy: {
-      emphasize: [
-        "Predictable acquisition",
-        "Operational clarity",
-        "Measured growth decisions"
-      ],
-      avoid: [
-        "Generic growth claims",
-        "Vague promises",
-        "Agency hype"
-      ],
+      emphasize: ["Predictable acquisition", "Signal visibility", "Proof-led execution"],
+      avoid: ["Generic growth claims", "Agency hype", "Vanity metrics"],
       competitor_blindspots: [
-        "Most competitors underplay predictability as the core purchase driver.",
-        "Most messaging ignores trust erosion from inconsistent results.",
-        "Most offers do not translate search demand into actionable strategy."
+        "Competitors over-index on activity instead of reliability.",
+        "Most offers do not translate messy demand into a clear operating decision.",
+        "Trust repair is under-addressed in category messaging."
       ]
     },
     recommended_move:
-      "Position the product around predictable acquisition and clarity over hype.",
+      "Sell predictable acquisition clarity and proof of signal visibility before promising scale.",
     executive_summary: [
-      "Demand exists, but buyers want more predictability.",
-      "Growth stagnation is the dominant visible query cluster.",
-      "Trust is fragile when outcomes feel inconsistent.",
-      "Positioning should center on clarity and intelligence-driven decisions."
+      "Demand clusters around stalled growth, inconsistent leads, and trust erosion.",
+      "The market is not asking for more tactics; it is asking for a more reliable acquisition system.",
+      "Confidence is high because the same pain pattern repeats across search and discussion signals.",
+      "Positioning should center on predictability, proof, and downside reduction."
     ],
-    confidence,
-    classification,
-    strategy,
-    source_meta: buildSourceMeta("DEV"),
+    confidence: {
+      confidence_score: 84,
+      reason: "Deterministic mock synthesis built for DEV mode."
+    },
+    classification: {
+      core_type: toDisplayMarketType(marketType),
+      business_model: "Lead Generation",
+      customer_type: "SMB",
+      intent_stage: "Problem-Aware",
+      purchase_behavior: "Considered",
+      acquisition_channel: "Search",
+      value_complexity: "Moderate",
+      risk_level: "Medium",
+      market_maturity: "Saturated",
+      competitive_structure: "Fragmented"
+    },
+    strategy: {
+      core_constraint:
+        "The market is not lacking demand. It is lacking confidence in predictable acquisition.",
+      pains: [
+        "Inconsistent customer flow",
+        "Wasted spend without clear attribution",
+        "Uncertainty around what channel actually works"
+      ],
+      objections: [
+        "This will be expensive",
+        "I have tried marketing before and it did not work",
+        "I do not trust agencies or generic growth advice"
+      ],
+      acquisition_angle:
+        "Position the offer around predictable acquisition clarity instead of vague growth promises.",
+      messaging:
+        "Lead with certainty, signal visibility, and practical outcomes instead of hype.",
+      offer_positioning:
+        "A market intelligence and positioning system that turns messy demand into usable strategy."
+    },
+    source_meta: buildSourceMeta("DEV", {
+      google_signal_count: googleSignals.length,
+      reddit_signal_count: redditSignals.length
+    }),
+    competitor_context: competitorContext,
+    fallback_used: false,
     generatedAt: new Date().toISOString()
   };
 }
@@ -205,18 +367,25 @@ async function collectHybridRedditSignals(query: string) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.warn("hybrid reddit fetch failed", message);
+    console.warn("reddit fetch failed", message);
     return [];
   }
 }
 
-function createHybridAnalysisResponse(
-  query: string,
-  marketType: string,
-  serpData: string[],
-  redditSignals: string[]
-): Extract<MarketAnalysisResponse, { success: true }> {
-  const combinedSignals = compactUnique([...serpData, ...redditSignals], 24);
+function createDeterministicAnalysisResponse({
+  mode,
+  query,
+  marketType,
+  googleSignals,
+  redditSignals,
+  competitorContext,
+  fallbackUsed = false
+}: DeterministicAnalysisOptions): MarketAnalysisSuccessResponse {
+  const combinedSignals = compactUnique([...googleSignals.serpData, ...redditSignals], 40);
+  const signalOrigins = mergeSignalOrigins([
+    ...googleSignals.signalOrigins,
+    ...buildSignalOriginEntries(redditSignals, "Reddit")
+  ]);
   const growthSignals = combinedSignals.filter((signal) =>
     /grow|growth|revenue|customers|business not growing|traction/i.test(signal)
   );
@@ -227,7 +396,7 @@ function createHybridAnalysisResponse(
   );
   const trustSignals = combinedSignals.filter(
     (signal) =>
-      /trust|expensive|cost|worth|agency|working|roi|overpromise/i.test(signal) &&
+      /trust|expensive|cost|worth|agency|working|roi|overpromise|proof/i.test(signal) &&
       !growthSignals.includes(signal) &&
       !leadSignals.includes(signal)
   );
@@ -267,10 +436,7 @@ function createHybridAnalysisResponse(
           }
         ];
 
-  const totalSignals = normalizedClusters.reduce(
-    (sum, cluster) => sum + cluster.frequency,
-    0
-  );
+  const totalSignals = normalizedClusters.reduce((sum, cluster) => sum + cluster.frequency, 0);
   const leadCluster = normalizedClusters[0];
   const confidenceScore = Math.min(
     89,
@@ -280,7 +446,7 @@ function createHybridAnalysisResponse(
     leadCluster.frequency >= 4 ? "Strong" : leadCluster.frequency >= 2 ? "Moderate" : "Fragmented";
   const signalStrength = totalSignals >= 9 ? "High" : totalSignals >= 5 ? "Medium" : "Low";
   const classification = {
-    core_type: toDisplayMarketType(marketType),
+    core_type: toDisplayMarketType(marketType || competitorContext.niche),
     business_model: "Lead Generation",
     customer_type: "SMB",
     intent_stage: "Problem-Aware",
@@ -289,10 +455,19 @@ function createHybridAnalysisResponse(
     value_complexity: "Moderate",
     risk_level: trustSignals.length >= 2 ? "High" : "Medium",
     market_maturity: totalSignals >= 9 ? "Saturated" : "Developing",
-    competitive_structure: "Fragmented"
+    competitive_structure:
+      competitorContext.competitor_names.length || competitorContext.competitor_urls.length
+        ? "Contested"
+        : "Fragmented"
   } satisfies MarketClassification;
+  const competitorReference =
+    competitorContext.competitor_names[0] ||
+    (competitorContext.competitor_urls[0]
+      ? new URL(competitorContext.competitor_urls[0]).hostname
+      : "");
   const strategy = {
-    core_constraint: "The market is not lacking demand. It is lacking confidence in predictable acquisition.",
+    core_constraint:
+      "The market is not lacking demand. It is lacking confidence in predictable acquisition.",
     pains: compactUnique(
       [
         growthSignals.length ? "Stalled growth despite active effort" : "",
@@ -309,15 +484,24 @@ function createHybridAnalysisResponse(
       ].filter(Boolean),
       3
     ),
-    acquisition_angle: "Position the offer around predictable acquisition clarity, not vague growth promises.",
+    acquisition_angle:
+      "Position the offer around predictable acquisition clarity, not vague growth promises.",
     messaging: "Lead with certainty, visibility, and practical outcomes instead of hype.",
-    offer_positioning: "A market intelligence system that turns live demand signals into clear growth decisions."
+    offer_positioning:
+      competitorReference
+        ? `A decision system that makes acquisition clarity more defensible than ${competitorReference}.`
+        : "A market intelligence system that turns live demand signals into clear growth decisions."
   } satisfies MarketStrategy;
+  const competitorGap =
+    competitorReference
+      ? `There is room to out-position ${competitorReference} by tying proof and predictability together.`
+      : "";
 
   return {
     success: true,
     query,
-    serpData,
+    serpData: combinedSignals,
+    signal_origins: signalOrigins,
     clusters: {
       clusters: normalizedClusters
     },
@@ -346,9 +530,10 @@ function createHybridAnalysisResponse(
           : "",
         trustSignals.length
           ? "There is room for proof-led positioning that reduces perceived downside."
-          : "The category leaves space for clearer acquisition visibility instead of vague channel talk."
+          : "The category leaves space for clearer acquisition visibility instead of vague channel talk.",
+        competitorGap
       ].filter(Boolean),
-      3
+      4
     ),
     positioning_strategy: {
       emphasize: compactUnique(
@@ -366,7 +551,9 @@ function createHybridAnalysisResponse(
           trustSignals.length
             ? "Most messaging ignores trust erosion caused by wasted spend."
             : "Most messaging fails to turn demand signals into usable guidance.",
-          "Few competitors translate visible demand into a clear operating decision."
+          competitorReference
+            ? `${competitorReference} does not own the narrative around acquisition certainty.`
+            : "Few competitors translate visible demand into a clear operating decision."
         ],
         3
       )
@@ -384,19 +571,31 @@ function createHybridAnalysisResponse(
         redditSignals.length
           ? "Reddit discussion reinforces the same acquisition and trust themes seen in search."
           : "Google demand signals are already concentrated enough to support a directional read.",
-        "The best move is to sell certainty, visibility, and repeatability instead of generic growth promises."
+        competitorReference
+          ? `${competitorReference} creates a visible comparison point, but does not close the trust gap.`
+          : "The best move is to sell certainty, visibility, and repeatability instead of generic growth promises."
       ],
       4
     ),
     confidence: {
       confidence_score: confidenceScore,
-      reason: "Built from live Google and Reddit signals in HYBRID mode."
+      reason:
+        mode === "LIVE" && fallbackUsed
+          ? "Fallback synthesis used after LIVE mode failed."
+          : mode === "LIVE"
+            ? "Built from live Google, Reddit, and OpenAI synthesis."
+            : "Built from live Google and Reddit signals in deterministic mode."
     },
     classification,
     strategy,
-    source_meta: buildSourceMeta("HYBRID", {
-      used_reddit: redditSignals.length > 0
+    source_meta: buildSourceMeta(mode, {
+      used_reddit: redditSignals.length > 0,
+      used_openai: mode === "LIVE" && !fallbackUsed,
+      google_signal_count: googleSignals.serpData.length,
+      reddit_signal_count: redditSignals.length
     }),
+    competitor_context: competitorContext,
+    fallback_used: fallbackUsed,
     generatedAt: new Date().toISOString()
   };
 }
@@ -568,13 +767,11 @@ function deriveStrategy(synthesis: MarketSynthesis): MarketStrategy {
 
 function getRuntimeConfig() {
   const openAiApiKey = process.env.OPENAI_API_KEY;
-  const serpApiKey = process.env.SERPAPI_KEY;
   const analysisModel = process.env.OPENAI_ANALYSIS_MODEL;
   const synthesisModel = process.env.OPENAI_SYNTHESIS_MODEL;
 
   const missing = [
     !openAiApiKey ? "OPENAI_API_KEY" : null,
-    !serpApiKey ? "SERPAPI_KEY" : null,
     !analysisModel ? "OPENAI_ANALYSIS_MODEL" : null,
     !synthesisModel ? "OPENAI_SYNTHESIS_MODEL" : null
   ].filter((value): value is string => Boolean(value));
@@ -590,104 +787,36 @@ function getRuntimeConfig() {
   };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const MODE = (process.env.MODE || "DEV").toUpperCase();
-    const {
-      query,
-      seedQuery,
-      marketType,
-      depth,
-      serpData
-    } = (await request.json()) as {
-      query?: string;
-      seedQuery?: string;
-      marketType?: string;
-      depth?: string;
-      serpData?: unknown;
-    };
-    const finalQuery = (query ?? "").trim() || (seedQuery ?? "").trim();
-    const finalMarketType = (marketType ?? "").trim();
-    const finalDepthCandidate = (depth ?? "").trim();
-    const finalDepth =
-      finalDepthCandidate === "deep" || finalDepthCandidate === "aggressive"
-        ? finalDepthCandidate
-        : "standard";
+async function runLiveOpenAiAnalysis({
+  query,
+  marketType,
+  depth,
+  googleSignals,
+  redditSignals,
+  competitorContext
+}: {
+  query: string;
+  marketType: string;
+  depth: string;
+  googleSignals: Awaited<ReturnType<typeof collectGoogleSignalBundle>>;
+  redditSignals: string[];
+  competitorContext: CompetitorContext;
+}): Promise<MarketAnalysisSuccessResponse> {
+  const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
+  const combinedSignals = compactUnique([...googleSignals.serpData, ...redditSignals], 50);
 
-    console.log("MODE:", MODE);
-    console.log("analyze request:", {
-      query,
-      seedQuery,
-      marketType: finalMarketType,
-      depth: finalDepth
-    });
+  if (!combinedSignals.length) {
+    throw new Error("serpData is required.");
+  }
 
-    if (!finalQuery) {
-      return NextResponse.json(
-        { success: false, error: "Missing query" },
-        { status: 400 }
-      );
-    }
+  const client = new OpenAI({
+    apiKey: openAiApiKey
+  });
 
-    if (MODE === "DEV") {
-      await new Promise((resolve) => setTimeout(resolve, DEV_MODE_DELAY_MS));
-      return NextResponse.json(createMockAnalysisResponse(finalQuery, finalMarketType));
-    }
-
-    if (MODE === "HYBRID") {
-      console.log("ENTERED HYBRID BRANCH");
-
-      const providedSerpData = compactUnique(
-        Array.isArray(serpData)
-          ? serpData.filter((item): item is string => typeof item === "string")
-          : [],
-        50
-      );
-      const normalizedSerpData = providedSerpData.length
-        ? providedSerpData
-        : await buildNormalizedSerpData(finalQuery);
-
-      if (!normalizedSerpData.length) {
-        throw new Error("serpData is required.");
-      }
-
-      const redditSignals = await collectHybridRedditSignals(finalQuery);
-
-      return NextResponse.json(
-        createHybridAnalysisResponse(
-          finalQuery,
-          finalMarketType,
-          normalizedSerpData,
-          redditSignals
-        )
-      );
-    }
-
-    console.log("ENTERING LIVE OPENAI BRANCH");
-
-    const providedSerpData = compactUnique(
-      Array.isArray(serpData)
-        ? serpData.filter((item): item is string => typeof item === "string")
-        : [],
-      50
-    );
-    const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
-    const normalizedSerpData = providedSerpData.length
-      ? providedSerpData
-      : await buildNormalizedSerpData(finalQuery);
-
-    if (!normalizedSerpData.length) {
-      throw new Error("serpData is required.");
-    }
-
-    const client = new OpenAI({
-      apiKey: openAiApiKey
-    });
-
-    const analysisPrompt = `
+  const analysisPrompt = `
 You are a market intelligence system.
 
-Given real user search queries, classify the market dynamics.
+Given real user search queries and discussion signals, classify the market dynamics.
 
 Return ONLY JSON in this format:
 
@@ -704,14 +833,27 @@ Return ONLY JSON in this format:
   "competitive_structure": ""
 }
 
-Queries:
-${JSON.stringify(normalizedSerpData)}
+Signals:
+${JSON.stringify(combinedSignals, null, 2)}
+
+Signal Origins:
+${JSON.stringify(
+    mergeSignalOrigins([
+      ...googleSignals.signalOrigins,
+      ...buildSignalOriginEntries(redditSignals, "Reddit")
+    ]),
+    null,
+    2
+  )}
+
+Competitor Context:
+${JSON.stringify(competitorContext, null, 2)}
 
 Market Type:
-${finalMarketType || "unspecified"}
+${marketType || "unspecified"}
 
 Analysis Depth:
-${finalDepth}
+${depth}
 
 Rules:
 - Infer from patterns
@@ -719,7 +861,7 @@ Rules:
 - No explanations
 `;
 
-    const clusteringPrompt = `
+  const clusteringPrompt = `
 Cluster queries into themes.
 
 Return JSON:
@@ -733,8 +875,8 @@ Return JSON:
   ]
 }
 
-Queries:
-${JSON.stringify(normalizedSerpData)}
+Signals:
+${JSON.stringify(combinedSignals, null, 2)}
 
 Rules:
 - Count frequency explicitly
@@ -742,32 +884,32 @@ Rules:
 - Group by intent, not keywords
 `;
 
-    const [analysisRes, clusteringRes] = await Promise.all([
-      client.responses.create({
-        model: analysisModel,
-        input: analysisPrompt
-      }),
-      client.responses.create({
-        model: analysisModel,
-        input: clusteringPrompt
-      })
-    ]);
+  const [analysisRes, clusteringRes] = await Promise.all([
+    client.responses.create({
+      model: analysisModel,
+      input: analysisPrompt
+    }),
+    client.responses.create({
+      model: analysisModel,
+      input: clusteringPrompt
+    })
+  ]);
 
-    const classificationText = extractOutputText(analysisRes);
-    const classification = safeParse<MarketClassification>(classificationText);
+  const classificationText = extractOutputText(analysisRes);
+  const classification = safeParse<MarketClassification>(classificationText);
 
-    if (!classification) {
-      throw new Error("Analysis model returned invalid JSON.");
-    }
+  if (!classification) {
+    throw new Error("Analysis model returned invalid JSON.");
+  }
 
-    const clusteringText = extractOutputText(clusteringRes);
-    const clusters = normalizeClusters(safeParse<MarketClusters>(clusteringText));
+  const clusteringText = extractOutputText(clusteringRes);
+  const clusters = normalizeClusters(safeParse<MarketClusters>(clusteringText));
 
-    if (!clusters.clusters.length) {
-      throw new Error("Clustering model returned invalid JSON.");
-    }
+  if (!clusters.clusters.length) {
+    throw new Error("Clustering model returned invalid JSON.");
+  }
 
-    const synthesisPrompt = `
+  const synthesisPrompt = `
 You are a senior market strategist.
 
 Your job is to analyze real user demand and produce decisive, high-signal insights.
@@ -812,55 +954,184 @@ Rules:
 - No fluff. No generic advice.
 - Frequency must reflect repetition across queries.
 - Dominant narrative must be one sharp sentence.
-- Executive summary must be 3–4 bullets max.
+- Executive summary must be 3-4 bullets max.
 - Positioning must be strategic, not vague.
 - Recommended move must be a clear directive.
 
 Data:
-SERP_DATA:
-${JSON.stringify(normalizedSerpData, null, 2)}
+SIGNALS:
+${JSON.stringify(combinedSignals, null, 2)}
+
+SIGNAL_ORIGINS:
+${JSON.stringify(
+    mergeSignalOrigins([
+      ...googleSignals.signalOrigins,
+      ...buildSignalOriginEntries(redditSignals, "Reddit")
+    ]),
+    null,
+    2
+  )}
 
 CLUSTERS:
 ${JSON.stringify(clusters.clusters, null, 2)}
 
 CLASSIFICATION:
 ${JSON.stringify(classification, null, 2)}
+
+COMPETITOR_CONTEXT:
+${JSON.stringify(competitorContext, null, 2)}
 `;
 
-    const synthesisRes = await client.responses.create({
-      model: synthesisModel,
-      input: synthesisPrompt
+  const synthesisRes = await client.responses.create({
+    model: synthesisModel,
+    input: synthesisPrompt
+  });
+
+  const synthesisText = extractOutputText(synthesisRes);
+  const synthesis = normalizeSynthesis(
+    safeParse<MarketSynthesis>(synthesisText),
+    clusters,
+    classification
+  );
+  const confidence = deriveConfidence(synthesis.signal_strength);
+  const strategy = deriveStrategy(synthesis);
+
+  if (!synthesis.dominant_narrative && !synthesis.core_constraint && !synthesis.recommended_move) {
+    throw new Error("Synthesis model returned invalid JSON.");
+  }
+
+  return {
+    success: true,
+    query,
+    serpData: combinedSignals,
+    signal_origins: mergeSignalOrigins([
+      ...googleSignals.signalOrigins,
+      ...buildSignalOriginEntries(redditSignals, "Reddit")
+    ]),
+    clusters: { clusters: synthesis.clusters },
+    dominant_narrative: synthesis.dominant_narrative,
+    market_diagnosis: synthesis.market_diagnosis,
+    signal_strength: synthesis.signal_strength,
+    market_gaps: synthesis.market_gaps,
+    positioning_strategy: synthesis.positioning_strategy,
+    recommended_move: synthesis.recommended_move,
+    executive_summary: synthesis.executive_summary,
+    confidence,
+    classification,
+    strategy,
+    source_meta: buildSourceMeta("LIVE", {
+      used_reddit: redditSignals.length > 0,
+      google_signal_count: googleSignals.serpData.length,
+      reddit_signal_count: redditSignals.length
+    }),
+    competitor_context: competitorContext,
+    fallback_used: false,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const MODE = (process.env.MODE || "DEV").toUpperCase();
+    const body = (await request.json()) as AnalyzeBody;
+    const { query, seedQuery, marketType, depth } = body;
+    const finalQuery = (query ?? "").trim() || (seedQuery ?? "").trim();
+    const finalMarketType = (marketType ?? "").trim();
+    const finalDepthCandidate = (depth ?? "").trim();
+    const finalDepth =
+      finalDepthCandidate === "deep" || finalDepthCandidate === "aggressive"
+        ? finalDepthCandidate
+        : "standard";
+    const competitorContext = normalizeCompetitorContext(body);
+
+    console.log("MODE:", MODE);
+    console.log("analyze request:", {
+      query,
+      seedQuery,
+      marketType: finalMarketType,
+      depth: finalDepth
     });
 
-    const synthesisText = extractOutputText(synthesisRes);
-    const synthesis = normalizeSynthesis(safeParse<MarketSynthesis>(synthesisText), clusters, classification);
-    const confidence = deriveConfidence(synthesis.signal_strength);
-    const strategy = deriveStrategy(synthesis);
-
-    if (!synthesis.dominant_narrative && !synthesis.core_constraint && !synthesis.recommended_move) {
-      throw new Error("Synthesis model returned invalid JSON.");
+    if (!finalQuery) {
+      return NextResponse.json(
+        { success: false, error: "Missing query" },
+        { status: 400 }
+      );
     }
 
-    const response: MarketAnalysisResponse = {
-      success: true,
-      query: finalQuery,
-      serpData: normalizedSerpData,
-      clusters: { clusters: synthesis.clusters },
-      dominant_narrative: synthesis.dominant_narrative,
-      market_diagnosis: synthesis.market_diagnosis,
-      signal_strength: synthesis.signal_strength,
-      market_gaps: synthesis.market_gaps,
-      positioning_strategy: synthesis.positioning_strategy,
-      recommended_move: synthesis.recommended_move,
-      executive_summary: synthesis.executive_summary,
-      confidence,
-      classification,
-      strategy,
-      source_meta: buildSourceMeta("LIVE"),
-      generatedAt: new Date().toISOString()
-    };
+    if (MODE === "DEV") {
+      await new Promise((resolve) => setTimeout(resolve, DEV_MODE_DELAY_MS));
+      return NextResponse.json(
+        createMockAnalysisResponse(finalQuery, finalMarketType, competitorContext)
+      );
+    }
 
-    return NextResponse.json(response);
+    if (MODE === "HYBRID") {
+      console.log("ENTERED HYBRID BRANCH");
+
+      const googleSignals = await collectGoogleSignalBundle(finalQuery);
+
+      if (!googleSignals.serpData.length) {
+        throw new Error("serpData is required.");
+      }
+
+      const redditSignals = await collectHybridRedditSignals(finalQuery);
+
+      return NextResponse.json(
+        createDeterministicAnalysisResponse({
+          mode: "HYBRID",
+          query: finalQuery,
+          marketType: finalMarketType,
+          googleSignals,
+          redditSignals,
+          competitorContext
+        })
+      );
+    }
+
+    console.log("ENTERING LIVE OPENAI BRANCH");
+
+    const googleSignals = await collectGoogleSignalBundle(finalQuery);
+
+    if (!googleSignals.serpData.length) {
+      throw new Error("serpData is required.");
+    }
+
+    const redditSignals = await collectHybridRedditSignals(finalQuery);
+
+    let liveError: Error | null = null;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return NextResponse.json(
+          await runLiveOpenAiAnalysis({
+            query: finalQuery,
+            marketType: finalMarketType,
+            depth: finalDepth,
+            googleSignals,
+            redditSignals,
+            competitorContext
+          })
+        );
+      } catch (error) {
+        liveError = error instanceof Error ? error : new Error("Unknown LIVE error");
+        console.warn(`live analysis attempt ${attempt + 1} failed`, liveError.message);
+      }
+    }
+
+    console.warn("live analysis failed, falling back to deterministic synthesis");
+
+    return NextResponse.json(
+      createDeterministicAnalysisResponse({
+        mode: "LIVE",
+        query: finalQuery,
+        marketType: finalMarketType,
+        googleSignals,
+        redditSignals,
+        competitorContext,
+        fallbackUsed: true
+      })
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = message === "Missing query" || message === "serpData is required." ? 400 : 500;

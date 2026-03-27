@@ -850,6 +850,11 @@ select {
   box-shadow: 0 0 0 4px rgba(14, 14, 14, 0.08);
 }
 
+.surface-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 .field-copy {
   margin: 0.95rem 0 0;
   color: var(--muted);
@@ -977,6 +982,18 @@ select {
   gap: 0.85rem;
 }
 
+.recent-analysis-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.recent-analysis-item.is-selected .recent-analysis-button,
+.recent-analysis-item.is-selected .recent-analysis-compare-button {
+  border-color: var(--line-strong);
+}
+
 .recent-analysis-button {
   width: 100%;
   padding: 1rem 1.1rem;
@@ -1013,6 +1030,29 @@ select {
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.5;
+}
+
+.recent-analysis-compare-button {
+  padding: 0.8rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+:root[data-theme="dark"] .recent-analysis-compare-button {
+  background: rgba(26, 28, 32, 0.88);
+}
+
+.recent-analysis-compare-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
 }
 
 .metric-line {
@@ -1065,6 +1105,50 @@ select {
   line-height: 1.6;
 }
 
+.signal-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.signal-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.signal-tag-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.signal-origin-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme="dark"] .signal-origin-tag {
+  background: rgba(26, 28, 32, 0.92);
+}
+
+.evidence-note {
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
 .numbered-list {
   list-style: decimal;
 }
@@ -1082,6 +1166,82 @@ select {
 
 .single-column-results {
   grid-template-columns: 1fr;
+}
+
+.comparison-shell,
+.action-output-grid {
+  gap: 1rem;
+}
+
+.comparison-header,
+.comparison-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.comparison-header {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.comparison-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comparison-status {
+  margin: 0.45rem 0 0.85rem;
+  color: var(--brand-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.action-output-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pdf-export-shell {
+  position: fixed;
+  inset: auto auto 0 -99999px;
+  width: 820px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pdf-export-document {
+  padding: 2rem;
+  background: white;
+  color: #111;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.pdf-export-cover {
+  padding-bottom: 1.8rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.pdf-export-cover h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.08;
+}
+
+.pdf-export-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  margin-top: 1rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.pdf-export-section {
+  margin-top: 1.5rem;
+  break-inside: avoid;
 }
 
 .loader-overlay {
@@ -2283,6 +2443,11 @@ select {
   .toolbar-panel {
     position: static;
   }
+
+  .comparison-header,
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
@@ -2313,6 +2478,18 @@ select {
   .results-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .recent-analysis-item {
+    grid-template-columns: 1fr;
+  }
+
+  .signal-list-item {
+    align-items: flex-start;
+  }
+
+  .signal-tag-row {
+    justify-content: flex-start;
   }
 
   .keyword-table,

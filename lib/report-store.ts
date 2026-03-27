@@ -35,6 +35,14 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
   return {
     query: parsed.query,
     serpData: parsed.serpData,
+    signal_origins:
+      parsed.signal_origins?.map((origin) => ({
+        text: origin.text ?? "",
+        sources:
+          origin.sources?.filter((source): source is "Autocomplete" | "PAA" | "Related Searches" | "Reddit" =>
+            typeof source === "string"
+          ) ?? []
+      })) ?? [],
     clusters: {
       clusters:
         parsed.clusters?.clusters?.map((cluster) => ({
@@ -72,12 +80,23 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
       ...parsed.strategy,
       offer_positioning: parsed.strategy.offer_positioning ?? ""
     },
-    source_meta: parsed.source_meta ?? {
-      mode: "LIVE",
-      used_google: true,
-      used_reddit: false,
-      used_openai: true
+    source_meta: {
+      mode:
+        parsed.source_meta?.mode === "HYBRID" || parsed.source_meta?.mode === "LIVE"
+          ? parsed.source_meta.mode
+          : "DEV",
+      used_google: parsed.source_meta?.used_google ?? true,
+      used_reddit: parsed.source_meta?.used_reddit ?? false,
+      used_openai: parsed.source_meta?.used_openai ?? true,
+      google_signal_count: parsed.source_meta?.google_signal_count ?? parsed.serpData.length,
+      reddit_signal_count: parsed.source_meta?.reddit_signal_count ?? 0
     },
+    competitor_context: parsed.competitor_context ?? {
+      competitor_names: [],
+      competitor_urls: [],
+      niche: ""
+    },
+    fallback_used: parsed.fallback_used ?? false,
     generatedAt: parsed.generatedAt ?? new Date().toISOString()
   };
 }

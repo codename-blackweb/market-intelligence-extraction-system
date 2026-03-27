@@ -43,11 +43,30 @@ export type MarketSignalStrength = {
   pattern_consistency: string;
 };
 
+export type SignalSourceTag =
+  | "Autocomplete"
+  | "PAA"
+  | "Related Searches"
+  | "Reddit";
+
+export type SignalOriginEntry = {
+  text: string;
+  sources: SignalSourceTag[];
+};
+
 export type MarketSourceMeta = {
   mode: "DEV" | "HYBRID" | "LIVE";
   used_google: boolean;
   used_reddit: boolean;
   used_openai: boolean;
+  google_signal_count: number;
+  reddit_signal_count: number;
+};
+
+export type CompetitorContext = {
+  competitor_names: string[];
+  competitor_urls: string[];
+  niche: string;
 };
 
 export type MarketPositioningStrategy = {
@@ -78,6 +97,7 @@ export type MarketConfidence = {
 export type MarketAnalysisReport = {
   query: string;
   serpData: string[];
+  signal_origins: SignalOriginEntry[];
   clusters: MarketClusters;
   dominant_narrative: string;
   market_diagnosis: MarketDiagnosis;
@@ -90,6 +110,8 @@ export type MarketAnalysisReport = {
   classification: MarketClassification;
   strategy: MarketStrategy;
   source_meta: MarketSourceMeta;
+  competitor_context: CompetitorContext;
+  fallback_used: boolean;
   generatedAt: string;
 };
 
@@ -97,6 +119,7 @@ export type MarketAnalysisSuccessResponse = {
   success: true;
   query: string;
   serpData: string[];
+  signal_origins: SignalOriginEntry[];
   clusters: MarketClusters;
   dominant_narrative: string;
   market_diagnosis: MarketDiagnosis;
@@ -109,7 +132,27 @@ export type MarketAnalysisSuccessResponse = {
   classification: MarketClassification;
   strategy: MarketStrategy;
   source_meta: MarketSourceMeta;
+  competitor_context: CompetitorContext;
+  fallback_used: boolean;
   generatedAt: string;
+};
+
+export type GeneratedActionKind =
+  | "positioning_statement"
+  | "ad_angles"
+  | "landing_page_hook"
+  | "email_angle";
+
+export type GeneratedActionsSuccessResponse = {
+  success: true;
+  kind: GeneratedActionKind;
+  outputs: string[];
+  fallback_used: boolean;
+};
+
+export type GeneratedActionsErrorResponse = {
+  success: false;
+  error: string;
 };
 
 export type MarketAnalysisErrorResponse = {
@@ -120,6 +163,10 @@ export type MarketAnalysisErrorResponse = {
 export type MarketAnalysisResponse =
   | MarketAnalysisSuccessResponse
   | MarketAnalysisErrorResponse;
+
+export type GeneratedActionsResponse =
+  | GeneratedActionsSuccessResponse
+  | GeneratedActionsErrorResponse;
 
 export type SerpDataSuccessResponse = {
   success: true;

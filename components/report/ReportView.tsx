@@ -4,8 +4,14 @@ import SectionCard from "@/components/report/SectionCard";
 import type { MarketAnalysisReport } from "@/types/market-analysis";
 
 const sidebarItems = [
+  { id: "source-activity", label: "Source Activity" },
+  { id: "executive-summary", label: "Executive Summary" },
+  { id: "dominant-narrative", label: "Dominant Narrative" },
+  { id: "signal-strength", label: "Signal Strength" },
   { id: "confidence", label: "Confidence" },
   { id: "clusters", label: "Demand Clusters" },
+  { id: "market-gaps", label: "Market Gaps" },
+  { id: "recommended-move", label: "Recommended Move" },
   { id: "breakdown", label: "Market Breakdown" },
   { id: "constraint", label: "Core Constraint" },
   { id: "pains", label: "Customer Pains" },
@@ -29,7 +35,22 @@ const classificationRows = [
   ["Competitive Structure", "competitive_structure"]
 ] as const;
 
+function formatEvidence(report: MarketAnalysisReport) {
+  return `Derived from ${report.source_meta.google_signal_count} Google signals and ${report.source_meta.reddit_signal_count} Reddit threads.`;
+}
+
+function buildSourceMap(report: MarketAnalysisReport) {
+  const sourceMap = new Map<string, string[]>();
+
+  for (const signal of report.signal_origins) {
+    sourceMap.set(signal.text.toLowerCase(), signal.sources);
+  }
+
+  return sourceMap;
+}
+
 export default function ReportView({ report }: { report: MarketAnalysisReport }) {
+  const sourceMap = buildSourceMap(report);
   const subtitle = [
     `Query: ${report.query}`,
     `Generated ${new Date(report.generatedAt).toLocaleString()}`,
@@ -42,6 +63,83 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
         <ReportSidebar items={sidebarItems} />
 
         <div className="report-main">
+          <SectionCard
+            id="source-activity"
+            title="Source Activity"
+            description="A traceability layer showing which sources contributed to the current report."
+          >
+            <div className="source-activity-strip" aria-label="Source activity">
+              <span
+                className={`source-activity-item ${report.source_meta.used_google ? "is-active" : "is-inactive"}`}
+              >
+                Google <span aria-hidden="true">{report.source_meta.used_google ? "●" : "○"}</span>
+              </span>
+              <span
+                className={`source-activity-item ${report.source_meta.used_reddit ? "is-active" : "is-inactive"}`}
+              >
+                Reddit <span aria-hidden="true">{report.source_meta.used_reddit ? "●" : "○"}</span>
+              </span>
+              <span
+                className={`source-activity-item ${report.source_meta.used_openai ? "is-active" : "is-inactive"}`}
+              >
+                OpenAI <span aria-hidden="true">{report.source_meta.used_openai ? "●" : "○"}</span>
+              </span>
+            </div>
+            {report.fallback_used ? <p className="section-description">Fallback synthesis used.</p> : null}
+          </SectionCard>
+
+          <SectionCard
+            id="executive-summary"
+            title="Executive Summary"
+            description="The short-form decision layer for stakeholder sharing."
+          >
+            <ul className="bullet-list">
+              {report.executive_summary.slice(0, 4).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </SectionCard>
+
+          <SectionCard
+            id="dominant-narrative"
+            title="Dominant Narrative"
+            description="The clearest read on the market pattern driving the rest of the analysis."
+          >
+            <div className="message-item">
+              <p>{report.dominant_narrative}</p>
+            </div>
+            <p className="section-description">{formatEvidence(report)}</p>
+          </SectionCard>
+
+          <SectionCard
+            id="signal-strength"
+            title="Signal Strength"
+            description="A compact reading of concentration, confidence, and pattern consistency."
+          >
+            <div className="signal-strength-meter" aria-hidden="true">
+              <span
+                className="signal-strength-meter-bar"
+                style={{ width: `${Math.max(0, Math.min(100, report.signal_strength.confidence_score))}%` }}
+              />
+            </div>
+            <div className="three-column-grid">
+              <article className="metric-card">
+                <p className="metric-label">Strength</p>
+                <p className="report-subtitle">{report.signal_strength.strength}</p>
+              </article>
+              <article className="metric-card">
+                <p className="metric-label">Confidence</p>
+                <p className="report-subtitle">{report.signal_strength.confidence_score}%</p>
+              </article>
+              <article className="metric-card">
+                <p className="metric-label">Pattern</p>
+                <p className="report-subtitle">{report.signal_strength.pattern_consistency}</p>
+              </article>
+            </div>
+            <p className="section-description">{report.confidence.reason}</p>
+            <p className="section-description">{formatEvidence(report)}</p>
+          </SectionCard>
+
           <SectionCard
             id="confidence"
             title="Confidence Score"
@@ -71,9 +169,18 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
                     <h3>
                       {cluster.theme} — {cluster.frequency} signals
                     </h3>
-                    <ul className="bullet-list">
+                    <ul className="bullet-list signal-list">
                       {cluster.queries.map((item) => (
-                        <li key={item}>{item}</li>
+                        <li className="signal-list-item" key={item}>
+                          <span>{item}</span>
+                          <span className="signal-tag-row">
+                            {(sourceMap.get(item.toLowerCase()) ?? []).map((source) => (
+                              <span className="signal-origin-tag" key={`${item}-${source}`}>
+                                {source}
+                              </span>
+                            ))}
+                          </span>
+                        </li>
                       ))}
                     </ul>
                   </article>
@@ -82,6 +189,31 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
                 <div className="info-banner">No demand clusters were returned.</div>
               )}
             </div>
+            <p className="section-description">{formatEvidence(report)}</p>
+          </SectionCard>
+
+          <SectionCard
+            id="market-gaps"
+            title="Market Gaps"
+            description="The whitespace exposed by the visible signal pattern."
+          >
+            <ul className="bullet-list">
+              {report.market_gaps.map((gap) => (
+                <li key={gap}>{gap}</li>
+              ))}
+            </ul>
+            <p className="section-description">{formatEvidence(report)}</p>
+          </SectionCard>
+
+          <SectionCard
+            id="recommended-move"
+            title="Recommended Move"
+            description="The decision output the system thinks should shape the next move."
+          >
+            <div className="message-item">
+              <p>{report.recommended_move}</p>
+            </div>
+            <p className="section-description">{formatEvidence(report)}</p>
           </SectionCard>
 
           <SectionCard
@@ -168,13 +300,20 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
             title="Source Queries"
             description="The flat query array passed into classification and synthesis."
           >
-            <div className="keyword-cluster">
+            <ul className="bullet-list signal-list">
               {report.serpData.map((signal) => (
-                <span className="keyword-chip" key={signal}>
-                  {signal}
-                </span>
+                <li className="signal-list-item" key={signal}>
+                  <span>{signal}</span>
+                  <span className="signal-tag-row">
+                    {(sourceMap.get(signal.toLowerCase()) ?? []).map((source) => (
+                      <span className="signal-origin-tag" key={`${signal}-${source}`}>
+                        {source}
+                      </span>
+                    ))}
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
           </SectionCard>
         </div>
       </div>

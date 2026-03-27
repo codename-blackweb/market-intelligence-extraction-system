@@ -14,7 +14,15 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
 import { VideoText } from "@/components/ui/VideoText";
 import { useMotionPolicy } from "@/lib/motion-policy";
-import type { MarketAnalysisResponse } from "@/types/market-analysis";
+import type {
+  CompetitorContext,
+  GeneratedActionsResponse,
+  GeneratedActionKind,
+  MarketAnalysisResponse,
+  MarketAnalysisSuccessResponse,
+  MarketSourceMeta,
+  SignalOriginEntry
+} from "@/types/market-analysis";
 
 const classificationRows = [
   ["Type", "core_type"],
@@ -47,6 +55,43 @@ const outputs = [
 
 const RECENT_ANALYSES_STORAGE_KEY = "market-intelligence:recent-analyses:v1";
 const MAX_SAVED_RUNS = 10;
+const NICHE_OPTIONS = [
+  "B2B SaaS",
+  "Agency",
+  "Local Service",
+  "Healthcare",
+  "Coaching",
+  "E-commerce",
+  "Fintech",
+  "Education",
+  "Other"
+] as const;
+const ACTION_BUTTONS: Array<{
+  kind: GeneratedActionKind;
+  label: string;
+  title: string;
+}> = [
+  {
+    kind: "positioning_statement",
+    label: "Generate Positioning Statement",
+    title: "Positioning Statement"
+  },
+  {
+    kind: "ad_angles",
+    label: "Generate Ad Angles",
+    title: "Ad Angles"
+  },
+  {
+    kind: "landing_page_hook",
+    label: "Generate Landing Page Hook",
+    title: "Landing Page Hook"
+  },
+  {
+    kind: "email_angle",
+    label: "Generate Email Angle",
+    title: "Email Angle"
+  }
+];
 
 type SuccessfulAnalysisResponse = Extract<MarketAnalysisResponse, { success: true }>;
 
@@ -59,6 +104,16 @@ type SavedAnalysisRun = {
   result: SuccessfulAnalysisResponse;
 };
 
+type ActionOutputState = Partial<
+  Record<
+    GeneratedActionKind,
+    {
+      outputs: string[];
+      fallbackUsed: boolean;
+    }
+  >
+>;
+
 function isSuccessfulAnalysisResponse(value: unknown): value is SuccessfulAnalysisResponse {
   return Boolean(
     value &&
@@ -67,6 +122,91 @@ function isSuccessfulAnalysisResponse(value: unknown): value is SuccessfulAnalys
       typeof (value as { query?: unknown }).query === "string" &&
       typeof (value as { generatedAt?: unknown }).generatedAt === "string"
   );
+}
+
+function normalizeSourceMeta(meta?: Partial<MarketSourceMeta>): MarketSourceMeta {
+  return {
+    mode: meta?.mode === "HYBRID" || meta?.mode === "LIVE" ? meta.mode : "DEV",
+    used_google: meta?.used_google ?? false,
+    used_reddit: meta?.used_reddit ?? false,
+    used_openai: meta?.used_openai ?? false,
+    google_signal_count: meta?.google_signal_count ?? 0,
+    reddit_signal_count: meta?.reddit_signal_count ?? 0
+  };
+}
+
+function normalizeCompetitorContext(context?: Partial<CompetitorContext>): CompetitorContext {
+  return {
+    competitor_names: Array.isArray(context?.competitor_names)
+      ? context.competitor_names.filter((item): item is string => typeof item === "string")
+      : [],
+    competitor_urls: Array.isArray(context?.competitor_urls)
+      ? context.competitor_urls.filter((item): item is string => typeof item === "string")
+      : [],
+    niche: typeof context?.niche === "string" ? context.niche : ""
+  };
+}
+
+function normalizeSignalOrigins(origins?: SignalOriginEntry[]) {
+  if (!Array.isArray(origins)) {
+    return [] as SignalOriginEntry[];
+  }
+
+  return origins
+    .filter(
+      (entry): entry is SignalOriginEntry =>
+        Boolean(
+          entry &&
+            typeof entry.text === "string" &&
+            Array.isArray(entry.sources)
+        )
+    )
+    .map((entry) => ({
+      text: entry.text,
+      sources: entry.sources.filter((source): source is SignalOriginEntry["sources"][number] =>
+        typeof source === "string"
+      )
+    }));
+}
+
+function normalizeSuccessfulAnalysis(
+  result: SuccessfulAnalysisResponse
+): SuccessfulAnalysisResponse {
+  return {
+    ...result,
+    signal_origins: normalizeSignalOrigins(result.signal_origins),
+    source_meta: normalizeSourceMeta(result.source_meta),
+    competitor_context: normalizeCompetitorContext(result.competitor_context),
+    fallback_used: result.fallback_used ?? false
+  };
+}
+
+function buildSignalSourceMap(origins: SignalOriginEntry[]) {
+  const originMap = new Map<string, SignalOriginEntry["sources"]>();
+
+  for (const origin of origins) {
+    originMap.set(origin.text.toLowerCase(), origin.sources);
+  }
+
+  return originMap;
+}
+
+function formatEvidence(sourceMeta: MarketSourceMeta) {
+  return `Derived from ${sourceMeta.google_signal_count} Google signals and ${sourceMeta.reddit_signal_count} Reddit threads.`;
+}
+
+function formatGeneratedTimestamp(timestamp: number) {
+  return new Date(timestamp).toLocaleString();
+}
+
+function getComparisonSignalSummary(result: SuccessfulAnalysisResponse) {
+  return `${result.signal_strength.strength} • ${result.signal_strength.confidence_score}% • ${result.signal_strength.pattern_consistency}`;
+}
+
+function getClusterSummary(result: SuccessfulAnalysisResponse) {
+  return result.clusters.clusters
+    .map((cluster) => `${cluster.theme} (${cluster.frequency})`)
+    .join(", ");
 }
 
 function loadSavedRuns() {
@@ -101,6 +241,10 @@ function loadSavedRuns() {
               isSuccessfulAnalysisResponse((item as { result?: unknown }).result)
           )
       )
+      .map((item) => ({
+        ...item,
+        result: normalizeSuccessfulAnalysis(item.result)
+      }))
       .slice(0, MAX_SAVED_RUNS);
   } catch {
     return [] as SavedAnalysisRun[];
@@ -123,8 +267,15 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
+  const [competitorNames, setCompetitorNames] = useState("");
+  const [competitorUrls, setCompetitorUrls] = useState("");
+  const [niche, setNiche] = useState("");
   const [data, setData] = useState<MarketAnalysisResponse | null>(null);
   const [savedRuns, setSavedRuns] = useState<SavedAnalysisRun[]>([]);
+  const [selectedComparisonIds, setSelectedComparisonIds] = useState<string[]>([]);
+  const [actionOutputs, setActionOutputs] = useState<ActionOutputState>({});
+  const [actionLoadingKind, setActionLoadingKind] = useState<GeneratedActionKind | null>(null);
+  const [actionError, setActionError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -136,13 +287,31 @@ export default function Home() {
     setQuery(savedRun.query);
     setMarketType(savedRun.marketType);
     setDepth(savedRun.depth);
+    setCompetitorNames(savedRun.result.competitor_context.competitor_names.join("\n"));
+    setCompetitorUrls(savedRun.result.competitor_context.competitor_urls.join("\n"));
+    setNiche(savedRun.result.competitor_context.niche);
     setError("");
+    setActionError("");
+    setActionOutputs({});
     setData(savedRun.result);
+  };
+
+  const toggleCompareRun = (runId: string) => {
+    setSelectedComparisonIds((currentIds) => {
+      if (currentIds.includes(runId)) {
+        return currentIds.filter((item) => item !== runId);
+      }
+
+      const nextIds = [...currentIds, runId];
+      return nextIds.slice(-2);
+    });
   };
 
   const runAnalysis = async () => {
     setLoading(true);
     setError("");
+    setActionError("");
+    setActionOutputs({});
 
     try {
       const res = await fetch("/api/analyze", {
@@ -153,7 +322,10 @@ export default function Home() {
         body: JSON.stringify({
           query,
           marketType,
-          depth
+          depth,
+          competitorNames,
+          competitorUrls,
+          niche
         })
       });
 
@@ -167,15 +339,16 @@ export default function Home() {
         return;
       }
 
-      setData(json);
+      const normalized = normalizeSuccessfulAnalysis(json);
+      setData(normalized);
 
       const savedRun: SavedAnalysisRun = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        query: json.query,
+        query: normalized.query,
         marketType,
         depth,
         createdAt: Date.now(),
-        result: json
+        result: normalized
       };
 
       setSavedRuns((currentRuns) => {
@@ -193,8 +366,52 @@ export default function Home() {
     }
   };
 
+  const generateActionOutput = async (kind: GeneratedActionKind) => {
+    if (!data || !data.success) {
+      return;
+    }
+
+    setActionLoadingKind(kind);
+    setActionError("");
+
+    try {
+      const response = await fetch("/api/actions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          kind,
+          analysis: data
+        })
+      });
+
+      const json = (await response.json()) as GeneratedActionsResponse;
+
+      if (!response.ok || !json.success) {
+        throw new Error("error" in json ? json.error : "Action generation failed.");
+      }
+
+      setActionOutputs((current) => ({
+        ...current,
+        [kind]: {
+          outputs: json.outputs,
+          fallbackUsed: json.fallback_used
+        }
+      }));
+    } catch (actionGenerationError) {
+      const message =
+        actionGenerationError instanceof Error
+          ? actionGenerationError.message
+          : "Action generation failed.";
+      setActionError(message);
+    } finally {
+      setActionLoadingKind(null);
+    }
+  };
+
   const exportPDF = async () => {
-    const el = document.getElementById("report");
+    const el = document.getElementById("report-export");
 
     if (!el) {
       return;
@@ -203,8 +420,24 @@ export default function Home() {
     const html2pdfModule = await import("html2pdf.js");
     const html2pdf = html2pdfModule.default;
 
-    await html2pdf().from(el).save();
+    await html2pdf()
+      .from(el)
+      .set({
+        margin: 10,
+        filename: "market-intelligence-report.pdf",
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      })
+      .save();
   };
+
+  const activeResult = data && data.success ? data : null;
+  const signalSourceMap = activeResult
+    ? buildSignalSourceMap(activeResult.signal_origins)
+    : new Map<string, SignalOriginEntry["sources"]>();
+  const comparisonRuns = selectedComparisonIds
+    .map((runId) => savedRuns.find((savedRun) => savedRun.id === runId))
+    .filter((savedRun): savedRun is SavedAnalysisRun => Boolean(savedRun));
 
   return (
     <main className="page-shell">
@@ -297,6 +530,43 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div className="card p-6">
+              <textarea
+                className="surface-input surface-textarea"
+                value={competitorNames}
+                onChange={(event) => setCompetitorNames(event.target.value)}
+                placeholder="Optional competitor names"
+                rows={4}
+              />
+            </div>
+
+            <div className="card p-6">
+              <textarea
+                className="surface-input surface-textarea"
+                value={competitorUrls}
+                onChange={(event) => setCompetitorUrls(event.target.value)}
+                placeholder="Optional competitor URLs"
+                rows={4}
+              />
+            </div>
+
+            <div className="card p-6">
+              <select
+                className="surface-input"
+                value={niche}
+                onChange={(event) => setNiche(event.target.value)}
+              >
+                <option value="">Optional Market / Niche</option>
+                {NICHE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <button className="btn-primary mt-10" disabled={loading} onClick={runAnalysis} type="button">
             <VideoText
               as="span"
@@ -330,21 +600,36 @@ export default function Home() {
             <div className="card p-6">
               <div className="recent-analyses-header">
                 <p className="card-label">Recent Analyses</p>
+                <p className="field-copy result-copy">
+                  Select up to two saved runs to compare without rerunning the API.
+                </p>
               </div>
               <div className="recent-analyses-list">
                 {savedRuns.map((savedRun) => (
-                  <button
-                    className="recent-analysis-button"
+                  <article
+                    className={`recent-analysis-item ${
+                      selectedComparisonIds.includes(savedRun.id) ? "is-selected" : ""
+                    }`}
                     key={savedRun.id}
-                    onClick={() => restoreSavedRun(savedRun)}
-                    type="button"
                   >
-                    <span className="recent-analysis-query">{savedRun.query}</span>
-                    <span className="recent-analysis-meta">
-                      {savedRun.result.source_meta.mode} •{" "}
-                      {new Date(savedRun.createdAt).toLocaleString()}
-                    </span>
-                  </button>
+                    <button
+                      className="recent-analysis-button"
+                      onClick={() => restoreSavedRun(savedRun)}
+                      type="button"
+                    >
+                      <span className="recent-analysis-query">{savedRun.query}</span>
+                      <span className="recent-analysis-meta">
+                        {savedRun.result.source_meta.mode} • {formatGeneratedTimestamp(savedRun.createdAt)}
+                      </span>
+                    </button>
+                    <button
+                      className="recent-analysis-compare-button"
+                      onClick={() => toggleCompareRun(savedRun.id)}
+                      type="button"
+                    >
+                      {selectedComparisonIds.includes(savedRun.id) ? "Selected" : "Compare"}
+                    </button>
+                  </article>
                 ))}
               </div>
             </div>
@@ -352,7 +637,103 @@ export default function Home() {
         </ScrollReveal>
       ) : null}
 
-      {data && data.success && (
+      {comparisonRuns.length === 2 ? (
+        <ScrollReveal eager>
+          <section className="max-w-7xl mx-auto px-6 pb-8">
+            <div className="card p-6 comparison-shell">
+              <p className="card-label">Compare Runs</p>
+              <div className="comparison-header">
+                <div className="subcard">
+                  <h3>{comparisonRuns[0].query}</h3>
+                  <p>
+                    {comparisonRuns[0].result.source_meta.mode} •{" "}
+                    {formatGeneratedTimestamp(comparisonRuns[0].createdAt)}
+                  </p>
+                </div>
+                <div className="subcard">
+                  <h3>{comparisonRuns[1].query}</h3>
+                  <p>
+                    {comparisonRuns[1].result.source_meta.mode} •{" "}
+                    {formatGeneratedTimestamp(comparisonRuns[1].createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="comparison-grid">
+                <div className="subcard">
+                  <h3>Dominant Narrative</h3>
+                  <p className="comparison-status">
+                    {comparisonRuns[0].result.dominant_narrative ===
+                    comparisonRuns[1].result.dominant_narrative
+                      ? "Consistent"
+                      : "Changed"}
+                  </p>
+                  <p>{comparisonRuns[0].result.dominant_narrative}</p>
+                  <p>{comparisonRuns[1].result.dominant_narrative}</p>
+                </div>
+
+                <div className="subcard">
+                  <h3>Signal Strength</h3>
+                  <p className="comparison-status">
+                    {getComparisonSignalSummary(comparisonRuns[0].result) ===
+                    getComparisonSignalSummary(comparisonRuns[1].result)
+                      ? "Consistent"
+                      : "Changed"}
+                  </p>
+                  <p>{getComparisonSignalSummary(comparisonRuns[0].result)}</p>
+                  <p>{getComparisonSignalSummary(comparisonRuns[1].result)}</p>
+                </div>
+
+                <div className="subcard">
+                  <h3>Clusters</h3>
+                  <p className="comparison-status">
+                    {getClusterSummary(comparisonRuns[0].result) ===
+                    getClusterSummary(comparisonRuns[1].result)
+                      ? "Consistent"
+                      : "Changed"}
+                  </p>
+                  <p>{getClusterSummary(comparisonRuns[0].result)}</p>
+                  <p>{getClusterSummary(comparisonRuns[1].result)}</p>
+                </div>
+
+                <div className="subcard">
+                  <h3>Market Gaps</h3>
+                  <p className="comparison-status">
+                    {comparisonRuns[0].result.market_gaps.join(" | ") ===
+                    comparisonRuns[1].result.market_gaps.join(" | ")
+                      ? "Consistent"
+                      : "Changed"}
+                  </p>
+                  <ul className="result-list">
+                    {comparisonRuns[0].result.market_gaps.map((gap) => (
+                      <li key={`${comparisonRuns[0].id}-${gap}`}>{gap}</li>
+                    ))}
+                  </ul>
+                  <ul className="result-list">
+                    {comparisonRuns[1].result.market_gaps.map((gap) => (
+                      <li key={`${comparisonRuns[1].id}-${gap}`}>{gap}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="subcard">
+                  <h3>Recommended Move</h3>
+                  <p className="comparison-status">
+                    {comparisonRuns[0].result.recommended_move ===
+                    comparisonRuns[1].result.recommended_move
+                      ? "Consistent"
+                      : "Changed"}
+                  </p>
+                  <p>{comparisonRuns[0].result.recommended_move}</p>
+                  <p>{comparisonRuns[1].result.recommended_move}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </ScrollReveal>
+      ) : null}
+
+      {activeResult && (
         <>
           <ScrollReveal eager>
             <section className="max-w-5xl mx-auto py-20 space-y-12">
@@ -369,33 +750,40 @@ export default function Home() {
                     <div className="source-activity-strip" aria-label="Source activity">
                       <span
                         className={`source-activity-item ${
-                          data.source_meta.used_google ? "is-active" : "is-inactive"
+                          activeResult.source_meta.used_google ? "is-active" : "is-inactive"
                         }`}
                       >
-                        Google <span aria-hidden="true">{data.source_meta.used_google ? "●" : "○"}</span>
+                        Google{" "}
+                        <span aria-hidden="true">{activeResult.source_meta.used_google ? "●" : "○"}</span>
                       </span>
                       <span
                         className={`source-activity-item ${
-                          data.source_meta.used_reddit ? "is-active" : "is-inactive"
+                          activeResult.source_meta.used_reddit ? "is-active" : "is-inactive"
                         }`}
                       >
-                        Reddit <span aria-hidden="true">{data.source_meta.used_reddit ? "●" : "○"}</span>
+                        Reddit{" "}
+                        <span aria-hidden="true">{activeResult.source_meta.used_reddit ? "●" : "○"}</span>
                       </span>
                       <span
                         className={`source-activity-item ${
-                          data.source_meta.used_openai ? "is-active" : "is-inactive"
+                          activeResult.source_meta.used_openai ? "is-active" : "is-inactive"
                         }`}
                       >
-                        OpenAI <span aria-hidden="true">{data.source_meta.used_openai ? "●" : "○"}</span>
+                        OpenAI{" "}
+                        <span aria-hidden="true">{activeResult.source_meta.used_openai ? "●" : "○"}</span>
                       </span>
                     </div>
+                    {activeResult.fallback_used ? (
+                      <p className="evidence-note">Fallback synthesis used.</p>
+                    ) : null}
                   </section>
                 </ScrollReveal>
 
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <p className="card-label">Dominant Narrative</p>
-                    <p className="dominant-narrative-copy">{data.dominant_narrative}</p>
+                    <p className="dominant-narrative-copy">{activeResult.dominant_narrative}</p>
+                    <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
                 </ScrollReveal>
 
@@ -405,19 +793,19 @@ export default function Home() {
                     <div className="result-grid diagnosis-grid">
                       <div className="subcard">
                         <h3>Type</h3>
-                        <p>{data.market_diagnosis.market_type}</p>
+                        <p>{activeResult.market_diagnosis.market_type}</p>
                       </div>
                       <div className="subcard">
                         <h3>Demand</h3>
-                        <p>{data.market_diagnosis.demand_state}</p>
+                        <p>{activeResult.market_diagnosis.demand_state}</p>
                       </div>
                       <div className="subcard">
                         <h3>Intent</h3>
-                        <p>{data.market_diagnosis.intent_level}</p>
+                        <p>{activeResult.market_diagnosis.intent_level}</p>
                       </div>
                       <div className="subcard">
                         <h3>Risk</h3>
-                        <p>{data.market_diagnosis.risk_level}</p>
+                        <p>{activeResult.market_diagnosis.risk_level}</p>
                       </div>
                     </div>
                   </section>
@@ -432,24 +820,30 @@ export default function Home() {
                     >
                       <span
                         className="signal-strength-meter-bar"
-                        style={{ width: `${Math.max(0, Math.min(100, data.signal_strength.confidence_score))}%` }}
+                        style={{
+                          width: `${Math.max(
+                            0,
+                            Math.min(100, activeResult.signal_strength.confidence_score)
+                          )}%`
+                        }}
                       />
                     </div>
                     <div className="result-grid breakdown-grid">
                       <div className="subcard">
                         <h3>Strength</h3>
-                        <p>{data.signal_strength.strength}</p>
+                        <p>{activeResult.signal_strength.strength}</p>
                       </div>
                       <div className="subcard">
                         <h3>Confidence</h3>
-                        <p>{data.signal_strength.confidence_score}%</p>
+                        <p>{activeResult.signal_strength.confidence_score}%</p>
                       </div>
                       <div className="subcard">
                         <h3>Pattern</h3>
-                        <p>{data.signal_strength.pattern_consistency}</p>
+                        <p>{activeResult.signal_strength.pattern_consistency}</p>
                       </div>
                     </div>
-                    <p className="field-copy result-copy">{data.confidence?.reason}</p>
+                    <p className="field-copy result-copy">{activeResult.confidence?.reason}</p>
+                    <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
                 </ScrollReveal>
 
@@ -457,19 +851,29 @@ export default function Home() {
                   <section className="card p-6">
                     <h2>Demand Clusters</h2>
                     <div className="stack">
-                      {data.clusters.clusters.map((cluster) => (
+                      {activeResult.clusters.clusters.map((cluster) => (
                         <div className="subcard" key={cluster.theme}>
                           <h3>
                             {cluster.theme} — {cluster.frequency} signals
                           </h3>
-                          <ul className="result-list">
+                          <ul className="result-list signal-list">
                             {cluster.queries.map((item) => (
-                              <li key={item}>{item}</li>
+                              <li className="signal-list-item" key={`${cluster.theme}-${item}`}>
+                                <span>{item}</span>
+                                <span className="signal-tag-row">
+                                  {(signalSourceMap.get(item.toLowerCase()) ?? []).map((source) => (
+                                    <span className="signal-origin-tag" key={`${item}-${source}`}>
+                                      {source}
+                                    </span>
+                                  ))}
+                                </span>
+                              </li>
                             ))}
                           </ul>
                         </div>
                       ))}
                     </div>
+                    <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
                 </ScrollReveal>
 
@@ -477,10 +881,11 @@ export default function Home() {
                   <section className="card p-6">
                     <h2>Market Gaps</h2>
                     <ul className="result-list">
-                      {data.market_gaps.map((gap) => (
+                      {activeResult.market_gaps.map((gap) => (
                         <li key={gap}>{gap}</li>
                       ))}
                     </ul>
+                    <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
                 </ScrollReveal>
 
@@ -491,7 +896,7 @@ export default function Home() {
                       <div className="subcard">
                         <h3>Emphasize</h3>
                         <ul className="result-list">
-                          {data.positioning_strategy.emphasize.map((item) => (
+                          {activeResult.positioning_strategy.emphasize.map((item) => (
                             <li key={item}>{item}</li>
                           ))}
                         </ul>
@@ -499,7 +904,7 @@ export default function Home() {
                       <div className="subcard">
                         <h3>Avoid</h3>
                         <ul className="result-list">
-                          {data.positioning_strategy.avoid.map((item) => (
+                          {activeResult.positioning_strategy.avoid.map((item) => (
                             <li key={item}>{item}</li>
                           ))}
                         </ul>
@@ -507,7 +912,7 @@ export default function Home() {
                       <div className="subcard">
                         <h3>Blindspots</h3>
                         <ul className="result-list">
-                          {data.positioning_strategy.competitor_blindspots.map((item) => (
+                          {activeResult.positioning_strategy.competitor_blindspots.map((item) => (
                             <li key={item}>{item}</li>
                           ))}
                         </ul>
@@ -519,7 +924,8 @@ export default function Home() {
                 <ScrollReveal eager>
                   <section className="card p-6 recommended-move-card">
                     <h2>Recommended Move</h2>
-                    <p className="recommended-move-copy">{data.recommended_move}</p>
+                    <p className="recommended-move-copy">{activeResult.recommended_move}</p>
+                    <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
                 </ScrollReveal>
 
@@ -527,7 +933,7 @@ export default function Home() {
                   <section className="card p-6">
                     <h2>Executive Summary</h2>
                     <ul className="result-list">
-                      {data.executive_summary.map((item) => (
+                      {activeResult.executive_summary.slice(0, 4).map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </ul>
@@ -537,8 +943,8 @@ export default function Home() {
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Confidence Score</h2>
-                    <p>{data.confidence?.confidence_score || "N/A"}</p>
-                    <p>{data.confidence?.reason}</p>
+                    <p>{activeResult.confidence?.confidence_score || "N/A"}</p>
+                    <p>{activeResult.confidence?.reason}</p>
                   </section>
                 </ScrollReveal>
 
@@ -546,14 +952,23 @@ export default function Home() {
                   <section className="card p-6">
                     <h2>Demand Clusters</h2>
                     <div className="result-grid single-column-results">
-                      {data.clusters?.clusters?.map((cluster) => (
+                      {activeResult.clusters?.clusters?.map((cluster) => (
                         <div className="subcard" key={cluster.theme}>
                           <h3>
                             {cluster.theme} — {cluster.frequency} signals
                           </h3>
-                          <ul className="result-list">
+                          <ul className="result-list signal-list">
                             {cluster.queries.map((item) => (
-                              <li key={item}>{item}</li>
+                              <li className="signal-list-item" key={`${cluster.theme}-repeat-${item}`}>
+                                <span>{item}</span>
+                                <span className="signal-tag-row">
+                                  {(signalSourceMap.get(item.toLowerCase()) ?? []).map((source) => (
+                                    <span className="signal-origin-tag" key={`${cluster.theme}-${item}-${source}`}>
+                                      {source}
+                                    </span>
+                                  ))}
+                                </span>
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -569,7 +984,7 @@ export default function Home() {
                       {classificationRows.map(([label, key]) => (
                         <div className="subcard" key={key}>
                           <h3>{label}</h3>
-                          <p>{data.classification?.[key]}</p>
+                          <p>{activeResult.classification?.[key]}</p>
                         </div>
                       ))}
                     </div>
@@ -579,7 +994,7 @@ export default function Home() {
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Core Constraint</h2>
-                    <p>{data.strategy?.core_constraint}</p>
+                    <p>{activeResult.strategy?.core_constraint}</p>
                   </section>
                 </ScrollReveal>
 
@@ -587,7 +1002,7 @@ export default function Home() {
                   <section className="card p-6">
                     <h2>Customer Pains</h2>
                     <ul className="result-list">
-                      {data.strategy?.pains?.map((pain) => (
+                      {activeResult.strategy?.pains?.map((pain) => (
                         <li key={pain}>{pain}</li>
                       ))}
                     </ul>
@@ -598,7 +1013,7 @@ export default function Home() {
                   <section className="card p-6">
                     <h2>Hidden Objections</h2>
                     <ul className="result-list">
-                      {data.strategy?.objections?.map((objection) => (
+                      {activeResult.strategy?.objections?.map((objection) => (
                         <li key={objection}>{objection}</li>
                       ))}
                     </ul>
@@ -608,21 +1023,60 @@ export default function Home() {
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Acquisition Angle</h2>
-                    <p>{data.strategy?.acquisition_angle}</p>
+                    <p>{activeResult.strategy?.acquisition_angle}</p>
                   </section>
                 </ScrollReveal>
 
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Messaging Direction</h2>
-                    <p>{data.strategy?.messaging}</p>
+                    <p>{activeResult.strategy?.messaging}</p>
                   </section>
                 </ScrollReveal>
 
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <h2>Offer Positioning</h2>
-                    <p>{data.strategy?.offer_positioning}</p>
+                    <p>{activeResult.strategy?.offer_positioning}</p>
+                  </section>
+                </ScrollReveal>
+
+                <ScrollReveal eager>
+                  <section className="card p-6">
+                    <p className="card-label">Action Outputs</p>
+                    <div className="action-output-buttons">
+                      {ACTION_BUTTONS.map((button) => (
+                        <button
+                          className="btn-secondary"
+                          disabled={actionLoadingKind !== null}
+                          key={button.kind}
+                          onClick={() => generateActionOutput(button.kind)}
+                          type="button"
+                        >
+                          {actionLoadingKind === button.kind ? "Generating..." : button.label}
+                        </button>
+                      ))}
+                    </div>
+                    {actionError ? (
+                      <p className="field-copy result-copy" role="alert">
+                        Error: {actionError}
+                      </p>
+                    ) : null}
+                    <div className="result-grid single-column-results action-output-grid">
+                      {ACTION_BUTTONS.filter((button) => actionOutputs[button.kind]).map((button) => (
+                        <div className="subcard" key={`output-${button.kind}`}>
+                          <h3>{button.title}</h3>
+                          <ul className="result-list">
+                            {actionOutputs[button.kind]?.outputs.map((item) => (
+                              <li key={`${button.kind}-${item}`}>{item}</li>
+                            ))}
+                          </ul>
+                          {actionOutputs[button.kind]?.fallbackUsed ? (
+                            <p className="evidence-note">Fallback generation used.</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
                   </section>
                 </ScrollReveal>
               </div>
@@ -630,6 +1084,115 @@ export default function Home() {
           </ScrollReveal>
         </>
       )}
+
+      {activeResult ? (
+        <div aria-hidden="true" className="pdf-export-shell">
+          <div className="pdf-export-document card" id="report-export">
+            <section className="pdf-export-cover">
+              <p className="card-label">Market Intelligence Report</p>
+              <h1>{activeResult.query}</h1>
+              <div className="pdf-export-meta">
+                <span>Market Type: {marketType || activeResult.classification.core_type}</span>
+                <span>Mode: {activeResult.source_meta.mode}</span>
+                <span>{new Date(activeResult.generatedAt).toLocaleString()}</span>
+              </div>
+            </section>
+
+            <section className="pdf-export-section">
+              <h2>Executive Summary</h2>
+              <ul className="result-list">
+                {activeResult.executive_summary.slice(0, 4).map((item) => (
+                  <li key={`export-summary-${item}`}>{item}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="pdf-export-section">
+              <h2>Dominant Narrative</h2>
+              <p className="dominant-narrative-copy">{activeResult.dominant_narrative}</p>
+              <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
+            </section>
+
+            <section className="pdf-export-section">
+              <h2>Signal Strength</h2>
+              <div className="result-grid breakdown-grid">
+                <div className="subcard">
+                  <h3>Strength</h3>
+                  <p>{activeResult.signal_strength.strength}</p>
+                </div>
+                <div className="subcard">
+                  <h3>Confidence Score</h3>
+                  <p>{activeResult.signal_strength.confidence_score}%</p>
+                </div>
+                <div className="subcard">
+                  <h3>Pattern Consistency</h3>
+                  <p>{activeResult.signal_strength.pattern_consistency}</p>
+                </div>
+              </div>
+              <p className="field-copy result-copy">{activeResult.confidence.reason}</p>
+            </section>
+
+            <section className="pdf-export-section">
+              <h2>Demand Clusters</h2>
+              <div className="stack">
+                {activeResult.clusters.clusters.map((cluster) => (
+                  <div className="subcard" key={`export-${cluster.theme}`}>
+                    <h3>
+                      {cluster.theme} — {cluster.frequency} signals
+                    </h3>
+                    <ul className="result-list signal-list">
+                      {cluster.queries.map((item) => (
+                        <li className="signal-list-item" key={`export-${cluster.theme}-${item}`}>
+                          <span>{item}</span>
+                          <span className="signal-tag-row">
+                            {(signalSourceMap.get(item.toLowerCase()) ?? []).map((source) => (
+                              <span className="signal-origin-tag" key={`export-${item}-${source}`}>
+                                {source}
+                              </span>
+                            ))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="pdf-export-section">
+              <h2>Market Gaps</h2>
+              <ul className="result-list">
+                {activeResult.market_gaps.map((gap) => (
+                  <li key={`export-gap-${gap}`}>{gap}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="pdf-export-section recommended-move-card">
+              <h2>Recommended Move</h2>
+              <p className="recommended-move-copy">{activeResult.recommended_move}</p>
+            </section>
+
+            <section className="pdf-export-section">
+              <h2>Supporting Signals</h2>
+              <ul className="result-list signal-list">
+                {activeResult.signal_origins.map((signal) => (
+                  <li className="signal-list-item" key={`export-origin-${signal.text}`}>
+                    <span>{signal.text}</span>
+                    <span className="signal-tag-row">
+                      {signal.sources.map((source) => (
+                        <span className="signal-origin-tag" key={`export-origin-${signal.text}-${source}`}>
+                          {source}
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+      ) : null}
 
       <ScrollReveal eager>
         <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">

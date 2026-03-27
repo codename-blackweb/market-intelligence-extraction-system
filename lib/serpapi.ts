@@ -1,3 +1,4 @@
+import type { SignalOriginEntry, SignalSourceTag } from "@/types/market-analysis";
 import { compactUnique } from "@/lib/utils";
 
 function getSerpApiKey() {
@@ -132,18 +133,72 @@ export function normalizeCompetitorBlocks(
     .slice(0, 6);
 }
 
-export async function buildNormalizedSerpData(query: string) {
+function mergeSignalOrigins(entries: SignalOriginEntry[]) {
+  const originMap = new Map<
+    string,
+    {
+      text: string;
+      sources: Set<SignalSourceTag>;
+    }
+  >();
+
+  for (const entry of entries) {
+    const normalized = entry.text.trim();
+
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.toLowerCase();
+    const current = originMap.get(key) ?? {
+      text: normalized,
+      sources: new Set<SignalSourceTag>()
+    };
+
+    for (const source of entry.sources) {
+      current.sources.add(source);
+    }
+
+    originMap.set(key, current);
+  }
+
+  return Array.from(originMap.values()).map(({ text, sources }) => ({
+    text,
+    sources: Array.from(sources)
+  }));
+}
+
+function buildOriginEntries(values: string[], source: SignalSourceTag) {
+  return values.map((text) => ({
+    text,
+    sources: [source]
+  })) satisfies SignalOriginEntry[];
+}
+
+export async function collectGoogleSignalBundle(query: string) {
   const [autocompleteRaw, searchRaw] = await Promise.all([
     fetchAutocomplete(query),
     fetchGoogleSearchIntel(query)
   ]);
 
-  return compactUnique(
-    [
-      ...normalizeAutocomplete(autocompleteRaw),
-      ...normalizePeopleAlsoAsk(searchRaw),
-      ...normalizeRelatedSearches(searchRaw)
-    ],
-    50
-  );
+  const autocomplete = normalizeAutocomplete(autocompleteRaw);
+  const paa = normalizePeopleAlsoAsk(searchRaw);
+  const related = normalizeRelatedSearches(searchRaw);
+  const serpData = compactUnique([...autocomplete, ...paa, ...related], 50);
+
+  return {
+    serpData,
+    autocomplete,
+    paa,
+    related,
+    signalOrigins: mergeSignalOrigins([
+      ...buildOriginEntries(autocomplete, "Autocomplete"),
+      ...buildOriginEntries(paa, "PAA"),
+      ...buildOriginEntries(related, "Related Searches")
+    ])
+  };
+}
+
+export async function buildNormalizedSerpData(query: string) {
+  return (await collectGoogleSignalBundle(query)).serpData;
 }
