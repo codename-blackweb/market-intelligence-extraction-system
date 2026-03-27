@@ -75,8 +75,10 @@ export default function FaqSection() {
                   fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
                   fontWeight={700}
                   fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                  textAnchor="middle"
+                  textAnchor="start"
+                  textX="0%"
                   dominantBaseline="middle"
+                  maskPosition="left center"
                   autoPlay
                   muted
                   loop

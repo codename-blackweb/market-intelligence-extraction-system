@@ -15,8 +15,10 @@ export interface VideoTextProps {
   fontSize?: string | number;
   fontWeight?: string | number;
   textAnchor?: string;
+  textX?: string;
   dominantBaseline?: string;
   fontFamily?: string;
+  maskPosition?: string;
   as?: "div" | "span" | "section" | "article" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 }
 
@@ -31,8 +33,10 @@ export function VideoText({
   fontSize = 20,
   fontWeight = "bold",
   textAnchor = "middle",
+  textX = "50%",
   dominantBaseline = "middle",
   fontFamily = "sans-serif",
+  maskPosition = "center",
   as = "div",
   ...motionProps
 }: VideoTextProps & HTMLMotionProps<"div">) {
@@ -59,13 +63,13 @@ export function VideoText({
         ? lines
             .map((line, index) => {
               const dy = index === 0 ? `${-0.6 * (lines.length - 1)}em` : "1.2em";
-              return `<tspan x='50%' dy='${dy}'>${escapeXml(line)}</tspan>`;
+              return `<tspan x='${textX}' dy='${dy}'>${escapeXml(line)}</tspan>`;
             })
             .join("")
         : escapeXml(content);
 
     const newSvgMask = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'>
-      <text x='50%' y='50%'
+      <text x='${textX}' y='50%'
             font-size='${responsiveFontSize}'
             font-weight='${fontWeight}'
             text-anchor='${textAnchor}'
@@ -74,7 +78,7 @@ export function VideoText({
             fill='black'>${lineMarkup}</text>
     </svg>`;
     setSvgMask(newSvgMask);
-  }, [content, fontSize, fontWeight, textAnchor, dominantBaseline, fontFamily]);
+  }, [content, fontSize, fontWeight, textAnchor, textX, dominantBaseline, fontFamily]);
 
   const validTags = ["div", "span", "section", "article", "p", "h1", "h2", "h3", "h4", "h5", "h6"] as const;
 
@@ -101,8 +105,8 @@ export function VideoText({
           WebkitMaskSize: "contain",
           maskRepeat: "no-repeat",
           WebkitMaskRepeat: "no-repeat",
-          maskPosition: "center",
-          WebkitMaskPosition: "center",
+          maskPosition,
+          WebkitMaskPosition: maskPosition,
           opacity: 1
         }}
       >
