@@ -13,7 +13,7 @@ export default function AccountEntryButton() {
       href={isAuthenticated ? "/account" : "/auth"}
     >
       {isAuthenticated ? <UserRound className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-      <span>{isAuthenticated ? session?.user.first_name || "Workspace" : "Login"}</span>
+      <span>{isAuthenticated ? "Profile" : "Account"}</span>
     </Link>
   );
 }

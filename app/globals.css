@@ -1606,6 +1606,17 @@ select {
   padding: 2rem 1.5rem 1rem;
 }
 
+.faq-visibility-shell {
+  min-height: 28rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-elevated) 72%, transparent),
+    color-mix(in srgb, var(--bg) 88%, transparent)
+  );
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+
 .faq-container {
   max-width: 72rem;
   margin: 0 auto;
@@ -3400,6 +3411,10 @@ select {
     padding-top: 1rem;
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  .faq-visibility-shell {
+    min-height: 24rem;
   }
 
   .faq-grid {

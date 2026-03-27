@@ -1855,21 +1855,24 @@ export default function Home() {
             </ScrollReveal>
           ) : null}
 
-          <ScrollReveal eager>
-            <FaqSection />
-          </ScrollReveal>
-
-          {activeResult ? (
-            <ScrollReveal eager>
-              <ResultsCtaSection
-                onRunAnother={scrollToAnalysisInputs}
-                onUpgrade={() => void handlePlanSelection("pro")}
-                plan={usageState.plan}
-              />
-            </ScrollReveal>
-          ) : null}
         </>
       )}
+
+      <section className="mt-24 faq-visibility-shell" id="faq">
+        <ScrollReveal eager>
+          <FaqSection />
+        </ScrollReveal>
+      </section>
+
+      <section className="mt-16" id="bottom-cta">
+        <ScrollReveal eager>
+          <ResultsCtaSection
+            onRunAnother={scrollToAnalysisInputs}
+            onUpgrade={() => void handlePlanSelection("pro")}
+            plan={usageState.plan}
+          />
+        </ScrollReveal>
+      </section>
 
       {showPricingModal ? (
         <div
