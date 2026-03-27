@@ -41,7 +41,8 @@
   box-sizing: border-box;
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+html.dark {
   color-scheme: dark;
   --bg: #09090b;
   --bg-accent: #131316;
@@ -92,7 +93,8 @@ body:has(.auth-page) {
   color: #f4f4f5;
 }
 
-:root[data-theme="dark"] body {
+:root[data-theme="dark"] body,
+html.dark body {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 24rem),
     radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.03), transparent 24rem),
