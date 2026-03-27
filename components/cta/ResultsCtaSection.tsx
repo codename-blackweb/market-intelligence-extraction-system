@@ -53,9 +53,9 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
                 loop
                 preload="auto"
               >
-                Stop guessing what the market wants.
+                STOP GUESSING WHAT THE MARKET WANTS.
                 {"\n"}
-                See the signal. Move with confidence.
+                SEE THE SIGNAL. MOVE WITH CONFIDENCE.
               </VideoText>
             </div>
 
