@@ -57,40 +57,6 @@ function extractOutputText(payload: unknown) {
   );
 }
 
-function normalizePayload(body: unknown) {
-  if (!body || typeof body !== "object") {
-    throw new Error("Request body must be a JSON object.");
-  }
-
-  const payload = body as Record<string, unknown>;
-  const query = typeof payload.query === "string" ? payload.query.trim() : "";
-  const seedQuery = typeof payload.seedQuery === "string" ? payload.seedQuery.trim() : "";
-  const finalQuery = query || seedQuery;
-  const marketType = typeof payload.marketType === "string" ? payload.marketType.trim() : "";
-  const depthCandidate = typeof payload.depth === "string" ? payload.depth.trim() : "";
-  const depth =
-    depthCandidate === "deep" || depthCandidate === "aggressive" ? depthCandidate : "standard";
-
-  if (!finalQuery) {
-    throw new Error("Missing query");
-  }
-
-  const serpData = compactUnique(
-    Array.isArray(payload.serpData)
-      ? payload.serpData.filter((item): item is string => typeof item === "string")
-      : [],
-    50
-  );
-
-  return {
-    seedQuery,
-    query: finalQuery,
-    marketType,
-    depth,
-    serpData
-  };
-}
-
 function createMockAnalysisResponse(
   query: string,
   _marketType: string
@@ -562,63 +528,90 @@ function getRuntimeConfig() {
 export async function POST(request: NextRequest) {
   try {
     const MODE = (process.env.MODE || "DEV").toUpperCase();
-    const body = await request.json();
-    const payload = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-    const query = typeof payload.query === "string" ? payload.query.trim() : "";
-    const seedQuery = typeof payload.seedQuery === "string" ? payload.seedQuery.trim() : "";
-    const marketType = typeof payload.marketType === "string" ? payload.marketType.trim() : "";
-    const depth = typeof payload.depth === "string" ? payload.depth.trim() : "";
-    const finalQuery = query || seedQuery;
-    const providedSerpData = compactUnique(
-      Array.isArray(payload.serpData)
-        ? payload.serpData.filter((item): item is string => typeof item === "string")
-        : [],
-      50
-    );
+    const {
+      query,
+      seedQuery,
+      marketType,
+      depth,
+      serpData
+    } = (await request.json()) as {
+      query?: string;
+      seedQuery?: string;
+      marketType?: string;
+      depth?: string;
+      serpData?: unknown;
+    };
+    const finalQuery = (query ?? "").trim() || (seedQuery ?? "").trim();
+    const finalMarketType = (marketType ?? "").trim();
+    const finalDepthCandidate = (depth ?? "").trim();
+    const finalDepth =
+      finalDepthCandidate === "deep" || finalDepthCandidate === "aggressive"
+        ? finalDepthCandidate
+        : "standard";
 
     console.log("MODE:", MODE);
-    console.log("analyze request:", { query, seedQuery, marketType, depth });
+    console.log("analyze request:", {
+      query,
+      seedQuery,
+      marketType: finalMarketType,
+      depth: finalDepth
+    });
 
     if (!finalQuery) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Missing query"
-        } satisfies MarketAnalysisResponse,
+        { success: false, error: "Missing query" },
         { status: 400 }
       );
     }
 
     if (MODE === "DEV") {
       await new Promise((resolve) => setTimeout(resolve, DEV_MODE_DELAY_MS));
-      return NextResponse.json(createMockAnalysisResponse(finalQuery, marketType));
+      return NextResponse.json(createMockAnalysisResponse(finalQuery, finalMarketType));
     }
 
     if (MODE === "HYBRID") {
       console.log("ENTERED HYBRID BRANCH");
-      const serpData = providedSerpData.length
+
+      const providedSerpData = compactUnique(
+        Array.isArray(serpData)
+          ? serpData.filter((item): item is string => typeof item === "string")
+          : [],
+        50
+      );
+      const normalizedSerpData = providedSerpData.length
         ? providedSerpData
         : await buildNormalizedSerpData(finalQuery);
 
-      if (!serpData.length) {
+      if (!normalizedSerpData.length) {
         throw new Error("serpData is required.");
       }
 
       const redditSignals = await collectHybridRedditSignals(finalQuery);
 
       return NextResponse.json(
-        createHybridAnalysisResponse(finalQuery, marketType, serpData, redditSignals)
+        createHybridAnalysisResponse(
+          finalQuery,
+          finalMarketType,
+          normalizedSerpData,
+          redditSignals
+        )
       );
     }
 
     console.log("ENTERING LIVE OPENAI BRANCH");
 
+    const providedSerpData = compactUnique(
+      Array.isArray(serpData)
+        ? serpData.filter((item): item is string => typeof item === "string")
+        : [],
+      50
+    );
     const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
-    const serpData = providedSerpData.length
+    const normalizedSerpData = providedSerpData.length
       ? providedSerpData
       : await buildNormalizedSerpData(finalQuery);
 
-    if (!serpData.length) {
+    if (!normalizedSerpData.length) {
       throw new Error("serpData is required.");
     }
 
@@ -647,13 +640,13 @@ Return ONLY JSON in this format:
 }
 
 Queries:
-${JSON.stringify(serpData)}
+${JSON.stringify(normalizedSerpData)}
 
 Market Type:
-${marketType || "unspecified"}
+${finalMarketType || "unspecified"}
 
 Analysis Depth:
-${depth}
+${finalDepth}
 
 Rules:
 - Infer from patterns
@@ -676,7 +669,7 @@ Return JSON:
 }
 
 Queries:
-${JSON.stringify(serpData)}
+${JSON.stringify(normalizedSerpData)}
 
 Rules:
 - Count frequency explicitly
@@ -760,7 +753,7 @@ Rules:
 
 Data:
 SERP_DATA:
-${JSON.stringify(serpData, null, 2)}
+${JSON.stringify(normalizedSerpData, null, 2)}
 
 CLUSTERS:
 ${JSON.stringify(clusters.clusters, null, 2)}
@@ -786,7 +779,7 @@ ${JSON.stringify(classification, null, 2)}
     const response: MarketAnalysisResponse = {
       success: true,
       query: finalQuery,
-      serpData,
+      serpData: normalizedSerpData,
       clusters: { clusters: synthesis.clusters },
       dominant_narrative: synthesis.dominant_narrative,
       market_diagnosis: synthesis.market_diagnosis,
