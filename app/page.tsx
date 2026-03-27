@@ -1105,7 +1105,6 @@ export default function Home() {
         <div className="text-center space-y-10 hero-stack">
           <div className="hero-brand-stack">
             <div className="hero-brand-line hero-brand-line-name">
-              <span className="hero-brand-fallback hero-brand-fallback-name">IntentEngine</span>
               <VideoText
                 as="div"
                 src="/assets/gradient-video.mp4"
@@ -1125,9 +1124,6 @@ export default function Home() {
             </div>
 
             <div className="hero-brand-line hero-brand-line-tagline">
-              <span className="hero-brand-fallback hero-brand-fallback-tagline">
-                Find buyers before your competitors know they exist.
-              </span>
               <VideoText
                 as="div"
                 src="/assets/gradient-video.mp4"
@@ -1149,9 +1145,6 @@ export default function Home() {
             </div>
 
             <div className="hero-brand-line hero-brand-line-powered">
-              <span className="hero-brand-fallback hero-brand-fallback-powered">
-                Powered by SignalForge intelligence.
-              </span>
               <VideoText
                 as="div"
                 src="/assets/gradient-video.mp4"
