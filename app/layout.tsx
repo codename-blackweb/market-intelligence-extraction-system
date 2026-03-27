@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import SideNav from "@/components/navigation/SideNav";
 import SmokeyCursor from "@/components/ui/smokey-cursor";
 import "./globals.css";
 
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body className="bg-white text-black">
         <AuthProvider>
           <SmokeyCursor intensity={0.6} />
+          <SideNav />
           {children}
         </AuthProvider>
       </body>

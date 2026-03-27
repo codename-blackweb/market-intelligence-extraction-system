@@ -23,6 +23,7 @@ import type {
 } from "@/types/market-analysis";
 
 const tabs = ["Analyses", "Reports", "Workspace", "Billing"] as const;
+type WorkspaceProfileTab = (typeof tabs)[number];
 
 function formatPlan(plan: UserPlan) {
   if (plan === "agency") {
@@ -53,9 +54,13 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export default function WorkspaceProfile() {
+export default function WorkspaceProfile({
+  initialTab = "Analyses"
+}: {
+  initialTab?: WorkspaceProfileTab;
+}) {
   const { isAuthenticated, isReady, plan, session, setPlan, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Analyses");
+  const [activeTab, setActiveTab] = useState<WorkspaceProfileTab>(initialTab);
   const [summary, setSummary] = useState<AccountSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -108,6 +113,10 @@ export default function WorkspaceProfile() {
       isMounted = false;
     };
   }, [isReady, session?.user.id, setPlan]);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const analyses = summary?.analyses ?? [];
   const publicReports = analyses.filter((item) => item.is_public);

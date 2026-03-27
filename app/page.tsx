@@ -1080,7 +1080,7 @@ export default function Home() {
   };
 
   return (
-    <main className="page-shell">
+    <main className="page-shell" id="home">
       {loading && (
         <div className="fixed inset-0 z-50 bg-white flex items-center justify-center loader-overlay">
           <RippleLoader
@@ -1132,7 +1132,7 @@ export default function Home() {
       </section>
 
       <ScrollReveal>
-        <section className="max-w-7xl mx-auto px-6 py-20" ref={analysisInputsRef}>
+        <section className="max-w-7xl mx-auto px-6 py-20" id="run-analysis" ref={analysisInputsRef}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="card p-6">
               <input
@@ -1270,49 +1270,51 @@ export default function Home() {
         </section>
       </ScrollReveal>
 
-      {savedRuns.length ? (
-        <ScrollReveal eager>
-          <section className="max-w-7xl mx-auto px-6 pb-8 recent-analyses-shell">
-            <div className="card p-6">
-              <div className="recent-analyses-header">
-                <p className="card-label">Recent Analyses</p>
-                <p className="field-copy result-copy">
-                  Select up to two saved runs to compare without rerunning the API.
-                </p>
-              </div>
-              <div className="recent-analyses-list">
-                {savedRuns.map((savedRun) => (
-                  <article
-                    className={`recent-analysis-item ${
-                      selectedComparisonIds.includes(savedRun.id) ? "is-selected" : ""
-                    }`}
-                    key={savedRun.id}
-                  >
-                    <button
-                      className="recent-analysis-button"
-                      onClick={() => restoreSavedRun(savedRun)}
-                      type="button"
+      <section id="recent-analyses">
+        {savedRuns.length ? (
+          <ScrollReveal eager>
+            <section className="max-w-7xl mx-auto px-6 pb-8 recent-analyses-shell">
+              <div className="card p-6">
+                <div className="recent-analyses-header">
+                  <p className="card-label">Recent Analyses</p>
+                  <p className="field-copy result-copy">
+                    Select up to two saved runs to compare without rerunning the API.
+                  </p>
+                </div>
+                <div className="recent-analyses-list">
+                  {savedRuns.map((savedRun) => (
+                    <article
+                      className={`recent-analysis-item ${
+                        selectedComparisonIds.includes(savedRun.id) ? "is-selected" : ""
+                      }`}
+                      key={savedRun.id}
                     >
-                      <span className="recent-analysis-query">{savedRun.query}</span>
-                      <span className="recent-analysis-meta">
-                        {savedRun.result.source_meta.mode} • {formatGeneratedTimestamp(savedRun.createdAt)}
-                        {savedRun.isPublic ? " • Public" : ""}
-                      </span>
-                    </button>
-                    <button
-                      className="recent-analysis-compare-button"
-                      onClick={() => toggleCompareRun(savedRun.id)}
-                      type="button"
-                    >
-                      {selectedComparisonIds.includes(savedRun.id) ? "Selected" : "Compare"}
-                    </button>
-                  </article>
-                ))}
+                      <button
+                        className="recent-analysis-button"
+                        onClick={() => restoreSavedRun(savedRun)}
+                        type="button"
+                      >
+                        <span className="recent-analysis-query">{savedRun.query}</span>
+                        <span className="recent-analysis-meta">
+                          {savedRun.result.source_meta.mode} • {formatGeneratedTimestamp(savedRun.createdAt)}
+                          {savedRun.isPublic ? " • Public" : ""}
+                        </span>
+                      </button>
+                      <button
+                        className="recent-analysis-compare-button"
+                        onClick={() => toggleCompareRun(savedRun.id)}
+                        type="button"
+                      >
+                        {selectedComparisonIds.includes(savedRun.id) ? "Selected" : "Compare"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
-        </ScrollReveal>
-      ) : null}
+            </section>
+          </ScrollReveal>
+        ) : null}
+      </section>
 
       {comparisonRuns.length === 2 ? (
         <ScrollReveal eager>
@@ -1840,20 +1842,22 @@ export default function Home() {
             </section>
           </ScrollReveal>
 
-          {showInlinePricing ? (
-            <ScrollReveal eager>
-              <section className="max-w-5xl mx-auto px-6 pb-8" ref={pricingSectionRef}>
-                <div className="card p-6 pricing-section-shell">
-                  <AnimatedPricingSection
-                    currentPlan={usageState.plan}
-                    focusState={gatedAction !== null}
-                    message={pricingMessage}
-                    onSelectPlan={(plan) => void handlePlanSelection(plan)}
-                  />
-                </div>
-              </section>
-            </ScrollReveal>
-          ) : null}
+          <section id="pricing">
+            {showInlinePricing ? (
+              <ScrollReveal eager>
+                <section className="max-w-5xl mx-auto px-6 pb-8" ref={pricingSectionRef}>
+                  <div className="card p-6 pricing-section-shell">
+                    <AnimatedPricingSection
+                      currentPlan={usageState.plan}
+                      focusState={gatedAction !== null}
+                      message={pricingMessage}
+                      onSelectPlan={(plan) => void handlePlanSelection(plan)}
+                    />
+                  </div>
+                </section>
+              </ScrollReveal>
+            ) : null}
+          </section>
 
         </>
       )}
