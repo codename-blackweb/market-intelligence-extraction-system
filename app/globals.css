@@ -835,6 +835,10 @@ select {
     padding-left: 7rem;
   }
 
+  .auth-page {
+    padding-left: 7rem;
+  }
+
   .side-nav-rail {
     display: block;
   }

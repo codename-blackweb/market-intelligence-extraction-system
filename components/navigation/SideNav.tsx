@@ -22,6 +22,7 @@ import {
   Search,
   UserRound
 } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 type NavItem = {
   label: string;
@@ -41,12 +42,6 @@ const primaryItems: NavItem[] = [
   },
   { label: "Pricing", icon: BadgeDollarSign, href: "/#pricing", sectionId: "pricing" },
   { label: "FAQ", icon: CircleHelp, href: "/#faq", sectionId: "faq" }
-];
-
-const secondaryItems: NavItem[] = [
-  { label: "Account", icon: UserRound, href: "/account" },
-  { label: "Workspace", icon: FolderKanban, href: "/workspace" },
-  { label: "Billing", icon: BadgeDollarSign, href: "/billing" }
 ];
 
 const railVariants = {
@@ -159,17 +154,32 @@ function SideNavItem({
 
 export default function SideNav() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const hiddenOnRoute = pathname.startsWith("/auth") || pathname.startsWith("/onboarding");
+  const hiddenOnRoute = pathname.startsWith("/onboarding");
   const expanded = hovered || pinned;
+
+  const secondaryItems = useMemo<NavItem[]>(
+    () => [
+      { label: "Account", icon: UserRound, href: isAuthenticated ? "/account" : "/auth" },
+      { label: "Workspace", icon: FolderKanban, href: "/workspace" },
+      { label: "Billing", icon: BadgeDollarSign, href: "/billing" }
+    ],
+    [isAuthenticated]
+  );
 
   const activeSection = useActiveSection(primaryItems.map((item) => item.sectionId ?? "").filter(Boolean));
   const isHomeRoute = pathname === "/";
 
   const activeHref = useMemo(() => {
-    if (pathname === "/account" || pathname === "/workspace" || pathname === "/billing") {
+    if (
+      pathname === "/auth" ||
+      pathname === "/account" ||
+      pathname === "/workspace" ||
+      pathname === "/billing"
+    ) {
       return pathname;
     }
 
@@ -273,7 +283,10 @@ export default function SideNav() {
           <div className="side-nav-group">
             {secondaryItems.map((item, index) => (
               <SideNavItem
-                active={pathname === item.href}
+                active={
+                  pathname === item.href ||
+                  (item.label === "Account" && ((isAuthenticated && pathname === "/account") || pathname === "/auth"))
+                }
                 expanded={expanded}
                 index={primaryItems.length + index}
                 item={item}
