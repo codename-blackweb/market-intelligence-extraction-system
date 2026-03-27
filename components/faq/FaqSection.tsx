@@ -101,24 +101,22 @@ export default function FaqSection() {
                   >
                     ACTUALLY
                   </VideoText>
-                  <span className="faq-title-does-shell">
-                    <VideoText
-                      as="div"
-                      src="/assets/gradient-video.mp4"
-                      className="faq-title-video faq-title-video-does"
-                      fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
-                      fontWeight={700}
-                      fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      autoPlay
-                      muted
-                      loop
-                      preload="auto"
-                    >
-                      DOES
-                    </VideoText>
-                  </span>
+                  <VideoText
+                    as="div"
+                    src="/assets/gradient-video.mp4"
+                    className="faq-title-video faq-title-video-does"
+                    fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
+                    fontWeight={700}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    DOES
+                  </VideoText>
                 </div>
               </div>
 
