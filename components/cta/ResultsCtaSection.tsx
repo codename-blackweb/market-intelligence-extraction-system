@@ -42,7 +42,7 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
               <VideoText
                 as="div"
                 src="/assets/gradient-video.mp4"
-                className="results-cta-title-video"
+                className="results-cta-title-video results-cta-title-video-desktop"
                 fontSize="clamp(1.72rem, 3vw, 3.05rem)"
                 fontWeight={700}
                 fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
@@ -56,6 +56,28 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
                 STOP GUESSING WHAT THE MARKET WANTS.
                 {"\n"}
                 SEE THE SIGNAL. MOVE WITH CONFIDENCE.
+              </VideoText>
+              <VideoText
+                as="div"
+                src="/assets/gradient-video.mp4"
+                className="results-cta-title-video results-cta-title-video-mobile"
+                fontSize="clamp(1.36rem, 5.1vw, 2rem)"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                STOP GUESSING WHAT
+                {"\n"}
+                THE MARKET WANTS.
+                {"\n"}
+                SEE THE SIGNAL.
+                {"\n"}
+                MOVE WITH CONFIDENCE.
               </VideoText>
             </div>
 

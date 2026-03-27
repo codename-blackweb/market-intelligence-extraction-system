@@ -1733,6 +1733,10 @@ select {
   overflow: hidden;
 }
 
+.results-cta-title-video-mobile {
+  display: none;
+}
+
 .results-cta-copy {
   max-width: 38rem;
   margin: 0 auto;
@@ -3679,6 +3683,17 @@ select {
 
   .results-cta-title-video {
     height: 120px;
+  }
+
+  .results-cta-title-video-desktop {
+    display: none;
+  }
+
+  .results-cta-title-video-mobile {
+    display: block;
+    width: min(100%, 360px);
+    height: 196px;
+    margin: 0 auto;
   }
 
   .results-cta-actions {
