@@ -1911,29 +1911,10 @@ select {
   justify-content: flex-start;
 }
 
-.faq-title-video-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 0.5rem 0.65rem;
-}
-
 .faq-title-video {
+  width: min(100%, 560px);
   height: 86px;
   overflow: hidden;
-}
-
-.faq-title-video-what {
-  width: 242px;
-}
-
-.faq-title-video-actually {
-  width: 238px;
-}
-
-.faq-title-video-does {
-  width: 128px;
 }
 
 .faq-copy {
@@ -3710,25 +3691,9 @@ select {
     max-width: none;
   }
 
-  .faq-title-video-row {
-    justify-content: flex-start;
-    gap: 0.35rem 0.45rem;
-  }
-
   .faq-title-video {
+    width: min(100%, 460px);
     height: 74px;
-  }
-
-  .faq-title-video-what {
-    width: 186px;
-  }
-
-  .faq-title-video-actually {
-    width: 182px;
-  }
-
-  .faq-title-video-does {
-    width: 96px;
   }
 
   .faq-trigger {

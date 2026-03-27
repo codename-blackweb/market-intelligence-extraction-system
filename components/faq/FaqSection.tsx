@@ -68,56 +68,22 @@ export default function FaqSection() {
               </div>
 
               <div aria-level={2} className="faq-title-video-wrap" role="heading">
-                <div className="faq-title-video-row">
-                  <VideoText
-                    as="div"
-                    src="/assets/gradient-video.mp4"
-                    className="faq-title-video faq-title-video-what"
-                    fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
-                    fontWeight={700}
-                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    autoPlay
-                    muted
-                    loop
-                    preload="auto"
-                  >
-                    WHAT THIS
-                  </VideoText>
-                  <VideoText
-                    as="div"
-                    src="/assets/gradient-video.mp4"
-                    className="faq-title-video faq-title-video-actually"
-                    fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
-                    fontWeight={700}
-                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    autoPlay
-                    muted
-                    loop
-                    preload="auto"
-                  >
-                    ACTUALLY
-                  </VideoText>
-                  <VideoText
-                    as="div"
-                    src="/assets/gradient-video.mp4"
-                    className="faq-title-video faq-title-video-does"
-                    fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
-                    fontWeight={700}
-                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    autoPlay
-                    muted
-                    loop
-                    preload="auto"
-                  >
-                    DOES
-                  </VideoText>
-                </div>
+                <VideoText
+                  as="div"
+                  src="/assets/gradient-video.mp4"
+                  className="faq-title-video"
+                  fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
+                  fontWeight={700}
+                  fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  autoPlay
+                  muted
+                  loop
+                  preload="auto"
+                >
+                  WHAT THIS ACTUALLY DOES
+                </VideoText>
               </div>
 
               <p className="faq-copy">
