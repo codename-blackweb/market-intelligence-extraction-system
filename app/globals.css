@@ -1089,11 +1089,24 @@ select {
   height: 24px;
 }
 
+.button-video-text-cta {
+  width: 122px;
+  height: 24px;
+}
+
 .button-video-text > div,
 .button-video-text video {
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: transform;
+}
+
+.top-right-controls {
+  gap: 1rem;
+}
+
+.top-right-account-shell {
+  margin-right: 0.25rem;
 }
 
 .btn-primary:has(.button-video-text):hover {
@@ -1708,6 +1721,18 @@ select {
   color: var(--accent);
 }
 
+.results-cta-title-video-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.results-cta-title-video {
+  width: min(100%, 860px);
+  height: 132px;
+  overflow: hidden;
+}
+
 .results-cta-copy {
   max-width: 38rem;
   margin: 0 auto;
@@ -1727,6 +1752,9 @@ select {
 .results-cta-primary,
 .results-cta-secondary {
   min-width: 13.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.95rem 1.35rem;
   border-radius: 999px;
   font-weight: 900;
@@ -1746,14 +1774,21 @@ select {
 }
 
 :root[data-theme="dark"] .results-cta-primary {
-  color: #09090b;
-  background: linear-gradient(135deg, #f5f7fb 0%, color-mix(in srgb, var(--accent) 46%, #a5b4fc) 100%);
+  color: #fff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.52);
+  box-shadow: none;
 }
 
 .results-cta-secondary {
-  color: var(--fg);
+  color: var(--ink);
   background: transparent;
   border-color: color-mix(in srgb, var(--line-strong) 42%, transparent);
+}
+
+:root[data-theme="dark"] .results-cta-secondary {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.52);
 }
 
 .results-cta-primary:hover,
@@ -1859,6 +1894,18 @@ select {
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--accent) 22%, transparent);
   text-underline-offset: 0.35rem;
+}
+
+.faq-title-video-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.faq-title-video {
+  width: min(100%, 540px);
+  height: 86px;
+  overflow: hidden;
 }
 
 .faq-copy {
@@ -2229,6 +2276,7 @@ select {
 .drawer-trigger-section {
   display: flex;
   justify-content: center;
+  margin-top: 2.75rem;
 }
 
 .single-column-results {
@@ -3587,6 +3635,10 @@ select {
     font-size: 0.95rem;
   }
 
+  .results-cta-title-video {
+    height: 120px;
+  }
+
   .results-cta-actions {
     flex-direction: column;
   }
@@ -3617,6 +3669,16 @@ select {
 
   .faq-copy {
     max-width: none;
+  }
+
+  .faq-title-video-wrap {
+    justify-content: center;
+  }
+
+  .faq-title-video {
+    width: 100%;
+    max-width: 460px;
+    height: 74px;
   }
 
   .faq-trigger {
@@ -3677,6 +3739,19 @@ select {
   .button-video-text-pipeline {
     width: 206px;
     height: 22px;
+  }
+
+  .button-video-text-cta {
+    width: 116px;
+    height: 22px;
+  }
+
+  .top-right-controls {
+    gap: 0.85rem;
+  }
+
+  .top-right-account-shell {
+    margin-right: 0.35rem;
   }
 }
 

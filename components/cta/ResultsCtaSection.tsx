@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2, Zap } from "lucide-react";
+import { VideoText } from "@/components/ui/VideoText";
 import type { UserPlan } from "@/types/market-analysis";
 
 type Props = {
@@ -37,10 +38,26 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
               <span>Real demand. Clear direction.</span>
             </div>
 
-            <h2 className="results-cta-title">
-              Stop guessing what the market wants.{" "}
-              <span>See the signal. Move with confidence.</span>
-            </h2>
+            <div aria-level={2} className="results-cta-title-video-wrap" role="heading">
+              <VideoText
+                as="div"
+                src="/assets/gradient-video.mp4"
+                className="results-cta-title-video"
+                fontSize="clamp(1.72rem, 3vw, 3.05rem)"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                Stop guessing what the market wants.
+                {"\n"}
+                See the signal. Move with confidence.
+              </VideoText>
+            </div>
 
             <p className="results-cta-copy">
               Run live demand analysis, surface what people actually want, and turn messy
@@ -53,7 +70,26 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
                 onClick={isFreePlan ? onUpgrade : onRunAnother}
                 type="button"
               >
-                {isFreePlan ? "Unlock Pro" : "Run Another Analysis"}
+                {isFreePlan ? (
+                  <VideoText
+                    as="div"
+                    src="/assets/gradient-video.mp4"
+                    className="button-video-text button-video-text-cta"
+                    fontSize="1rem"
+                    fontWeight={700}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    Unlock Pro
+                  </VideoText>
+                ) : (
+                  "Run Another Analysis"
+                )}
               </button>
 
               {isFreePlan ? (

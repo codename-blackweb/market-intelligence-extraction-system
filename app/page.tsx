@@ -1093,8 +1093,10 @@ export default function Home() {
       )}
 
       <div className="fixed top-6 right-6 z-50">
-        <div className="flex items-center gap-3">
-          <AccountEntryButton />
+        <div className="flex items-center gap-3 top-right-controls">
+          <div className="top-right-account-shell">
+            <AccountEntryButton />
+          </div>
           <ToggleTheme animationType="circle-spread" />
         </div>
       </div>

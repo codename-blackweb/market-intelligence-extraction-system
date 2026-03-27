@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, HelpCircle, Minus, Plus } from "lucide-react";
+import { VideoText } from "@/components/ui/VideoText";
 
 const faqs = [
   {
@@ -66,9 +67,24 @@ export default function FaqSection() {
                 <span>Understand the system</span>
               </div>
 
-              <h2 className="faq-title">
-                What this actually <span>does</span>
-              </h2>
+              <div aria-level={2} className="faq-title-video-wrap" role="heading">
+                <VideoText
+                  as="div"
+                  src="/assets/gradient-video.mp4"
+                  className="faq-title-video"
+                  fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
+                  fontWeight={700}
+                  fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  autoPlay
+                  muted
+                  loop
+                  preload="auto"
+                >
+                  What this actually does
+                </VideoText>
+              </div>
 
               <p className="faq-copy">
                 This isn’t another keyword tool. It’s a system for extracting real demand
