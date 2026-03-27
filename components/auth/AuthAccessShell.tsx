@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -55,11 +55,11 @@ export default function AuthAccessShell() {
   const [success, setSuccess] = useState("");
   const passkeySupported = false;
   const inputClassName =
-    "h-11 pl-10 text-xs font-bold";
+    "auth-input";
   const primaryButtonClassName =
-    "w-full h-11 text-[10px] uppercase tracking-[0.2em]";
+    "auth-primary-button";
   const secondaryButtonClassName =
-    "h-10 rounded-xl font-black text-[9px] uppercase tracking-widest";
+    "auth-provider-button";
   const planLabel =
     upgradePlan === "pro" ? "Unlocking Pro" : upgradePlan === "agency" ? "Unlocking Agency" : null;
 
@@ -247,25 +247,38 @@ export default function AuthAccessShell() {
     }
   };
 
-  return (
-    <section className="relative min-h-screen w-full overflow-hidden bg-white p-4 dark:bg-zinc-950">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-20 h-72 w-72 -translate-x-[140%] rounded-full bg-zinc-900/6 blur-3xl dark:bg-white/6" />
-        <div className="absolute bottom-16 left-1/2 h-80 w-80 translate-x-[10%] rounded-full bg-zinc-900/7 blur-3xl dark:bg-white/5" />
-      </div>
+  useEffect(() => {
+    const previousBodyBackground = document.body.style.background;
+    const previousBodyColor = document.body.style.color;
+    const previousHtmlBackground = document.documentElement.style.background;
 
-      <div className="flex min-h-screen items-center justify-center">
+    document.body.style.background = "#050505";
+    document.body.style.color = "#f4f4f5";
+    document.documentElement.style.background = "#050505";
+
+    return () => {
+      document.body.style.background = previousBodyBackground;
+      document.body.style.color = previousBodyColor;
+      document.documentElement.style.background = previousHtmlBackground;
+    };
+  }, []);
+
+  return (
+    <section className="auth-page">
+      <div className="auth-page-glow auth-page-glow-left" aria-hidden="true" />
+      <div className="auth-page-glow auth-page-glow-right" aria-hidden="true" />
+
+      <div className="auth-page-center">
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative z-10 w-full max-w-sm"
+        className="auth-shell"
       >
-        <div className="relative">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-xl backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="text-center mb-8">
+        <div className="auth-card">
+            <div className="auth-header">
               {planLabel ? (
-                <div className="mb-4 inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                <div className="auth-plan-pill">
                   {planLabel}
                 </div>
               ) : null}
@@ -273,32 +286,28 @@ export default function AuthAccessShell() {
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.1, type: "spring" }}
-                className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-900 dark:bg-zinc-100 mb-4 shadow-lg shadow-zinc-200 dark:shadow-none"
+                className="auth-icon-shell"
               >
                 {view === "verify" ? (
-                  <ShieldCheck className="w-5 h-5 text-white dark:text-zinc-900" />
+                  <ShieldCheck className="auth-icon" />
                 ) : view === "magic" ? (
-                  <Mail className="w-5 h-5 text-white dark:text-zinc-900" />
+                  <Mail className="auth-icon" />
                 ) : (
-                  <Lock className="w-5 h-5 text-white dark:text-zinc-900" />
+                  <Lock className="auth-icon" />
                 )}
               </motion.div>
-              <h1 className="text-xl font-black uppercase italic tracking-tight text-zinc-900 dark:text-zinc-100">
+              <h1 className="auth-title">
                 {hint.title}
               </h1>
-              <p className="mt-3 text-[12px] font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">
+              <p className="auth-copy">
                 {hintCopy}
               </p>
             </div>
 
-            <div className="mb-6 grid grid-cols-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="auth-segments">
               {segmentedViews.map((item) => (
                 <button
-                  className={`rounded-xl px-2 py-2 text-[9px] font-black uppercase tracking-[0.16em] transition-colors ${
-                    view === item.id
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                      : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                  }`}
+                  className={`auth-segment ${view === item.id ? "is-active" : ""}`}
                   key={item.id}
                   onClick={() => {
                     setError("");
@@ -312,17 +321,14 @@ export default function AuthAccessShell() {
               ))}
             </div>
 
-            <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
+            <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
               {view !== "verify" ? (
-                <div className="space-y-1.5">
-                  <label
-                    className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1"
-                    htmlFor="auth-email"
-                  >
+                <div className="auth-field">
+                  <label className="auth-label" htmlFor="auth-email">
                     Work Email
                   </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                  <div className="auth-input-shell">
+                    <Mail className="auth-input-icon" />
                     <Input
                       id="auth-email"
                       type="email"
@@ -337,24 +343,21 @@ export default function AuthAccessShell() {
 
               {view === "signin" ? (
                 <>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center px-1">
-                      <label
-                        className="text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                        htmlFor="auth-password"
-                      >
+                  <div className="auth-field">
+                    <div className="auth-field-head">
+                      <label className="auth-label" htmlFor="auth-password">
                         Password
                       </label>
                       <button
-                        className="text-[9px] font-black text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors uppercase tracking-widest"
+                        className="auth-inline-link"
                         onClick={() => setView("recovery")}
                         type="button"
                       >
                         Forgot Password
                       </button>
                     </div>
-                    <div className="relative">
-                      <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                    <div className="auth-input-shell">
+                      <KeyRound className="auth-input-icon" />
                       <Input
                         id="auth-password"
                         type="password"
@@ -366,17 +369,14 @@ export default function AuthAccessShell() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 px-1">
+                  <div className="auth-remember">
                     <Checkbox
                       id="remember"
                       checked={rememberSession}
-                      className="rounded"
+                      className="auth-checkbox"
                       onChange={(event) => setRememberSession(event.target.checked)}
                     />
-                    <label
-                      htmlFor="remember"
-                      className="text-[10px] font-bold text-zinc-400 cursor-pointer select-none uppercase tracking-wide"
-                    >
+                    <label htmlFor="remember" className="auth-remember-label">
                       Persistent session (30d)
                     </label>
                   </div>
@@ -387,7 +387,7 @@ export default function AuthAccessShell() {
                     onClick={handlePasswordSignIn}
                   >
                     {loading ? "Continuing..." : "Continue"}
-                    <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
+                    <ArrowRight className="auth-button-arrow" />
                   </Button>
                 </>
               ) : null}
@@ -400,9 +400,9 @@ export default function AuthAccessShell() {
                     onClick={handleMagicAccess}
                   >
                     {loading ? "Sending..." : "Send Magic Access"}
-                    <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
+                    <ArrowRight className="auth-button-arrow" />
                   </Button>
-                  <p className="text-center text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
+                  <p className="auth-magic-note">
                     No password required • Secure access flow
                   </p>
                 </>
@@ -416,14 +416,14 @@ export default function AuthAccessShell() {
                     onClick={handleRecovery}
                   >
                     {loading ? "Sending..." : "Send Recovery Link"}
-                    <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
+                    <ArrowRight className="auth-button-arrow" />
                   </Button>
                   {success === "Recovery Link Sent" ? (
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
-                      <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">
+                    <div className="auth-success-card">
+                      <p className="auth-success-title">
                         Recovery Link Sent
                       </p>
-                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      <p className="auth-success-copy">
                         Check your inbox for a secure password reset link.
                       </p>
                     </div>
@@ -433,16 +433,13 @@ export default function AuthAccessShell() {
 
               {view === "verify" ? (
                 <>
-                  <div className="space-y-1.5">
-                    <label
-                      className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1"
-                      htmlFor="verification-code"
-                    >
+                  <div className="auth-field">
+                    <label className="auth-label" htmlFor="verification-code">
                       Verification Code
                     </label>
                     <Input
                       id="verification-code"
-                      className="h-11 px-4 text-center text-lg font-black tracking-[0.4em]"
+                      className="auth-input auth-code-input"
                       maxLength={6}
                       onChange={(event) => setVerificationCode(event.target.value)}
                       placeholder="123456"
@@ -457,18 +454,18 @@ export default function AuthAccessShell() {
                   >
                     {loading ? "Verifying..." : "Verify and Continue"}
                   </Button>
-                  <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.14em] text-zinc-400">
-                    <button onClick={() => setView("magic")} type="button">
+                  <div className="auth-verify-actions">
+                    <button className="auth-inline-link" onClick={() => setView("magic")} type="button">
                       Resend Code
                     </button>
                     {passkeySupported ? (
-                      <button type="button">Use Passkey</button>
+                      <button className="auth-inline-link" type="button">Use Passkey</button>
                     ) : (
-                      <button className="opacity-40" disabled type="button">
+                      <button className="auth-inline-link is-disabled" disabled type="button">
                         Use Passkey
                       </button>
                     )}
-                    <button onClick={() => setView("signin")} type="button">
+                    <button className="auth-inline-link" onClick={() => setView("signin")} type="button">
                       Back to Login
                     </button>
                   </div>
@@ -476,33 +473,31 @@ export default function AuthAccessShell() {
               ) : null}
             </form>
 
-            {error ? <p className="mt-4 text-[11px] font-semibold text-red-500">{error}</p> : null}
+            {error ? <p className="auth-message auth-message-error">{error}</p> : null}
             {success && success !== "Recovery Link Sent" ? (
-              <p className="mt-4 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+              <p className="auth-message auth-message-success">
                 {success}
               </p>
             ) : null}
 
-            <div className="relative my-7">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-zinc-100 dark:border-zinc-800" />
-              </div>
-              <div className="relative flex justify-center text-[8px] uppercase font-black tracking-[0.3em]">
-                <span className="bg-white dark:bg-zinc-950 px-4 text-zinc-400 translate-y-[1px]">
+            <div className="auth-divider">
+              <div className="auth-divider-line" />
+              <div className="auth-divider-label">
+                <span>
                   Workspace Providers
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="auth-provider-grid">
               <Button
                 className={secondaryButtonClassName}
                 onClick={() => handleProviderClick("GitHub")}
                 type="button"
                 variant="outline"
               >
-                <span className="inline-flex items-center justify-center">
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <span className="auth-provider-inner">
+                  <svg className="auth-provider-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
                       d="M12 1C5.925 1 1 5.925 1 12c0 4.86 3.149 8.982 7.516 10.436.55.102.75-.239.75-.532 0-.264-.01-.963-.016-1.89-3.058.664-3.703-1.474-3.703-1.474-.5-1.27-1.221-1.608-1.221-1.608-.998-.682.076-.668.076-.668 1.103.078 1.684 1.132 1.684 1.132.98 1.68 2.571 1.194 3.198.913.1-.709.384-1.194.698-1.469-2.441-.278-5.008-1.221-5.008-5.434 0-1.2.429-2.182 1.132-2.951-.113-.278-.49-1.396.108-2.911 0 0 .923-.295 3.025 1.128A10.53 10.53 0 0 1 12 6.32c.936.004 1.879.127 2.758.372 2.1-1.423 3.022-1.128 3.022-1.128.6 1.515.223 2.633.11 2.911.705.769 1.13 1.751 1.13 2.951 0 4.223-2.57 5.153-5.018 5.426.394.34.745 1.01.745 2.036 0 1.469-.013 2.654-.013 3.015 0 .295.198.64.756.531C19.854 20.978 23 16.858 23 12c0-6.075-4.925-11-11-11Z"
                       fill="currentColor"
@@ -517,8 +512,8 @@ export default function AuthAccessShell() {
                 type="button"
                 variant="outline"
               >
-                <span className="inline-flex items-center justify-center">
-                  <svg className="mr-2 h-3.5 w-3.5" viewBox="0 0 24 24" aria-hidden="true">
+                <span className="auth-provider-inner">
+                  <svg className="auth-provider-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                       fill="currentColor"
@@ -544,16 +539,15 @@ export default function AuthAccessShell() {
               </Button>
             </div>
 
-            <p className="text-center mt-7 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+            <p className="auth-footer-copy">
               New here?{" "}
               <Link
                 href={upgradePlan ? `/onboarding?plan=${upgradePlan}` : "/onboarding"}
-                className="font-black text-zinc-900 dark:text-zinc-100 hover:underline"
+                className="auth-footer-link"
               >
                 Create your account
               </Link>
             </p>
-          </div>
         </div>
       </motion.div>
       </div>
