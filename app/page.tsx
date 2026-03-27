@@ -12,8 +12,11 @@ import {
   TriangleAlert,
   Zap
 } from "lucide-react";
+import AccountEntryButton from "@/components/auth/AccountEntryButton";
 import ResultsCtaSection from "@/components/cta/ResultsCtaSection";
+import FaqSection from "@/components/faq/FaqSection";
 import { AuroraTextEffect } from "@/components/lightswind/aurora-text-effect";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { BeamCircle } from "@/components/ui/beam-circle";
 import {
   IntelligenceTimeline,
@@ -524,6 +527,7 @@ function persistSavedRuns(runs: SavedAnalysisRun[]) {
 
 export default function Home() {
   const motionPolicy = useMotionPolicy();
+  const { isAuthenticated, session, setPlan: setAuthPlan } = useAuth();
   const [query, setQuery] = useState("");
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
@@ -553,7 +557,7 @@ export default function Home() {
   useEffect(() => {
     const localRuns = loadSavedRuns();
     const localUsage = loadUsageState();
-    const nextUserId = getOrCreateUserId();
+    const nextUserId = session?.user.id ?? getOrCreateUserId();
 
     setUserId(nextUserId);
     setSavedRuns(localRuns);
@@ -586,17 +590,19 @@ export default function Home() {
           Boolean(profileJson.persistenceConfigured || analysesJson.persistenceConfigured)
         );
 
-        if (
-          profileJson.success &&
-          (profileJson.profile?.plan === "pro" || profileJson.profile?.plan === "agency")
-        ) {
+        if (profileJson.success) {
+          const nextPlan =
+            profileJson.profile?.plan === "pro" || profileJson.profile?.plan === "agency"
+              ? profileJson.profile.plan
+              : "free";
           const nextUsage = normalizeUsageState({
             ...localUsage,
-            plan: profileJson.profile.plan
+            plan: nextPlan
           });
-          persistStoredPlan(profileJson.profile.plan);
+          persistStoredPlan(nextPlan);
           persistUsageState(nextUsage);
           setUsageState(nextUsage);
+          setAuthPlan(nextPlan);
         }
 
         if (analysesJson.success && Array.isArray(analysesJson.analyses)) {
@@ -612,7 +618,7 @@ export default function Home() {
         setPersistenceConfigured(false);
       }
     })();
-  }, []);
+  }, [session?.user.id, setAuthPlan]);
 
   const syncPlan = async (plan: UserPlan) => {
     const nextState = normalizeUsageState({
@@ -625,6 +631,7 @@ export default function Home() {
     persistUsageState(nextState);
     setUsageState(nextState);
     setGatedAction(null);
+    setAuthPlan(plan);
 
     if (!userId) {
       return;
@@ -655,6 +662,12 @@ export default function Home() {
   };
 
   const startUpgradeFlow = async (plan: Exclude<UserPlan, "free">) => {
+    if (!isAuthenticated) {
+      persistPendingPlan(plan);
+      window.location.href = `/auth?plan=${encodeURIComponent(plan)}`;
+      return;
+    }
+
     if (STRIPE_CHECKOUT_URL) {
       persistPendingPlan(plan);
       window.location.href = STRIPE_CHECKOUT_URL;
@@ -1080,7 +1093,10 @@ export default function Home() {
       )}
 
       <div className="fixed top-6 right-6 z-50">
-        <ToggleTheme animationType="circle-spread" />
+        <div className="flex items-center gap-3">
+          <AccountEntryButton />
+          <ToggleTheme animationType="circle-spread" />
+        </div>
       </div>
 
       <section className="min-h-screen flex items-center justify-center">
@@ -1838,6 +1854,10 @@ export default function Home() {
               </section>
             </ScrollReveal>
           ) : null}
+
+          <ScrollReveal eager>
+            <FaqSection />
+          </ScrollReveal>
 
           {activeResult ? (
             <ScrollReveal eager>

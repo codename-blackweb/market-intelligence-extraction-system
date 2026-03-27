@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const profile = await upsertPersistedProfile(body.userId, body.plan);
+    const profile = await upsertPersistedProfile({
+      userId: body.userId,
+      plan: body.plan
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,7 +1,9 @@
 import type {
   PersistedAnalysisRecord,
   UserPlan,
-  UserProfileRecord
+  UserProfileRecord,
+  WorkspaceInviteRecord,
+  WorkspaceRecord
 } from "@/types/market-analysis";
 
 function getSupabaseConfig() {
@@ -143,13 +145,22 @@ export async function getPersistedProfile(userId: string) {
   }
 
   const payload = await supabaseRequest(
-    `user_profiles?select=user_id,plan,created_at,updated_at&user_id=eq.${escapeValue(userId)}&limit=1`
+    `user_profiles?select=user_id,plan,email,first_name,last_name,default_workspace_id,created_at,updated_at&user_id=eq.${escapeValue(
+      userId
+    )}&limit=1`
   );
 
   return Array.isArray(payload) ? ((payload[0] as UserProfileRecord) ?? null) : null;
 }
 
-export async function upsertPersistedProfile(userId: string, plan: UserPlan) {
+export async function upsertPersistedProfile(input: {
+  userId: string;
+  plan: UserPlan;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  defaultWorkspaceId?: string | null;
+}) {
   if (!isPersistenceConfigured()) {
     return null;
   }
@@ -160,10 +171,90 @@ export async function upsertPersistedProfile(userId: string, plan: UserPlan) {
       Prefer: "resolution=merge-duplicates,return=representation"
     },
     body: JSON.stringify({
-      user_id: userId,
-      plan
+      user_id: input.userId,
+      plan: input.plan,
+      email: input.email ?? "",
+      first_name: input.firstName ?? "",
+      last_name: input.lastName ?? "",
+      default_workspace_id: input.defaultWorkspaceId ?? null
     })
   });
 
   return Array.isArray(payload) ? ((payload[0] as UserProfileRecord) ?? null) : null;
+}
+
+export async function createWorkspace(input: {
+  ownerId: string;
+  name: string;
+  useCase: string;
+  teamSize: string;
+  industry: string;
+}) {
+  if (!isPersistenceConfigured()) {
+    return null;
+  }
+
+  const payload = await supabaseRequest("workspaces", {
+    method: "POST",
+    body: JSON.stringify({
+      owner_id: input.ownerId,
+      name: input.name,
+      use_case: input.useCase,
+      team_size: input.teamSize,
+      industry: input.industry
+    })
+  });
+
+  return Array.isArray(payload) ? ((payload[0] as WorkspaceRecord) ?? null) : null;
+}
+
+export async function listWorkspacesByOwner(userId: string) {
+  if (!isPersistenceConfigured()) {
+    return [] as WorkspaceRecord[];
+  }
+
+  const payload = await supabaseRequest(
+    `workspaces?select=id,owner_id,name,use_case,team_size,industry,created_at&owner_id=eq.${escapeValue(
+      userId
+    )}&order=created_at.asc`
+  );
+
+  return Array.isArray(payload) ? (payload as WorkspaceRecord[]) : [];
+}
+
+export async function createWorkspaceInvites(input: {
+  workspaceId: string;
+  emails: string[];
+  role?: string;
+}) {
+  if (!isPersistenceConfigured() || input.emails.length === 0) {
+    return [] as WorkspaceInviteRecord[];
+  }
+
+  const payload = await supabaseRequest("workspace_invites", {
+    method: "POST",
+    body: JSON.stringify(
+      input.emails.map((email) => ({
+        workspace_id: input.workspaceId,
+        email,
+        role: input.role ?? "member"
+      }))
+    )
+  });
+
+  return Array.isArray(payload) ? (payload as WorkspaceInviteRecord[]) : [];
+}
+
+export async function listWorkspaceInvites(workspaceId: string) {
+  if (!isPersistenceConfigured()) {
+    return [] as WorkspaceInviteRecord[];
+  }
+
+  const payload = await supabaseRequest(
+    `workspace_invites?select=id,workspace_id,email,role,status,created_at&workspace_id=eq.${escapeValue(
+      workspaceId
+    )}&order=created_at.asc`
+  );
+
+  return Array.isArray(payload) ? (payload as WorkspaceInviteRecord[]) : [];
 }

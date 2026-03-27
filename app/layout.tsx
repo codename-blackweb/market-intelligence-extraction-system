@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import SmokeyCursor from "@/components/ui/smokey-cursor";
 import "./globals.css";
 
@@ -16,8 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-white text-black">
-        <SmokeyCursor intensity={0.6} />
-        {children}
+        <AuthProvider>
+          <SmokeyCursor intensity={0.6} />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -87,7 +87,7 @@ export type CompetitorContext = {
   niche: string;
 };
 
-export type UserPlan = "free" | "pro" | "agency";
+export type UserPlan = "free" | "starter" | "growth" | "pro" | "agency";
 
 export type MarketPositioningStrategy = {
   emphasize: string[];
@@ -153,8 +153,60 @@ export type PersistedAnalysisRecord = {
 export type UserProfileRecord = {
   user_id: string;
   plan: UserPlan;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  default_workspace_id?: string | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type WorkspaceRecord = {
+  id: string;
+  owner_id: string;
+  name: string;
+  use_case: string;
+  team_size: string;
+  industry: string;
+  created_at: string;
+};
+
+export type WorkspaceInviteRecord = {
+  id: string;
+  workspace_id: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+};
+
+export type AuthSessionUser = {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  created_at?: string;
+};
+
+export type AuthSession = {
+  access_token: string;
+  refresh_token?: string;
+  expires_at?: number;
+  user: AuthSessionUser;
+};
+
+export type AccountSummaryResponse = {
+  success: boolean;
+  persistenceConfigured?: boolean;
+  profile?: UserProfileRecord | null;
+  workspace?: WorkspaceRecord | null;
+  workspaces?: WorkspaceRecord[];
+  invites?: WorkspaceInviteRecord[];
+  analyses?: PersistedAnalysisRecord[];
+  sharedReportsCount?: number;
+  savedAnalysesCount?: number;
+  error?: string;
 };
 
 export type MarketAnalysisSuccessResponse = {
