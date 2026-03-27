@@ -49,6 +49,21 @@ export async function fetchGoogleSearchIntel(query: string) {
   });
 }
 
+export async function fetchYouTubeSearchIntel(query: string) {
+  return fetchSerpApi({
+    engine: "youtube",
+    search_query: query
+  });
+}
+
+export async function fetchAmazonSearchIntel(query: string) {
+  return fetchSerpApi({
+    engine: "amazon",
+    k: query,
+    amazon_domain: "amazon.com"
+  });
+}
+
 export async function fetchCompetitorSearchIntel(competitor: string, seedQuery: string) {
   return fetchSerpApi({
     engine: "google",

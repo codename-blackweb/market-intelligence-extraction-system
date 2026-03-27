@@ -67,6 +67,7 @@ export default function IntakeForm() {
       saveReport(reportId, {
         query: analysisPayload.query,
         serpData: analysisPayload.serpData,
+        normalized_signals: analysisPayload.normalized_signals,
         signal_origins: analysisPayload.signal_origins,
         clusters: analysisPayload.clusters,
         dominant_narrative: analysisPayload.dominant_narrative,
@@ -81,6 +82,9 @@ export default function IntakeForm() {
         strategy: analysisPayload.strategy,
         source_meta: analysisPayload.source_meta,
         competitor_context: analysisPayload.competitor_context,
+        ai_confidence_score: analysisPayload.ai_confidence_score,
+        synthesis_depth: analysisPayload.synthesis_depth,
+        reasoning_quality: analysisPayload.reasoning_quality,
         fallback_used: analysisPayload.fallback_used,
         generatedAt: analysisPayload.generatedAt
       });

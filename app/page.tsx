@@ -1,9 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Brain } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Brain,
+  Check,
+  Layers3,
+  MessageSquare,
+  Search,
+  Shield,
+  Star,
+  TriangleAlert,
+  Zap
+} from "lucide-react";
 import { AuroraTextEffect } from "@/components/lightswind/aurora-text-effect";
 import { BeamCircle } from "@/components/ui/beam-circle";
+import {
+  IntelligenceTimeline,
+  type IntelligenceTimelineStep
+} from "@/components/ui/intelligence-timeline";
+import AnimatedPricingSection from "@/components/pricing/AnimatedPricingSection";
 import {
   Drawer,
   DrawerContent,
@@ -13,6 +28,13 @@ import RippleLoader from "@/components/ui/RippleLoader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
 import { VideoText } from "@/components/ui/VideoText";
+import {
+  clearPendingPlan,
+  getOrCreateUserId,
+  loadStoredPlan,
+  persistPendingPlan,
+  persistStoredPlan
+} from "@/lib/client-identity";
 import { useMotionPolicy } from "@/lib/motion-policy";
 import type {
   CompetitorContext,
@@ -21,7 +43,10 @@ import type {
   MarketAnalysisResponse,
   MarketAnalysisSuccessResponse,
   MarketSourceMeta,
-  SignalOriginEntry
+  NormalizedSignal,
+  PersistedAnalysisRecord,
+  SignalOriginEntry,
+  UserPlan
 } from "@/types/market-analysis";
 
 const classificationRows = [
@@ -37,7 +62,7 @@ const classificationRows = [
   ["Competition", "competitive_structure"]
 ] as const;
 
-const pipeline = [
+const pipelineIntroLines = [
   "Collects search demand signals from the seed query.",
   "Clusters visible demand into interpretable themes.",
   "Classifies the market across models, customers, intent, and risk.",
@@ -45,16 +70,109 @@ const pipeline = [
   "Packages the output into an exportable intelligence report."
 ];
 
-const outputs = [
-  "Structured demand map",
-  "Emotional language bank",
-  "Competitor positioning",
-  "Conversion insights",
-  "Strategic recommendations"
+const pipelineTimelineSteps: IntelligenceTimelineStep[] = [
+  {
+    title: "Search Intelligence",
+    time: "Step 01",
+    description:
+      "Collects search demand signals from the seed query across autocomplete, related searches, and visible question patterns.",
+    icon: Search,
+    accent: "#3b82f6"
+  },
+  {
+    title: "Pattern Clustering",
+    time: "Step 02",
+    description:
+      "Groups repeated phrases and visible demand signals into interpretable themes that reflect what the market is actually struggling with.",
+    icon: Layers3,
+    accent: "#7c3aed"
+  },
+  {
+    title: "Market Classification",
+    time: "Step 03",
+    description:
+      "Classifies the market across business model, customer type, intent level, complexity, maturity, and risk.",
+    icon: Shield,
+    accent: "#0f766e"
+  },
+  {
+    title: "Strategic Synthesis",
+    time: "Step 04",
+    description:
+      "Synthesizes pains, objections, acquisition angles, messaging direction, and positioning pressure points.",
+    icon: Zap,
+    accent: "#d97706"
+  },
+  {
+    title: "Report Packaging",
+    time: "Step 05",
+    description:
+      "Packages the output into a clean intelligence report designed for interpretation, export, and strategic use.",
+    icon: Star,
+    accent: "#059669"
+  }
+];
+
+const intelligenceOutputTimelineSteps: IntelligenceTimelineStep[] = [
+  {
+    title: "Problems",
+    time: "Output 01",
+    description:
+      "The repeated friction, complaints, bottlenecks, and pain patterns visible in the market.",
+    icon: TriangleAlert,
+    accent: "#dc2626"
+  },
+  {
+    title: "Language",
+    time: "Output 02",
+    description:
+      "The exact emotional wording, phrasing, and problem language people use when they describe what they want or what is failing.",
+    icon: MessageSquare,
+    accent: "#2563eb"
+  },
+  {
+    title: "Keywords",
+    time: "Output 03",
+    description:
+      "The clustered search phrases, repeated queries, and demand signals that reveal market intent.",
+    icon: Search,
+    accent: "#7c3aed"
+  },
+  {
+    title: "Competitor Angles",
+    time: "Output 04",
+    description:
+      "The positioning patterns, claims, and framing approaches visible across the market and adjacent competitors.",
+    icon: Layers3,
+    accent: "#0f766e"
+  },
+  {
+    title: "Gaps",
+    time: "Output 05",
+    description:
+      "The whitespace, under-addressed objections, and strategic opportunities the market is leaving exposed.",
+    icon: Star,
+    accent: "#d97706"
+  },
+  {
+    title: "Strategy",
+    time: "Output 06",
+    description:
+      "The recommended move, messaging direction, and usable strategic interpretation generated from the full signal set.",
+    icon: Check,
+    accent: "#059669"
+  }
 ];
 
 const RECENT_ANALYSES_STORAGE_KEY = "market-intelligence:recent-analyses:v1";
+const USAGE_STATE_STORAGE_KEY = "market-intelligence:usage:v1";
 const MAX_SAVED_RUNS = 10;
+const LIVE_DAILY_LIMIT = 5;
+const CLIENT_MODE = ((process.env.NEXT_PUBLIC_MODE || "DEV").toUpperCase() as
+  | "DEV"
+  | "HYBRID"
+  | "LIVE");
+const STRIPE_CHECKOUT_URL = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
 const NICHE_OPTIONS = [
   "B2B SaaS",
   "Agency",
@@ -97,12 +215,24 @@ type SuccessfulAnalysisResponse = Extract<MarketAnalysisResponse, { success: tru
 
 type SavedAnalysisRun = {
   id: string;
+  databaseId: string | null;
+  isPublic: boolean;
   query: string;
   marketType: string;
   depth: string;
   createdAt: number;
   result: SuccessfulAnalysisResponse;
 };
+
+type UsageState = {
+  totalRuns: number;
+  runsToday: number;
+  lastRunTimestamp: number | null;
+  lastRunDay: string;
+  plan: UserPlan;
+};
+
+type GatedAction = "export" | "live_limit" | "deep" | "generator" | null;
 
 type ActionOutputState = Partial<
   Record<
@@ -130,8 +260,16 @@ function normalizeSourceMeta(meta?: Partial<MarketSourceMeta>): MarketSourceMeta
     used_google: meta?.used_google ?? false,
     used_reddit: meta?.used_reddit ?? false,
     used_openai: meta?.used_openai ?? false,
+    used_youtube: meta?.used_youtube ?? false,
+    used_amazon: meta?.used_amazon ?? false,
+    used_news: meta?.used_news ?? false,
+    used_competitors: meta?.used_competitors ?? false,
     google_signal_count: meta?.google_signal_count ?? 0,
-    reddit_signal_count: meta?.reddit_signal_count ?? 0
+    reddit_signal_count: meta?.reddit_signal_count ?? 0,
+    youtube_signal_count: meta?.youtube_signal_count ?? 0,
+    amazon_signal_count: meta?.amazon_signal_count ?? 0,
+    news_signal_count: meta?.news_signal_count ?? 0,
+    competitor_signal_count: meta?.competitor_signal_count ?? 0
   };
 }
 
@@ -169,14 +307,37 @@ function normalizeSignalOrigins(origins?: SignalOriginEntry[]) {
     }));
 }
 
+function normalizeSignals(signals?: NormalizedSignal[]) {
+  if (!Array.isArray(signals)) {
+    return [] as NormalizedSignal[];
+  }
+
+  return signals.filter(
+    (signal): signal is NormalizedSignal =>
+      Boolean(
+        signal &&
+          typeof signal.text === "string" &&
+          typeof signal.source === "string" &&
+          typeof signal.weight === "number"
+      )
+  );
+}
+
 function normalizeSuccessfulAnalysis(
   result: SuccessfulAnalysisResponse
 ): SuccessfulAnalysisResponse {
   return {
     ...result,
+    normalized_signals: normalizeSignals(result.normalized_signals),
     signal_origins: normalizeSignalOrigins(result.signal_origins),
     source_meta: normalizeSourceMeta(result.source_meta),
     competitor_context: normalizeCompetitorContext(result.competitor_context),
+    ai_confidence_score: result.ai_confidence_score ?? 0,
+    synthesis_depth: result.synthesis_depth === "deep" ? "deep" : "standard",
+    reasoning_quality:
+      result.reasoning_quality === "high" || result.reasoning_quality === "low"
+        ? result.reasoning_quality
+        : "medium",
     fallback_used: result.fallback_used ?? false
   };
 }
@@ -195,8 +356,74 @@ function formatEvidence(sourceMeta: MarketSourceMeta) {
   return `Derived from ${sourceMeta.google_signal_count} Google signals and ${sourceMeta.reddit_signal_count} Reddit threads.`;
 }
 
+function getTodayKey() {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+function normalizeUsageState(state?: Partial<UsageState>): UsageState {
+  const today = getTodayKey();
+  const lastRunDay = typeof state?.lastRunDay === "string" ? state.lastRunDay : today;
+
+  return {
+    totalRuns: typeof state?.totalRuns === "number" ? state.totalRuns : 0,
+    runsToday:
+      typeof state?.runsToday === "number" && lastRunDay === today ? state.runsToday : 0,
+    lastRunTimestamp:
+      typeof state?.lastRunTimestamp === "number" ? state.lastRunTimestamp : null,
+    lastRunDay,
+    plan:
+      state?.plan === "pro" ||
+      state?.plan === "agency" ||
+      loadStoredPlan() === "pro" ||
+      loadStoredPlan() === "agency"
+        ? (state?.plan === "agency" || loadStoredPlan() === "agency" ? "agency" : "pro")
+        : "free"
+  };
+}
+
+function loadUsageState() {
+  if (typeof window === "undefined") {
+    return normalizeUsageState();
+  }
+
+  const raw = window.localStorage.getItem(USAGE_STATE_STORAGE_KEY);
+
+  if (!raw) {
+    return normalizeUsageState();
+  }
+
+  try {
+    return normalizeUsageState(JSON.parse(raw) as Partial<UsageState>);
+  } catch {
+    return normalizeUsageState();
+  }
+}
+
+function persistUsageState(state: UsageState) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(USAGE_STATE_STORAGE_KEY, JSON.stringify(state));
+}
+
 function formatGeneratedTimestamp(timestamp: number) {
   return new Date(timestamp).toLocaleString();
+}
+
+function getPricingMessage(gatedAction: GatedAction) {
+  switch (gatedAction) {
+    case "export":
+      return "Full report export is a Pro feature";
+    case "live_limit":
+      return "Daily AI analysis limit reached";
+    case "deep":
+      return "Deep synthesis is available on Pro";
+    case "generator":
+      return "Advanced generators are available on Pro";
+    default:
+      return "Unlock full intelligence";
+  }
 }
 
 function getComparisonSignalSummary(result: SuccessfulAnalysisResponse) {
@@ -207,6 +434,35 @@ function getClusterSummary(result: SuccessfulAnalysisResponse) {
   return result.clusters.clusters
     .map((cluster) => `${cluster.theme} (${cluster.frequency})`)
     .join(", ");
+}
+
+function savedRunFromPersisted(record: PersistedAnalysisRecord): SavedAnalysisRun {
+  return {
+    id: record.id,
+    databaseId: record.id,
+    isPublic: record.is_public,
+    query: record.query,
+    marketType: record.market_type,
+    depth: record.depth,
+    createdAt: new Date(record.created_at).getTime(),
+    result: normalizeSuccessfulAnalysis(record.result_json)
+  };
+}
+
+function mergeSavedRuns(localRuns: SavedAnalysisRun[], remoteRuns: SavedAnalysisRun[]) {
+  const merged = new Map<string, SavedAnalysisRun>();
+
+  for (const run of [...remoteRuns, ...localRuns]) {
+    const key = run.databaseId ?? `${run.query}-${run.createdAt}`;
+
+    if (!merged.has(key)) {
+      merged.set(key, run);
+    }
+  }
+
+  return Array.from(merged.values())
+    .sort((left, right) => right.createdAt - left.createdAt)
+    .slice(0, MAX_SAVED_RUNS);
 }
 
 function loadSavedRuns() {
@@ -243,6 +499,9 @@ function loadSavedRuns() {
       )
       .map((item) => ({
         ...item,
+        databaseId:
+          typeof item.databaseId === "string" && item.databaseId ? item.databaseId : null,
+        isPublic: Boolean(item.isPublic),
         result: normalizeSuccessfulAnalysis(item.result)
       }))
       .slice(0, MAX_SAVED_RUNS);
@@ -270,20 +529,157 @@ export default function Home() {
   const [competitorNames, setCompetitorNames] = useState("");
   const [competitorUrls, setCompetitorUrls] = useState("");
   const [niche, setNiche] = useState("");
+  const [userId, setUserId] = useState("");
   const [data, setData] = useState<MarketAnalysisResponse | null>(null);
   const [savedRuns, setSavedRuns] = useState<SavedAnalysisRun[]>([]);
+  const [usageState, setUsageState] = useState<UsageState>(normalizeUsageState());
+  const [persistenceConfigured, setPersistenceConfigured] = useState(false);
+  const [activeAnalysisId, setActiveAnalysisId] = useState<string | null>(null);
+  const [activeAnalysisPublic, setActiveAnalysisPublic] = useState(false);
   const [selectedComparisonIds, setSelectedComparisonIds] = useState<string[]>([]);
   const [actionOutputs, setActionOutputs] = useState<ActionOutputState>({});
   const [actionLoadingKind, setActionLoadingKind] = useState<GeneratedActionKind | null>(null);
   const [actionError, setActionError] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
+  const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState(false);
+  const [gatedAction, setGatedAction] = useState<GatedAction>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const pricingSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    setSavedRuns(loadSavedRuns());
+    const localRuns = loadSavedRuns();
+    const localUsage = loadUsageState();
+    const nextUserId = getOrCreateUserId();
+
+    setUserId(nextUserId);
+    setSavedRuns(localRuns);
+    setUsageState(localUsage);
+    setHasCompletedFirstRun(localRuns.length > 0);
+
+    void (async () => {
+      try {
+        const [profileResponse, analysesResponse] = await Promise.all([
+          fetch(`/api/profile?userId=${encodeURIComponent(nextUserId)}`, {
+            cache: "no-store"
+          }),
+          fetch(`/api/analyses?userId=${encodeURIComponent(nextUserId)}`, {
+            cache: "no-store"
+          })
+        ]);
+
+        const profileJson = (await profileResponse.json()) as {
+          success: boolean;
+          persistenceConfigured?: boolean;
+          profile?: { plan?: UserPlan } | null;
+        };
+        const analysesJson = (await analysesResponse.json()) as {
+          success: boolean;
+          persistenceConfigured?: boolean;
+          analyses?: PersistedAnalysisRecord[];
+        };
+
+        setPersistenceConfigured(
+          Boolean(profileJson.persistenceConfigured || analysesJson.persistenceConfigured)
+        );
+
+        if (
+          profileJson.success &&
+          (profileJson.profile?.plan === "pro" || profileJson.profile?.plan === "agency")
+        ) {
+          const nextUsage = normalizeUsageState({
+            ...localUsage,
+            plan: profileJson.profile.plan
+          });
+          persistStoredPlan(profileJson.profile.plan);
+          persistUsageState(nextUsage);
+          setUsageState(nextUsage);
+        }
+
+        if (analysesJson.success && Array.isArray(analysesJson.analyses)) {
+          const remoteRuns = analysesJson.analyses.map(savedRunFromPersisted);
+          const mergedRuns = mergeSavedRuns(localRuns, remoteRuns);
+          persistSavedRuns(mergedRuns);
+          setSavedRuns(mergedRuns);
+          if (mergedRuns.length) {
+            setHasCompletedFirstRun(true);
+          }
+        }
+      } catch {
+        setPersistenceConfigured(false);
+      }
+    })();
   }, []);
 
-  const restoreSavedRun = (savedRun: SavedAnalysisRun) => {
+  const syncPlan = async (plan: UserPlan) => {
+    const nextState = normalizeUsageState({
+      ...usageState,
+      plan
+    });
+
+    clearPendingPlan();
+    persistStoredPlan(plan);
+    persistUsageState(nextState);
+    setUsageState(nextState);
+    setGatedAction(null);
+
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          plan
+        })
+      });
+      const json = (await response.json()) as {
+        success: boolean;
+        persistenceConfigured?: boolean;
+      };
+
+      if (json.success) {
+        setPersistenceConfigured(Boolean(json.persistenceConfigured));
+      }
+    } catch {
+      // Keep the local plan even if profile sync fails.
+    }
+  };
+
+  const startUpgradeFlow = async (plan: Exclude<UserPlan, "free">) => {
+    if (STRIPE_CHECKOUT_URL) {
+      persistPendingPlan(plan);
+      window.location.href = STRIPE_CHECKOUT_URL;
+      return;
+    }
+
+    await syncPlan(plan);
+  };
+
+  const updateSavedRun = (databaseId: string, updater: (run: SavedAnalysisRun) => SavedAnalysisRun) => {
+    setSavedRuns((currentRuns) => {
+      const nextRuns = currentRuns.map((run) =>
+        run.databaseId === databaseId ? updater(run) : run
+      );
+      persistSavedRuns(nextRuns);
+      return nextRuns;
+    });
+  };
+
+  const buildShareUrl = (analysisId: string) => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return `${window.location.origin}/analysis/${analysisId}`;
+  };
+
+  const restoreSavedRun = async (savedRun: SavedAnalysisRun) => {
     setQuery(savedRun.query);
     setMarketType(savedRun.marketType);
     setDepth(savedRun.depth);
@@ -293,6 +689,40 @@ export default function Home() {
     setError("");
     setActionError("");
     setActionOutputs({});
+    setShareMessage("");
+    setGatedAction(null);
+
+    if (savedRun.databaseId && userId) {
+      try {
+        const response = await fetch(
+          `/api/analyses/${savedRun.databaseId}?userId=${encodeURIComponent(userId)}`,
+          {
+            cache: "no-store"
+          }
+        );
+        const json = (await response.json()) as {
+          success: boolean;
+          analysis?: PersistedAnalysisRecord;
+          error?: string;
+        };
+
+        if (response.ok && json.success && json.analysis) {
+          const remoteRun = savedRunFromPersisted(json.analysis);
+          updateSavedRun(remoteRun.databaseId ?? remoteRun.id, () => remoteRun);
+          setActiveAnalysisId(remoteRun.databaseId);
+          setActiveAnalysisPublic(remoteRun.isPublic);
+          setHasCompletedFirstRun(true);
+          setData(remoteRun.result);
+          return;
+        }
+      } catch {
+        // Fall through to the cached result.
+      }
+    }
+
+    setActiveAnalysisId(savedRun.databaseId);
+    setActiveAnalysisPublic(savedRun.isPublic);
+    setHasCompletedFirstRun(true);
     setData(savedRun.result);
   };
 
@@ -307,11 +737,26 @@ export default function Home() {
     });
   };
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (modeOverride?: "HYBRID") => {
+    const requestMode = modeOverride ?? CLIENT_MODE;
+
+    if (requestMode === "LIVE" && usageState.plan === "free" && usageState.runsToday >= LIVE_DAILY_LIMIT) {
+      setGatedAction("live_limit");
+      setError("");
+      return;
+    }
+
+    if (usageState.plan === "free" && (depth === "deep" || depth === "aggressive")) {
+      setGatedAction("deep");
+      setError("");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setActionError("");
     setActionOutputs({});
+    setShareMessage("");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -325,7 +770,8 @@ export default function Home() {
           depth,
           competitorNames,
           competitorUrls,
-          niche
+          niche,
+          modeOverride
         })
       });
 
@@ -341,9 +787,13 @@ export default function Home() {
 
       const normalized = normalizeSuccessfulAnalysis(json);
       setData(normalized);
+      setGatedAction(null);
+      setHasCompletedFirstRun(true);
 
-      const savedRun: SavedAnalysisRun = {
+      let savedRun: SavedAnalysisRun = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        databaseId: null,
+        isPublic: false,
         query: normalized.query,
         marketType,
         depth,
@@ -351,11 +801,64 @@ export default function Home() {
         result: normalized
       };
 
+      if (userId) {
+        try {
+          const persistenceResponse = await fetch("/api/analyses", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              userId,
+              query: normalized.query,
+              marketType,
+              depth,
+              result: normalized,
+              isPublic: false
+            })
+          });
+          const persistenceJson = (await persistenceResponse.json()) as {
+            success: boolean;
+            persistenceConfigured?: boolean;
+            analysis?: PersistedAnalysisRecord | null;
+          };
+
+          setPersistenceConfigured(Boolean(persistenceJson.persistenceConfigured));
+
+          if (persistenceResponse.ok && persistenceJson.success && persistenceJson.analysis) {
+            savedRun = savedRunFromPersisted(persistenceJson.analysis);
+          }
+        } catch {
+          // Keep local-only save behavior if persistence is unavailable.
+        }
+      }
+
+      setActiveAnalysisId(savedRun.databaseId);
+      setActiveAnalysisPublic(savedRun.isPublic);
+
       setSavedRuns((currentRuns) => {
-        const nextRuns = [savedRun, ...currentRuns].slice(0, MAX_SAVED_RUNS);
+        const nextRuns = mergeSavedRuns(currentRuns, [savedRun]);
         persistSavedRuns(nextRuns);
         return nextRuns;
       });
+
+      if (requestMode === "LIVE") {
+        setUsageState((currentState) => {
+          const normalizedState = normalizeUsageState(currentState);
+          const nextState = normalizeUsageState({
+            ...normalizedState,
+            totalRuns: normalizedState.totalRuns + 1,
+            runsToday: normalizedState.runsToday + 1,
+            lastRunTimestamp: Date.now(),
+            lastRunDay: getTodayKey()
+          });
+          persistUsageState(nextState);
+          if (nextState.plan === "free" && nextState.runsToday >= LIVE_DAILY_LIMIT) {
+            setGatedAction("live_limit");
+          }
+          return nextState;
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("analyze error", message);
@@ -368,6 +871,12 @@ export default function Home() {
 
   const generateActionOutput = async (kind: GeneratedActionKind) => {
     if (!data || !data.success) {
+      return;
+    }
+
+    if (usageState.plan === "free") {
+      setActionError("");
+      setGatedAction("generator");
       return;
     }
 
@@ -417,6 +926,11 @@ export default function Home() {
       return;
     }
 
+    if (usageState.plan === "free") {
+      setGatedAction("export");
+      return;
+    }
+
     const html2pdfModule = await import("html2pdf.js");
     const html2pdf = html2pdfModule.default;
 
@@ -431,13 +945,112 @@ export default function Home() {
       .save();
   };
 
+  const toggleShareVisibility = async () => {
+    if (!activeAnalysisId || !userId) {
+      setShareMessage("Share links require a persisted analysis.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/analyses/${activeAnalysisId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          isPublic: !activeAnalysisPublic
+        })
+      });
+      const json = (await response.json()) as {
+        success: boolean;
+        persistenceConfigured?: boolean;
+        analysis?: PersistedAnalysisRecord | null;
+        error?: string;
+      };
+
+      if (!response.ok || !json.success || !json.analysis) {
+        throw new Error(json.error || "Unable to update share visibility.");
+      }
+
+      const updatedRun = savedRunFromPersisted(json.analysis);
+      setPersistenceConfigured(Boolean(json.persistenceConfigured));
+      setActiveAnalysisPublic(updatedRun.isPublic);
+      updateSavedRun(activeAnalysisId, () => updatedRun);
+      setShareMessage(updatedRun.isPublic ? "Share link ready." : "Analysis set to private.");
+    } catch (shareError) {
+      const message = shareError instanceof Error ? shareError.message : "Unable to update share visibility.";
+      setShareMessage(message);
+    }
+  };
+
+  const copyShareLink = async () => {
+    if (!activeAnalysisId) {
+      setShareMessage("Share links require a persisted analysis.");
+      return;
+    }
+
+    if (!activeAnalysisPublic) {
+      setShareMessage("Make this analysis public to copy its share link.");
+      return;
+    }
+
+    const shareUrl = buildShareUrl(activeAnalysisId);
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage("Share link copied.");
+    } catch {
+      setShareMessage(shareUrl);
+    }
+  };
+
+  const openShareLink = () => {
+    if (!activeAnalysisId) {
+      setShareMessage("Share links require a persisted analysis.");
+      return;
+    }
+
+    if (!activeAnalysisPublic) {
+      setShareMessage("Make this analysis public to open its share link.");
+      return;
+    }
+
+    window.open(buildShareUrl(activeAnalysisId), "_blank", "noopener,noreferrer");
+  };
+
   const activeResult = data && data.success ? data : null;
+  const liveLimitReached =
+    CLIENT_MODE === "LIVE" && usageState.plan === "free" && usageState.runsToday >= LIVE_DAILY_LIMIT;
+  const showInlinePricing =
+    usageState.plan === "free" && Boolean(activeResult) && (hasCompletedFirstRun || gatedAction !== null);
+  const showPricingModal =
+    usageState.plan === "free" && !activeResult && gatedAction !== null;
+  const pricingMessage = getPricingMessage(gatedAction);
   const signalSourceMap = activeResult
     ? buildSignalSourceMap(activeResult.signal_origins)
     : new Map<string, SignalOriginEntry["sources"]>();
   const comparisonRuns = selectedComparisonIds
     .map((runId) => savedRuns.find((savedRun) => savedRun.id === runId))
     .filter((savedRun): savedRun is SavedAnalysisRun => Boolean(savedRun));
+
+  useEffect(() => {
+    if (gatedAction && activeResult && pricingSectionRef.current) {
+      pricingSectionRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  }, [activeResult, gatedAction]);
+
+  const handlePlanSelection = async (plan: UserPlan) => {
+    if (plan === "free") {
+      setGatedAction(null);
+      return;
+    }
+
+    await startUpgradeFlow(plan);
+  };
 
   return (
     <main className="page-shell">
@@ -567,7 +1180,12 @@ export default function Home() {
             </div>
           </div>
 
-          <button className="btn-primary mt-10" disabled={loading} onClick={runAnalysis} type="button">
+          <button
+            className="btn-primary mt-10"
+            disabled={loading || liveLimitReached}
+            onClick={() => runAnalysis()}
+            type="button"
+          >
             <VideoText
               as="span"
               src="/assets/gradient-video.mp4"
@@ -585,6 +1203,33 @@ export default function Home() {
               Run Intelligence
             </VideoText>
           </button>
+
+          {CLIENT_MODE === "LIVE" ? (
+            <div className="usage-status-shell">
+              <p className="field-copy result-copy">
+                Plan:{" "}
+                {usageState.plan === "agency"
+                  ? "Agency"
+                  : usageState.plan === "pro"
+                    ? "Pro"
+                    : "Free"}{" "}
+                • {usageState.runsToday}/
+                {usageState.plan === "free" ? LIVE_DAILY_LIMIT : "∞"} AI analyses used today
+              </p>
+              {liveLimitReached ? (
+                <p className="field-copy result-copy" role="status">
+                  Daily AI analysis limit reached
+                </p>
+              ) : null}
+              {liveLimitReached ? (
+                <div className="upgrade-shell">
+                  <button className="btn-secondary" onClick={() => runAnalysis("HYBRID")} type="button">
+                    Continue in HYBRID
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {error ? (
             <p className="field-copy result-copy" role="alert">
@@ -620,6 +1265,7 @@ export default function Home() {
                       <span className="recent-analysis-query">{savedRun.query}</span>
                       <span className="recent-analysis-meta">
                         {savedRun.result.source_meta.mode} • {formatGeneratedTimestamp(savedRun.createdAt)}
+                        {savedRun.isPublic ? " • Public" : ""}
                       </span>
                     </button>
                     <button
@@ -738,9 +1384,51 @@ export default function Home() {
           <ScrollReveal eager>
             <section className="max-w-5xl mx-auto py-20 space-y-12">
               <div className="results-toolbar">
-                <button className="btn-secondary" onClick={exportPDF} type="button">
-                  Export PDF
-                </button>
+                <div className="results-toolbar-actions">
+                  <button className="btn-secondary" onClick={exportPDF} type="button">
+                    Export PDF
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    disabled={!activeAnalysisId}
+                    onClick={() => void toggleShareVisibility()}
+                    type="button"
+                  >
+                    {activeAnalysisPublic ? "Make Private" : "Make Public"}
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    disabled={!activeAnalysisId || !activeAnalysisPublic}
+                    onClick={() => void copyShareLink()}
+                    type="button"
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    disabled={!activeAnalysisId || !activeAnalysisPublic}
+                    onClick={openShareLink}
+                    type="button"
+                  >
+                    Open Link
+                  </button>
+                </div>
+                <div className="results-toolbar-status">
+                  <p className="field-copy result-copy">
+                    {activeAnalysisId
+                      ? activeAnalysisPublic
+                        ? "This analysis is public and shareable."
+                        : "This analysis is private."
+                      : persistenceConfigured
+                        ? "Saving locally while persistence completes."
+                        : "Persistence is unavailable. Runs stay in local storage."}
+                  </p>
+                  {shareMessage ? (
+                    <p className="field-copy result-copy" role="status">
+                      {shareMessage}
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
               <div className="space-y-12" id="report">
@@ -771,6 +1459,40 @@ export default function Home() {
                       >
                         OpenAI{" "}
                         <span aria-hidden="true">{activeResult.source_meta.used_openai ? "●" : "○"}</span>
+                      </span>
+                      <span
+                        className={`source-activity-item ${
+                          activeResult.source_meta.used_youtube ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        YouTube{" "}
+                        <span aria-hidden="true">{activeResult.source_meta.used_youtube ? "●" : "○"}</span>
+                      </span>
+                      <span
+                        className={`source-activity-item ${
+                          activeResult.source_meta.used_amazon ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        Amazon{" "}
+                        <span aria-hidden="true">{activeResult.source_meta.used_amazon ? "●" : "○"}</span>
+                      </span>
+                      <span
+                        className={`source-activity-item ${
+                          activeResult.source_meta.used_news ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        News{" "}
+                        <span aria-hidden="true">{activeResult.source_meta.used_news ? "●" : "○"}</span>
+                      </span>
+                      <span
+                        className={`source-activity-item ${
+                          activeResult.source_meta.used_competitors ? "is-active" : "is-inactive"
+                        }`}
+                      >
+                        Competitors{" "}
+                        <span aria-hidden="true">
+                          {activeResult.source_meta.used_competitors ? "●" : "○"}
+                        </span>
                       </span>
                     </div>
                     {activeResult.fallback_used ? (
@@ -843,6 +1565,10 @@ export default function Home() {
                       </div>
                     </div>
                     <p className="field-copy result-copy">{activeResult.confidence?.reason}</p>
+                    <p className="evidence-note">
+                      AI synthesis confidence {activeResult.ai_confidence_score}% • Depth{" "}
+                      {activeResult.synthesis_depth} • Reasoning {activeResult.reasoning_quality}
+                    </p>
                     <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
                 </ScrollReveal>
@@ -1082,8 +1808,46 @@ export default function Home() {
               </div>
             </section>
           </ScrollReveal>
+
+          {showInlinePricing ? (
+            <ScrollReveal eager>
+              <section className="max-w-5xl mx-auto px-6 pb-8" ref={pricingSectionRef}>
+                <div className="card p-6 pricing-section-shell">
+                  <AnimatedPricingSection
+                    currentPlan={usageState.plan}
+                    focusState={gatedAction !== null}
+                    message={pricingMessage}
+                    onSelectPlan={(plan) => void handlePlanSelection(plan)}
+                  />
+                </div>
+              </section>
+            </ScrollReveal>
+          ) : null}
         </>
       )}
+
+      {showPricingModal ? (
+        <div
+          className="pricing-modal-backdrop"
+          onClick={() => setGatedAction(null)}
+          role="presentation"
+        >
+          <div
+            className="pricing-modal-panel card p-6"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={pricingMessage}
+          >
+            <AnimatedPricingSection
+              currentPlan={usageState.plan}
+              focusState
+              message={pricingMessage}
+              onSelectPlan={(plan) => void handlePlanSelection(plan)}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {activeResult ? (
         <div aria-hidden="true" className="pdf-export-shell">
@@ -1235,11 +1999,12 @@ export default function Home() {
                   >
                     Pipeline
                   </VideoText>
-                  <ol className="result-list numbered-list">
-                    {pipeline.map((step) => (
-                      <li key={step}>{step}</li>
+                  <div className="drawer-timeline-intro">
+                    {pipelineIntroLines.map((line) => (
+                      <p key={line}>{line}</p>
                     ))}
-                  </ol>
+                  </div>
+                  <IntelligenceTimeline steps={pipelineTimelineSteps} />
                 </div>
 
                 <div className="card p-6">
@@ -1259,11 +2024,7 @@ export default function Home() {
                   >
                     Intelligence Output
                   </VideoText>
-                  <ul className="result-list">
-                    {outputs.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
+                  <IntelligenceTimeline steps={intelligenceOutputTimelineSteps} />
                 </div>
               </div>
             </DrawerContent>

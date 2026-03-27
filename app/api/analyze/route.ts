@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { collectRedditCorpus } from "@/lib/reddit";
 import { collectGoogleSignalBundle } from "@/lib/serpapi";
+import {
+  collectAmazonSignals,
+  collectCompetitorSignals,
+  collectNewsSignals,
+  collectYouTubeSignals
+} from "@/lib/source-expansion";
 import { compactUnique, normalizeUrl, splitListInput } from "@/lib/utils";
 import type {
   CompetitorContext,
@@ -15,6 +21,7 @@ import type {
   MarketSourceMeta,
   MarketStrategy,
   MarketSynthesis,
+  NormalizedSignal,
   SignalOriginEntry,
   SignalSourceTag
 } from "@/types/market-analysis";
@@ -34,6 +41,7 @@ type AnalyzeBody = {
   competitorNames?: unknown;
   competitorUrls?: unknown;
   niche?: unknown;
+  modeOverride?: unknown;
 };
 
 type DeterministicAnalysisOptions = {
@@ -41,8 +49,11 @@ type DeterministicAnalysisOptions = {
   query: string;
   marketType: string;
   googleSignals: Awaited<ReturnType<typeof collectGoogleSignalBundle>>;
-  redditSignals: string[];
+  normalizedSignals: NormalizedSignal[];
+  signalOrigins: SignalOriginEntry[];
+  sourceMeta: MarketSourceMeta;
   competitorContext: CompetitorContext;
+  synthesisDepth: "standard" | "deep";
   fallbackUsed?: boolean;
 };
 
@@ -56,24 +67,48 @@ function buildSourceMeta(
       used_google: true,
       used_reddit: true,
       used_openai: false,
+      used_youtube: false,
+      used_amazon: false,
+      used_news: false,
+      used_competitors: false,
       google_signal_count: 0,
-      reddit_signal_count: 0
+      reddit_signal_count: 0,
+      youtube_signal_count: 0,
+      amazon_signal_count: 0,
+      news_signal_count: 0,
+      competitor_signal_count: 0
     },
     HYBRID: {
       mode: "HYBRID",
       used_google: true,
       used_reddit: true,
       used_openai: false,
+      used_youtube: false,
+      used_amazon: false,
+      used_news: false,
+      used_competitors: false,
       google_signal_count: 0,
-      reddit_signal_count: 0
+      reddit_signal_count: 0,
+      youtube_signal_count: 0,
+      amazon_signal_count: 0,
+      news_signal_count: 0,
+      competitor_signal_count: 0
     },
     LIVE: {
       mode: "LIVE",
       used_google: true,
       used_reddit: true,
       used_openai: true,
+      used_youtube: false,
+      used_amazon: false,
+      used_news: false,
+      used_competitors: false,
       google_signal_count: 0,
-      reddit_signal_count: 0
+      reddit_signal_count: 0,
+      youtube_signal_count: 0,
+      amazon_signal_count: 0,
+      news_signal_count: 0,
+      competitor_signal_count: 0
     }
   };
 
@@ -198,6 +233,110 @@ function normalizeCompetitorContext(body: AnalyzeBody): CompetitorContext {
   };
 }
 
+function buildNormalizedSignals(values: string[], source: SignalSourceTag, weight: number) {
+  return values.map((text) => ({
+    text,
+    source,
+    weight
+  })) satisfies NormalizedSignal[];
+}
+
+function mergeNormalizedSignals(signals: NormalizedSignal[]) {
+  const signalMap = new Map<
+    string,
+    {
+      text: string;
+      sources: Set<SignalSourceTag>;
+      weight: number;
+    }
+  >();
+
+  for (const signal of signals) {
+    const text = signal.text.trim();
+
+    if (!text) {
+      continue;
+    }
+
+    const key = text.toLowerCase();
+    const current = signalMap.get(key) ?? {
+      text,
+      sources: new Set<SignalSourceTag>(),
+      weight: 0
+    };
+
+    current.sources.add(signal.source);
+    current.weight = Math.max(current.weight, signal.weight);
+    signalMap.set(key, current);
+  }
+
+  return {
+    normalizedSignals: Array.from(signalMap.values()).map(({ text, sources, weight }) => ({
+      text,
+      source: Array.from(sources)[0],
+      weight
+    })),
+    signalOrigins: Array.from(signalMap.values()).map(({ text, sources }) => ({
+      text,
+      sources: Array.from(sources)
+    }))
+  };
+}
+
+async function collectUnifiedSignals(
+  query: string,
+  competitorContext: CompetitorContext,
+  mode: MarketSourceMeta["mode"]
+) {
+  const googleSignals = await collectGoogleSignalBundle(query);
+  const redditSignals = await collectHybridRedditSignals(query);
+
+  const [youtubeSignals, amazonSignals, newsSignals, competitorSignals] =
+    mode === "DEV"
+      ? [[], [], [], []]
+      : await Promise.all([
+          collectYouTubeSignals(query),
+          collectAmazonSignals(query),
+          collectNewsSignals(query),
+          collectCompetitorSignals(competitorContext.competitor_urls)
+        ]);
+
+  const { normalizedSignals, signalOrigins } = mergeNormalizedSignals([
+    ...buildNormalizedSignals(googleSignals.autocomplete, "Autocomplete", 1),
+    ...buildNormalizedSignals(googleSignals.paa, "PAA", 1.08),
+    ...buildNormalizedSignals(googleSignals.related, "Related Searches", 0.96),
+    ...buildNormalizedSignals(redditSignals, "Reddit", 1.12),
+    ...youtubeSignals,
+    ...amazonSignals,
+    ...newsSignals,
+    ...competitorSignals
+  ]);
+
+  return {
+    googleSignals,
+    redditSignals,
+    youtubeSignals,
+    amazonSignals,
+    newsSignals,
+    competitorSignals,
+    normalizedSignals,
+    signalOrigins,
+    sourceMeta: buildSourceMeta(mode, {
+      used_reddit: redditSignals.length > 0,
+      used_youtube: youtubeSignals.length > 0,
+      used_amazon: amazonSignals.length > 0,
+      used_news: newsSignals.length > 0,
+      used_competitors: competitorSignals.length > 0,
+      google_signal_count: googleSignals.serpData.length,
+      reddit_signal_count: redditSignals.length,
+      youtube_signal_count: youtubeSignals.length,
+      amazon_signal_count: amazonSignals.length,
+      news_signal_count: newsSignals.length,
+      competitor_signal_count: competitorSignals.length
+    })
+  };
+}
+
 function createMockAnalysisResponse(
   query: string,
   marketType: string,
@@ -213,6 +352,20 @@ function createMockAnalysisResponse(
   const redditSignals = [
     "marketing agency promises but no results",
     "small business lead gen feels unpredictable"
+  ];
+  const normalizedSignals = [
+    ...buildNormalizedSignals(
+      ["why is my business not growing", "how to get more customers"],
+      "Autocomplete",
+      1
+    ),
+    ...buildNormalizedSignals(
+      ["stuck at same revenue", "how to get consistent leads"],
+      "PAA",
+      1.08
+    ),
+    ...buildNormalizedSignals(["how do i know if marketing is working"], "Related Searches", 0.96),
+    ...buildNormalizedSignals(redditSignals, "Reddit", 1.12)
   ];
   const signalOrigins = mergeSignalOrigins([
     ...buildSignalOriginEntries(
@@ -238,6 +391,7 @@ function createMockAnalysisResponse(
     success: true,
     query,
     serpData: compactUnique([...googleSignals, ...redditSignals], 50),
+    normalized_signals: normalizedSignals,
     signal_origins: signalOrigins,
     clusters: {
       clusters: [
@@ -344,6 +498,9 @@ function createMockAnalysisResponse(
       reddit_signal_count: redditSignals.length
     }),
     competitor_context: competitorContext,
+    ai_confidence_score: 78,
+    synthesis_depth: "standard",
+    reasoning_quality: "medium",
     fallback_used: false,
     generatedAt: new Date().toISOString()
   };
@@ -377,50 +534,50 @@ function createDeterministicAnalysisResponse({
   query,
   marketType,
   googleSignals,
-  redditSignals,
+  normalizedSignals,
+  signalOrigins,
+  sourceMeta,
   competitorContext,
+  synthesisDepth,
   fallbackUsed = false
 }: DeterministicAnalysisOptions): MarketAnalysisSuccessResponse {
-  const combinedSignals = compactUnique([...googleSignals.serpData, ...redditSignals], 40);
-  const signalOrigins = mergeSignalOrigins([
-    ...googleSignals.signalOrigins,
-    ...buildSignalOriginEntries(redditSignals, "Reddit")
-  ]);
-  const growthSignals = combinedSignals.filter((signal) =>
-    /grow|growth|revenue|customers|business not growing|traction/i.test(signal)
+  const combinedSignals = compactUnique(normalizedSignals.map((signal) => signal.text), 50);
+  const growthSignals = normalizedSignals.filter((signal) =>
+    /grow|growth|revenue|customers|business not growing|traction/i.test(signal.text)
   );
-  const leadSignals = combinedSignals.filter(
+  const leadSignals = normalizedSignals.filter(
     (signal) =>
-      /lead|pipeline|prospect|customer flow|inbound|outbound/i.test(signal) &&
+      /lead|pipeline|prospect|customer flow|inbound|outbound/i.test(signal.text) &&
       !growthSignals.includes(signal)
   );
-  const trustSignals = combinedSignals.filter(
+  const trustSignals = normalizedSignals.filter(
     (signal) =>
-      /trust|expensive|cost|worth|agency|working|roi|overpromise|proof/i.test(signal) &&
+      /trust|expensive|cost|worth|agency|working|roi|overpromise|proof/i.test(signal.text) &&
       !growthSignals.includes(signal) &&
       !leadSignals.includes(signal)
   );
+  const weightedSignalVolume = normalizedSignals.reduce((sum, signal) => sum + signal.weight, 0);
 
   const clusters = [
     growthSignals.length
       ? {
           theme: "Growth stagnation",
           frequency: growthSignals.length,
-          queries: growthSignals.slice(0, 6)
+          queries: growthSignals.slice(0, 6).map((signal) => signal.text)
         }
       : null,
     leadSignals.length
       ? {
           theme: "Lead inconsistency",
           frequency: leadSignals.length,
-          queries: leadSignals.slice(0, 6)
+          queries: leadSignals.slice(0, 6).map((signal) => signal.text)
         }
       : null,
     trustSignals.length
       ? {
           theme: "Trust and cost resistance",
           frequency: trustSignals.length,
-          queries: trustSignals.slice(0, 6)
+          queries: trustSignals.slice(0, 6).map((signal) => signal.text)
         }
       : null
   ].filter((cluster): cluster is MarketClusters["clusters"][number] => Boolean(cluster));
@@ -440,11 +597,24 @@ function createDeterministicAnalysisResponse({
   const leadCluster = normalizedClusters[0];
   const confidenceScore = Math.min(
     89,
-    Math.max(72, 72 + totalSignals + Math.min(redditSignals.length, 5))
+    Math.max(72, 70 + Math.round(weightedSignalVolume) + Math.min(sourceMeta.reddit_signal_count, 5))
   );
   const patternConsistency =
     leadCluster.frequency >= 4 ? "Strong" : leadCluster.frequency >= 2 ? "Moderate" : "Fragmented";
   const signalStrength = totalSignals >= 9 ? "High" : totalSignals >= 5 ? "Medium" : "Low";
+  const aiConfidenceScore = Math.min(
+    92,
+    Math.max(
+      68,
+      Math.round(
+        confidenceScore +
+          (mode === "LIVE" && !fallbackUsed ? 5 : 0) +
+          (synthesisDepth === "deep" ? 3 : 0)
+      )
+    )
+  );
+  const reasoningQuality: MarketAnalysisSuccessResponse["reasoning_quality"] =
+    aiConfidenceScore >= 86 ? "high" : aiConfidenceScore >= 76 ? "medium" : "low";
   const classification = {
     core_type: toDisplayMarketType(marketType || competitorContext.niche),
     business_model: "Lead Generation",
@@ -501,6 +671,7 @@ function createDeterministicAnalysisResponse({
     success: true,
     query,
     serpData: combinedSignals,
+    normalized_signals: normalizedSignals,
     signal_origins: signalOrigins,
     clusters: {
       clusters: normalizedClusters
@@ -568,9 +739,15 @@ function createDeterministicAnalysisResponse({
       [
         `${leadCluster.theme} is the dominant visible cluster with ${leadCluster.frequency} signals.`,
         `Signal strength reads ${signalStrength.toLowerCase()} at ${confidenceScore}% confidence.`,
-        redditSignals.length
+        sourceMeta.reddit_signal_count
           ? "Reddit discussion reinforces the same acquisition and trust themes seen in search."
           : "Google demand signals are already concentrated enough to support a directional read.",
+        sourceMeta.used_youtube
+          ? "YouTube titles reinforce the same problem-aware framing visible in search."
+          : "",
+        sourceMeta.used_news
+          ? "News coverage adds current context without displacing the core market pattern."
+          : "",
         competitorReference
           ? `${competitorReference} creates a visible comparison point, but does not close the trust gap.`
           : "The best move is to sell certainty, visibility, and repeatability instead of generic growth promises."
@@ -583,18 +760,19 @@ function createDeterministicAnalysisResponse({
         mode === "LIVE" && fallbackUsed
           ? "Fallback synthesis used after LIVE mode failed."
           : mode === "LIVE"
-            ? "Built from live Google, Reddit, and OpenAI synthesis."
-            : "Built from live Google and Reddit signals in deterministic mode."
+            ? "Built from live multi-source signals and structured AI synthesis."
+            : "Built from live multi-source signals in deterministic mode."
     },
     classification,
     strategy,
-    source_meta: buildSourceMeta(mode, {
-      used_reddit: redditSignals.length > 0,
-      used_openai: mode === "LIVE" && !fallbackUsed,
-      google_signal_count: googleSignals.serpData.length,
-      reddit_signal_count: redditSignals.length
-    }),
+    source_meta: {
+      ...sourceMeta,
+      used_openai: mode === "LIVE" && !fallbackUsed
+    },
     competitor_context: competitorContext,
+    ai_confidence_score: aiConfidenceScore,
+    synthesis_depth: synthesisDepth,
+    reasoning_quality: reasoningQuality,
     fallback_used: fallbackUsed,
     generatedAt: new Date().toISOString()
   };
@@ -655,6 +833,73 @@ function normalizePatternConsistencyLabel(
   }
 
   return "Moderate";
+}
+
+function normalizeReasoningQuality(
+  value: unknown
+): MarketAnalysisSuccessResponse["reasoning_quality"] {
+  const normalized = toCleanString(value).toLowerCase();
+
+  if (normalized === "high") {
+    return "high";
+  }
+
+  if (normalized === "low") {
+    return "low";
+  }
+
+  return "medium";
+}
+
+function normalizeSynthesisDepth(
+  value: unknown,
+  fallback: MarketAnalysisSuccessResponse["synthesis_depth"]
+): MarketAnalysisSuccessResponse["synthesis_depth"] {
+  const normalized = toCleanString(value).toLowerCase();
+  return normalized === "deep" ? "deep" : fallback;
+}
+
+function normalizeAiConfidenceScore(value: unknown, fallback: number) {
+  const normalized = toNumber(value);
+  return normalized ? Math.max(0, Math.min(100, normalized)) : fallback;
+}
+
+function normalizeClassificationPayload(
+  value: unknown,
+  fallback: MarketClassification
+): MarketClassification {
+  const classification = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+  return {
+    core_type: toCleanString(classification.core_type) || fallback.core_type,
+    business_model: toCleanString(classification.business_model) || fallback.business_model,
+    customer_type: toCleanString(classification.customer_type) || fallback.customer_type,
+    intent_stage: toCleanString(classification.intent_stage) || fallback.intent_stage,
+    purchase_behavior:
+      toCleanString(classification.purchase_behavior) || fallback.purchase_behavior,
+    acquisition_channel:
+      toCleanString(classification.acquisition_channel) || fallback.acquisition_channel,
+    value_complexity: toCleanString(classification.value_complexity) || fallback.value_complexity,
+    risk_level: toCleanString(classification.risk_level) || fallback.risk_level,
+    market_maturity: toCleanString(classification.market_maturity) || fallback.market_maturity,
+    competitive_structure:
+      toCleanString(classification.competitive_structure) || fallback.competitive_structure
+  };
+}
+
+function normalizeStrategyPayload(value: unknown, fallback: MarketStrategy): MarketStrategy {
+  const strategy = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const pains = toStringArray(strategy.pains);
+  const objections = toStringArray(strategy.objections);
+
+  return {
+    core_constraint: toCleanString(strategy.core_constraint) || fallback.core_constraint,
+    pains: pains.length ? pains : fallback.pains,
+    objections: objections.length ? objections : fallback.objections,
+    acquisition_angle: toCleanString(strategy.acquisition_angle) || fallback.acquisition_angle,
+    messaging: toCleanString(strategy.messaging) || fallback.messaging,
+    offer_positioning: toCleanString(strategy.offer_positioning) || fallback.offer_positioning
+  };
 }
 
 function normalizeCluster(value: unknown): DemandCluster | null {
@@ -767,12 +1012,10 @@ function deriveStrategy(synthesis: MarketSynthesis): MarketStrategy {
 
 function getRuntimeConfig() {
   const openAiApiKey = process.env.OPENAI_API_KEY;
-  const analysisModel = process.env.OPENAI_ANALYSIS_MODEL;
-  const synthesisModel = process.env.OPENAI_SYNTHESIS_MODEL;
+  const synthesisModel = process.env.OPENAI_SYNTHESIS_MODEL || process.env.OPENAI_ANALYSIS_MODEL;
 
   const missing = [
     !openAiApiKey ? "OPENAI_API_KEY" : null,
-    !analysisModel ? "OPENAI_ANALYSIS_MODEL" : null,
     !synthesisModel ? "OPENAI_SYNTHESIS_MODEL" : null
   ].filter((value): value is string => Boolean(value));
 
@@ -782,7 +1025,6 @@ function getRuntimeConfig() {
 
   return {
     openAiApiKey: openAiApiKey!,
-    analysisModel: analysisModel!,
     synthesisModel: synthesisModel!
   };
 }
@@ -792,20 +1034,35 @@ async function runLiveOpenAiAnalysis({
   marketType,
   depth,
   googleSignals,
-  redditSignals,
+  normalizedSignals,
+  signalOrigins,
+  sourceMeta,
   competitorContext
 }: {
   query: string;
   marketType: string;
   depth: string;
   googleSignals: Awaited<ReturnType<typeof collectGoogleSignalBundle>>;
-  redditSignals: string[];
+  normalizedSignals: NormalizedSignal[];
+  signalOrigins: SignalOriginEntry[];
+  sourceMeta: MarketSourceMeta;
   competitorContext: CompetitorContext;
 }): Promise<MarketAnalysisSuccessResponse> {
-  const { openAiApiKey, analysisModel, synthesisModel } = getRuntimeConfig();
-  const combinedSignals = compactUnique([...googleSignals.serpData, ...redditSignals], 50);
+  const { openAiApiKey, synthesisModel } = getRuntimeConfig();
+  const synthesisDepth = depth === "deep" || depth === "aggressive" ? "deep" : "standard";
+  const baseline = createDeterministicAnalysisResponse({
+    mode: "LIVE",
+    query,
+    marketType,
+    googleSignals,
+    normalizedSignals,
+    signalOrigins,
+    sourceMeta,
+    competitorContext,
+    synthesisDepth
+  });
 
-  if (!combinedSignals.length) {
+  if (!baseline.serpData.length) {
     throw new Error("serpData is required.");
   }
 
@@ -813,106 +1070,17 @@ async function runLiveOpenAiAnalysis({
     apiKey: openAiApiKey
   });
 
-  const analysisPrompt = `
-You are a market intelligence system.
-
-Given real user search queries and discussion signals, classify the market dynamics.
-
-Return ONLY JSON in this format:
-
-{
-  "core_type": "",
-  "business_model": "",
-  "customer_type": "",
-  "intent_stage": "",
-  "purchase_behavior": "",
-  "acquisition_channel": "",
-  "value_complexity": "",
-  "risk_level": "",
-  "market_maturity": "",
-  "competitive_structure": ""
-}
-
-Signals:
-${JSON.stringify(combinedSignals, null, 2)}
-
-Signal Origins:
-${JSON.stringify(
-    mergeSignalOrigins([
-      ...googleSignals.signalOrigins,
-      ...buildSignalOriginEntries(redditSignals, "Reddit")
-    ]),
-    null,
-    2
-  )}
-
-Competitor Context:
-${JSON.stringify(competitorContext, null, 2)}
-
-Market Type:
-${marketType || "unspecified"}
-
-Analysis Depth:
-${depth}
-
-Rules:
-- Infer from patterns
-- Be decisive
-- No explanations
-`;
-
-  const clusteringPrompt = `
-Cluster queries into themes.
-
-Return JSON:
-{
-  "clusters": [
-    {
-      "theme": "",
-      "frequency": 0,
-      "queries": []
-    }
-  ]
-}
-
-Signals:
-${JSON.stringify(combinedSignals, null, 2)}
-
-Rules:
-- Count frequency explicitly
-- Max 6 clusters
-- Group by intent, not keywords
-`;
-
-  const [analysisRes, clusteringRes] = await Promise.all([
-    client.responses.create({
-      model: analysisModel,
-      input: analysisPrompt
-    }),
-    client.responses.create({
-      model: analysisModel,
-      input: clusteringPrompt
-    })
-  ]);
-
-  const classificationText = extractOutputText(analysisRes);
-  const classification = safeParse<MarketClassification>(classificationText);
-
-  if (!classification) {
-    throw new Error("Analysis model returned invalid JSON.");
-  }
-
-  const clusteringText = extractOutputText(clusteringRes);
-  const clusters = normalizeClusters(safeParse<MarketClusters>(clusteringText));
-
-  if (!clusters.clusters.length) {
-    throw new Error("Clustering model returned invalid JSON.");
-  }
-
   const synthesisPrompt = `
 You are a senior market strategist.
 
 Your job is to analyze real user demand and produce decisive, high-signal insights.
+
+Internally perform three stages before answering:
+1. Signal interpretation
+2. Constraint extraction
+3. Strategic synthesis
+
+Do not expose your chain of thought. Return JSON only.
 
 Return ONLY JSON in this exact format:
 
@@ -936,9 +1104,26 @@ Return ONLY JSON in this exact format:
       "queries": []
     }
   ],
-  "core_constraint": "",
-  "pains": [],
-  "objections": [],
+  "classification": {
+    "core_type": "",
+    "business_model": "",
+    "customer_type": "",
+    "intent_stage": "",
+    "purchase_behavior": "",
+    "acquisition_channel": "",
+    "value_complexity": "",
+    "risk_level": "",
+    "market_maturity": "",
+    "competitive_structure": ""
+  },
+  "strategy": {
+    "core_constraint": "",
+    "pains": [],
+    "objections": [],
+    "acquisition_angle": "",
+    "messaging": "",
+    "offer_positioning": ""
+  },
   "market_gaps": [],
   "positioning_strategy": {
     "emphasize": [],
@@ -946,7 +1131,10 @@ Return ONLY JSON in this exact format:
     "competitor_blindspots": []
   },
   "recommended_move": "",
-  "executive_summary": []
+  "executive_summary": [],
+  "ai_confidence_score": 0,
+  "synthesis_depth": "${synthesisDepth}",
+  "reasoning_quality": ""
 }
 
 Rules:
@@ -957,29 +1145,22 @@ Rules:
 - Executive summary must be 3-4 bullets max.
 - Positioning must be strategic, not vague.
 - Recommended move must be a clear directive.
+- Keep reasoning_quality to high, medium, or low.
+- Keep ai_confidence_score between 0 and 100.
+- Output valid JSON only.
 
 Data:
-SIGNALS:
-${JSON.stringify(combinedSignals, null, 2)}
+NORMALIZED_SIGNALS:
+${JSON.stringify(normalizedSignals, null, 2)}
 
 SIGNAL_ORIGINS:
-${JSON.stringify(
-    mergeSignalOrigins([
-      ...googleSignals.signalOrigins,
-      ...buildSignalOriginEntries(redditSignals, "Reddit")
-    ]),
-    null,
-    2
-  )}
-
-CLUSTERS:
-${JSON.stringify(clusters.clusters, null, 2)}
-
-CLASSIFICATION:
-${JSON.stringify(classification, null, 2)}
+${JSON.stringify(signalOrigins, null, 2)}
 
 COMPETITOR_CONTEXT:
 ${JSON.stringify(competitorContext, null, 2)}
+
+DETERMINISTIC_BASELINE:
+${JSON.stringify(baseline, null, 2)}
 `;
 
   const synthesisRes = await client.responses.create({
@@ -988,26 +1169,29 @@ ${JSON.stringify(competitorContext, null, 2)}
   });
 
   const synthesisText = extractOutputText(synthesisRes);
-  const synthesis = normalizeSynthesis(
-    safeParse<MarketSynthesis>(synthesisText),
-    clusters,
-    classification
-  );
-  const confidence = deriveConfidence(synthesis.signal_strength);
-  const strategy = deriveStrategy(synthesis);
+  const parsed = safeParse<Record<string, unknown>>(synthesisText);
 
-  if (!synthesis.dominant_narrative && !synthesis.core_constraint && !synthesis.recommended_move) {
+  if (!parsed) {
+    throw new Error("Synthesis model returned invalid JSON.");
+  }
+
+  const clusters = normalizeClusters({ clusters: parsed.clusters });
+  const classification = normalizeClassificationPayload(parsed.classification, baseline.classification);
+  const strategy = normalizeStrategyPayload(parsed.strategy, baseline.strategy);
+  const synthesis = normalizeSynthesis(parsed, clusters.clusters.length ? clusters : baseline.clusters, classification);
+  const confidence = {
+    ...deriveConfidence(synthesis.signal_strength),
+    reason: `Structured AI synthesis completed with ${normalizeReasoningQuality(
+      parsed.reasoning_quality
+    )} reasoning quality.`
+  };
+
+  if (!synthesis.dominant_narrative && !strategy.core_constraint && !synthesis.recommended_move) {
     throw new Error("Synthesis model returned invalid JSON.");
   }
 
   return {
-    success: true,
-    query,
-    serpData: combinedSignals,
-    signal_origins: mergeSignalOrigins([
-      ...googleSignals.signalOrigins,
-      ...buildSignalOriginEntries(redditSignals, "Reddit")
-    ]),
+    ...baseline,
     clusters: { clusters: synthesis.clusters },
     dominant_narrative: synthesis.dominant_narrative,
     market_diagnosis: synthesis.market_diagnosis,
@@ -1019,12 +1203,13 @@ ${JSON.stringify(competitorContext, null, 2)}
     confidence,
     classification,
     strategy,
-    source_meta: buildSourceMeta("LIVE", {
-      used_reddit: redditSignals.length > 0,
-      google_signal_count: googleSignals.serpData.length,
-      reddit_signal_count: redditSignals.length
-    }),
-    competitor_context: competitorContext,
+    source_meta: {
+      ...sourceMeta,
+      used_openai: true
+    },
+    ai_confidence_score: normalizeAiConfidenceScore(parsed.ai_confidence_score, baseline.ai_confidence_score),
+    synthesis_depth: normalizeSynthesisDepth(parsed.synthesis_depth, synthesisDepth),
+    reasoning_quality: normalizeReasoningQuality(parsed.reasoning_quality),
     fallback_used: false,
     generatedAt: new Date().toISOString()
   };
@@ -1035,6 +1220,10 @@ export async function POST(request: NextRequest) {
     const MODE = (process.env.MODE || "DEV").toUpperCase();
     const body = (await request.json()) as AnalyzeBody;
     const { query, seedQuery, marketType, depth } = body;
+    const effectiveMode =
+      typeof body.modeOverride === "string" && body.modeOverride.toUpperCase() === "HYBRID"
+        ? "HYBRID"
+        : MODE;
     const finalQuery = (query ?? "").trim() || (seedQuery ?? "").trim();
     const finalMarketType = (marketType ?? "").trim();
     const finalDepthCandidate = (depth ?? "").trim();
@@ -1044,7 +1233,7 @@ export async function POST(request: NextRequest) {
         : "standard";
     const competitorContext = normalizeCompetitorContext(body);
 
-    console.log("MODE:", MODE);
+    console.log("MODE:", effectiveMode);
     console.log("analyze request:", {
       query,
       seedQuery,
@@ -1059,45 +1248,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (MODE === "DEV") {
+    if (effectiveMode === "DEV") {
       await new Promise((resolve) => setTimeout(resolve, DEV_MODE_DELAY_MS));
       return NextResponse.json(
         createMockAnalysisResponse(finalQuery, finalMarketType, competitorContext)
       );
     }
 
-    if (MODE === "HYBRID") {
+    if (effectiveMode === "HYBRID") {
       console.log("ENTERED HYBRID BRANCH");
 
-      const googleSignals = await collectGoogleSignalBundle(finalQuery);
+      const sourceBundle = await collectUnifiedSignals(finalQuery, competitorContext, "HYBRID");
 
-      if (!googleSignals.serpData.length) {
+      if (!sourceBundle.googleSignals.serpData.length) {
         throw new Error("serpData is required.");
       }
-
-      const redditSignals = await collectHybridRedditSignals(finalQuery);
 
       return NextResponse.json(
         createDeterministicAnalysisResponse({
           mode: "HYBRID",
           query: finalQuery,
           marketType: finalMarketType,
-          googleSignals,
-          redditSignals,
-          competitorContext
+          googleSignals: sourceBundle.googleSignals,
+          normalizedSignals: sourceBundle.normalizedSignals,
+          signalOrigins: sourceBundle.signalOrigins,
+          sourceMeta: sourceBundle.sourceMeta,
+          competitorContext,
+          synthesisDepth: finalDepth === "deep" || finalDepth === "aggressive" ? "deep" : "standard"
         })
       );
     }
 
     console.log("ENTERING LIVE OPENAI BRANCH");
 
-    const googleSignals = await collectGoogleSignalBundle(finalQuery);
+    const sourceBundle = await collectUnifiedSignals(finalQuery, competitorContext, "LIVE");
 
-    if (!googleSignals.serpData.length) {
+    if (!sourceBundle.googleSignals.serpData.length) {
       throw new Error("serpData is required.");
     }
-
-    const redditSignals = await collectHybridRedditSignals(finalQuery);
 
     let liveError: Error | null = null;
 
@@ -1108,8 +1296,10 @@ export async function POST(request: NextRequest) {
             query: finalQuery,
             marketType: finalMarketType,
             depth: finalDepth,
-            googleSignals,
-            redditSignals,
+            googleSignals: sourceBundle.googleSignals,
+            normalizedSignals: sourceBundle.normalizedSignals,
+            signalOrigins: sourceBundle.signalOrigins,
+            sourceMeta: sourceBundle.sourceMeta,
             competitorContext
           })
         );
@@ -1126,9 +1316,15 @@ export async function POST(request: NextRequest) {
         mode: "LIVE",
         query: finalQuery,
         marketType: finalMarketType,
-        googleSignals,
-        redditSignals,
+        googleSignals: sourceBundle.googleSignals,
+        normalizedSignals: sourceBundle.normalizedSignals,
+        signalOrigins: sourceBundle.signalOrigins,
+        sourceMeta: {
+          ...sourceBundle.sourceMeta,
+          used_openai: false
+        },
         competitorContext,
+        synthesisDepth: finalDepth === "deep" || finalDepth === "aggressive" ? "deep" : "standard",
         fallbackUsed: true
       })
     );

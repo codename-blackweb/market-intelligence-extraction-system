@@ -35,11 +35,18 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
   return {
     query: parsed.query,
     serpData: parsed.serpData,
+    normalized_signals:
+      parsed.normalized_signals?.map((signal) => ({
+        text: signal.text ?? "",
+        source:
+          typeof signal.source === "string" ? signal.source : "Autocomplete",
+        weight: typeof signal.weight === "number" ? signal.weight : 1
+      })) ?? [],
     signal_origins:
       parsed.signal_origins?.map((origin) => ({
         text: origin.text ?? "",
         sources:
-          origin.sources?.filter((source): source is "Autocomplete" | "PAA" | "Related Searches" | "Reddit" =>
+          origin.sources?.filter((source): source is "Autocomplete" | "PAA" | "Related Searches" | "Reddit" | "YouTube" | "Amazon" | "News" | "Competitor" =>
             typeof source === "string"
           ) ?? []
       })) ?? [],
@@ -88,14 +95,28 @@ export function loadReport(reportId: string): MarketAnalysisReport | null {
       used_google: parsed.source_meta?.used_google ?? true,
       used_reddit: parsed.source_meta?.used_reddit ?? false,
       used_openai: parsed.source_meta?.used_openai ?? true,
+      used_youtube: parsed.source_meta?.used_youtube ?? false,
+      used_amazon: parsed.source_meta?.used_amazon ?? false,
+      used_news: parsed.source_meta?.used_news ?? false,
+      used_competitors: parsed.source_meta?.used_competitors ?? false,
       google_signal_count: parsed.source_meta?.google_signal_count ?? parsed.serpData.length,
-      reddit_signal_count: parsed.source_meta?.reddit_signal_count ?? 0
+      reddit_signal_count: parsed.source_meta?.reddit_signal_count ?? 0,
+      youtube_signal_count: parsed.source_meta?.youtube_signal_count ?? 0,
+      amazon_signal_count: parsed.source_meta?.amazon_signal_count ?? 0,
+      news_signal_count: parsed.source_meta?.news_signal_count ?? 0,
+      competitor_signal_count: parsed.source_meta?.competitor_signal_count ?? 0
     },
     competitor_context: parsed.competitor_context ?? {
       competitor_names: [],
       competitor_urls: [],
       niche: ""
     },
+    ai_confidence_score: parsed.ai_confidence_score ?? 0,
+    synthesis_depth: parsed.synthesis_depth === "deep" ? "deep" : "standard",
+    reasoning_quality:
+      parsed.reasoning_quality === "high" || parsed.reasoning_quality === "low"
+        ? parsed.reasoning_quality
+        : "medium",
     fallback_used: parsed.fallback_used ?? false,
     generatedAt: parsed.generatedAt ?? new Date().toISOString()
   };

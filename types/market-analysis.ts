@@ -47,7 +47,17 @@ export type SignalSourceTag =
   | "Autocomplete"
   | "PAA"
   | "Related Searches"
-  | "Reddit";
+  | "Reddit"
+  | "YouTube"
+  | "Amazon"
+  | "News"
+  | "Competitor";
+
+export type NormalizedSignal = {
+  text: string;
+  source: SignalSourceTag;
+  weight: number;
+};
 
 export type SignalOriginEntry = {
   text: string;
@@ -59,8 +69,16 @@ export type MarketSourceMeta = {
   used_google: boolean;
   used_reddit: boolean;
   used_openai: boolean;
+  used_youtube: boolean;
+  used_amazon: boolean;
+  used_news: boolean;
+  used_competitors: boolean;
   google_signal_count: number;
   reddit_signal_count: number;
+  youtube_signal_count: number;
+  amazon_signal_count: number;
+  news_signal_count: number;
+  competitor_signal_count: number;
 };
 
 export type CompetitorContext = {
@@ -68,6 +86,8 @@ export type CompetitorContext = {
   competitor_urls: string[];
   niche: string;
 };
+
+export type UserPlan = "free" | "pro" | "agency";
 
 export type MarketPositioningStrategy = {
   emphasize: string[];
@@ -97,6 +117,7 @@ export type MarketConfidence = {
 export type MarketAnalysisReport = {
   query: string;
   serpData: string[];
+  normalized_signals: NormalizedSignal[];
   signal_origins: SignalOriginEntry[];
   clusters: MarketClusters;
   dominant_narrative: string;
@@ -111,14 +132,36 @@ export type MarketAnalysisReport = {
   strategy: MarketStrategy;
   source_meta: MarketSourceMeta;
   competitor_context: CompetitorContext;
+  ai_confidence_score: number;
+  synthesis_depth: "standard" | "deep";
+  reasoning_quality: "high" | "medium" | "low";
   fallback_used: boolean;
   generatedAt: string;
+};
+
+export type PersistedAnalysisRecord = {
+  id: string;
+  user_id: string;
+  query: string;
+  market_type: string;
+  depth: string;
+  result_json: MarketAnalysisSuccessResponse;
+  is_public: boolean;
+  created_at: string;
+};
+
+export type UserProfileRecord = {
+  user_id: string;
+  plan: UserPlan;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type MarketAnalysisSuccessResponse = {
   success: true;
   query: string;
   serpData: string[];
+  normalized_signals: NormalizedSignal[];
   signal_origins: SignalOriginEntry[];
   clusters: MarketClusters;
   dominant_narrative: string;
@@ -133,6 +176,9 @@ export type MarketAnalysisSuccessResponse = {
   strategy: MarketStrategy;
   source_meta: MarketSourceMeta;
   competitor_context: CompetitorContext;
+  ai_confidence_score: number;
+  synthesis_depth: "standard" | "deep";
+  reasoning_quality: "high" | "medium" | "low";
   fallback_used: boolean;
   generatedAt: string;
 };

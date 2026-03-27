@@ -84,6 +84,26 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
               >
                 OpenAI <span aria-hidden="true">{report.source_meta.used_openai ? "●" : "○"}</span>
               </span>
+              <span
+                className={`source-activity-item ${report.source_meta.used_youtube ? "is-active" : "is-inactive"}`}
+              >
+                YouTube <span aria-hidden="true">{report.source_meta.used_youtube ? "●" : "○"}</span>
+              </span>
+              <span
+                className={`source-activity-item ${report.source_meta.used_amazon ? "is-active" : "is-inactive"}`}
+              >
+                Amazon <span aria-hidden="true">{report.source_meta.used_amazon ? "●" : "○"}</span>
+              </span>
+              <span
+                className={`source-activity-item ${report.source_meta.used_news ? "is-active" : "is-inactive"}`}
+              >
+                News <span aria-hidden="true">{report.source_meta.used_news ? "●" : "○"}</span>
+              </span>
+              <span
+                className={`source-activity-item ${report.source_meta.used_competitors ? "is-active" : "is-inactive"}`}
+              >
+                Competitors <span aria-hidden="true">{report.source_meta.used_competitors ? "●" : "○"}</span>
+              </span>
             </div>
             {report.fallback_used ? <p className="section-description">Fallback synthesis used.</p> : null}
           </SectionCard>
@@ -137,6 +157,10 @@ export default function ReportView({ report }: { report: MarketAnalysisReport })
               </article>
             </div>
             <p className="section-description">{report.confidence.reason}</p>
+            <p className="section-description">
+              AI synthesis confidence {report.ai_confidence_score}% • Depth {report.synthesis_depth} • Reasoning{" "}
+              {report.reasoning_quality}
+            </p>
             <p className="section-description">{formatEvidence(report)}</p>
           </SectionCard>
 
