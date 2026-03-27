@@ -12,6 +12,7 @@ import {
   TriangleAlert,
   Zap
 } from "lucide-react";
+import ResultsCtaSection from "@/components/cta/ResultsCtaSection";
 import { AuroraTextEffect } from "@/components/lightswind/aurora-text-effect";
 import { BeamCircle } from "@/components/ui/beam-circle";
 import {
@@ -545,6 +546,8 @@ export default function Home() {
   const [gatedAction, setGatedAction] = useState<GatedAction>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const analysisInputsRef = useRef<HTMLElement | null>(null);
+  const queryInputRef = useRef<HTMLInputElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -1052,6 +1055,17 @@ export default function Home() {
     await startUpgradeFlow(plan);
   };
 
+  const scrollToAnalysisInputs = () => {
+    analysisInputsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+    window.setTimeout(() => {
+      queryInputRef.current?.focus();
+    }, 250);
+  };
+
   return (
     <main className="page-shell">
       {loading && (
@@ -1102,11 +1116,12 @@ export default function Home() {
       </section>
 
       <ScrollReveal>
-        <section className="max-w-7xl mx-auto px-6 py-20">
+        <section className="max-w-7xl mx-auto px-6 py-20" ref={analysisInputsRef}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="card p-6">
               <input
                 className="surface-input"
+                ref={queryInputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Enter seed query"
@@ -1821,6 +1836,16 @@ export default function Home() {
                   />
                 </div>
               </section>
+            </ScrollReveal>
+          ) : null}
+
+          {activeResult ? (
+            <ScrollReveal eager>
+              <ResultsCtaSection
+                onRunAnother={scrollToAnalysisInputs}
+                onUpgrade={() => void handlePlanSelection("pro")}
+                plan={usageState.plan}
+              />
             </ScrollReveal>
           ) : null}
         </>

@@ -24,6 +24,7 @@ type PricingPlan = {
   cta: string;
   highlight?: boolean;
   note?: string;
+  glowColor: string;
 };
 
 type TabsContextValue = {
@@ -105,18 +106,30 @@ function TabsContent({
   return <div>{children}</div>;
 }
 
-function GlowingCards({ children }: { children: ReactNode }) {
-  return <motion.div className="glowing-cards" variants={gridVariants}>{children}</motion.div>;
+function GlowingCards({
+  children,
+  className = ""
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div className={`glowing-cards ${className}`.trim()} variants={gridVariants}>
+      {children}
+    </motion.div>
+  );
 }
 
 function GlowingCard({
   children,
   highlighted = false,
-  current = false
+  current = false,
+  glowColor
 }: {
   children: ReactNode;
   highlighted?: boolean;
   current?: boolean;
+  glowColor: string;
 }) {
   return (
     <motion.article
@@ -124,7 +137,13 @@ function GlowingCard({
       variants={cardVariants}
       whileHover={{ scale: 1.018, y: -4 }}
     >
-      <div className="glowing-card-aura" aria-hidden="true" />
+      <div
+        className="glowing-card-aura"
+        aria-hidden="true"
+        style={{
+          background: `radial-gradient(circle, ${glowColor}55 0%, transparent 62%)`
+        }}
+      />
       {children}
     </motion.article>
   );
@@ -198,7 +217,8 @@ const plans: PricingPlan[] = [
       "Basic export",
       "Signal strength and narrative output"
     ],
-    cta: "Start Free"
+    cta: "Start Free",
+    glowColor: "#ff6b6b"
   },
   {
     id: "pro",
@@ -218,7 +238,8 @@ const plans: PricingPlan[] = [
     ],
     cta: "Unlock Pro",
     highlight: true,
-    note: "Most users upgrade after their first 3 searches."
+    note: "Most users upgrade after their first 3 searches.",
+    glowColor: "#6bc1ff"
   },
   {
     id: "agency",
@@ -235,7 +256,8 @@ const plans: PricingPlan[] = [
       "Premium export controls",
       "Higher storage limits"
     ],
-    cta: "Choose Agency"
+    cta: "Choose Agency",
+    glowColor: "#6bff95"
   }
 ];
 
@@ -287,6 +309,62 @@ export default function AnimatedPricingSection({
 }: Props) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
 
+  const renderCards = (cycle: BillingCycle) => (
+    <GlowingCards className="pricing02-cards">
+      {plans.map((plan) => {
+        const isCurrent = currentPlan === plan.id;
+        const displayPrice = cycle === "monthly" ? plan.monthlyPrice : plan.annualPrice;
+
+        return (
+          <GlowingCard
+            current={isCurrent}
+            glowColor={plan.glowColor}
+            highlighted={plan.highlight}
+            key={`${plan.id}-${cycle}`}
+          >
+            <div className="glowing-card-header pricing02-card-header">
+              <h3 className="glowing-card-name">{plan.name}</h3>
+              <p className="glowing-card-description">{plan.description}</p>
+            </div>
+
+            <div className="glowing-card-price-row pricing02-price-row">
+              <div className="glowing-card-price-figure">
+                <span className="glowing-card-currency">$</span>
+                <span className="glowing-card-price">
+                  <CountUp value={displayPrice} />
+                </span>
+              </div>
+              <span className="glowing-card-cycle">
+                {cycle === "monthly" ? "/month" : "/year"}
+              </span>
+            </div>
+
+            <ul className="glowing-card-features pricing02-feature-list">
+              {plan.features.map((feature) => (
+                <li key={`${plan.id}-${feature}`}>
+                  <span className="glowing-card-check-wrap" aria-hidden="true">
+                    <Check className="glowing-card-check" size={14} />
+                  </span>
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            {plan.note ? <p className="glowing-card-note">{plan.note}</p> : null}
+
+            <GradientButton
+              disabled={isCurrent}
+              onClick={() => onSelectPlan(plan.id)}
+              secondary={!plan.highlight}
+            >
+              {isCurrent ? "Current Plan" : plan.cta}
+            </GradientButton>
+          </GlowingCard>
+        );
+      })}
+    </GlowingCards>
+  );
+
   return (
     <motion.div
       animate="visible"
@@ -305,109 +383,20 @@ export default function AnimatedPricingSection({
       </div>
 
       <Tabs onValueChange={setBillingCycle} value={billingCycle}>
-        <div className="pricing-tabs-shell">
+        <div className="pricing-tabs-shell pricing02-tabs-shell">
           <TabsList>
             <TabsTrigger value="monthly">Monthly</TabsTrigger>
             <TabsTrigger value="annual">Annual</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="monthly">
-          <GlowingCards>
-            {plans.map((plan) => {
-              const isCurrent = currentPlan === plan.id;
+        <TabsContent value="monthly">{renderCards("monthly")}</TabsContent>
 
-              return (
-                <GlowingCard current={isCurrent} highlighted={plan.highlight} key={`${plan.id}-monthly`}>
-                  <div className="glowing-card-header">
-                    <div>
-                      <p className="glowing-card-name">{plan.name}</p>
-                      <p className="glowing-card-description">{plan.description}</p>
-                    </div>
-                    <div className="glowing-card-price-row">
-                      <span className="glowing-card-currency">$</span>
-                      <span className="glowing-card-price">
-                        <CountUp value={plan.monthlyPrice} />
-                      </span>
-                      {plan.monthlyPrice > 0 ? (
-                        <span className="glowing-card-cycle">/mo</span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <ul className="glowing-card-features">
-                    {plan.features.map((feature) => (
-                      <li key={`${plan.id}-${feature}`}>
-                        <Check className="glowing-card-check" size={16} />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {plan.note ? <p className="glowing-card-note">{plan.note}</p> : null}
-
-                  <GradientButton
-                    disabled={isCurrent}
-                    onClick={() => onSelectPlan(plan.id)}
-                    secondary={!plan.highlight}
-                  >
-                    {isCurrent ? "Current Plan" : plan.cta}
-                  </GradientButton>
-                </GlowingCard>
-              );
-            })}
-          </GlowingCards>
-        </TabsContent>
-
-        <TabsContent value="annual">
-          <GlowingCards>
-            {plans.map((plan) => {
-              const isCurrent = currentPlan === plan.id;
-
-              return (
-                <GlowingCard current={isCurrent} highlighted={plan.highlight} key={`${plan.id}-annual`}>
-                  <div className="glowing-card-header">
-                    <div>
-                      <p className="glowing-card-name">{plan.name}</p>
-                      <p className="glowing-card-description">{plan.description}</p>
-                    </div>
-                    <div className="glowing-card-price-row">
-                      <span className="glowing-card-currency">$</span>
-                      <span className="glowing-card-price">
-                        <CountUp value={plan.annualPrice} />
-                      </span>
-                    </div>
-                  </div>
-
-                  <ul className="glowing-card-features">
-                    {plan.features.map((feature) => (
-                      <li key={`${plan.id}-${feature}`}>
-                        <Check className="glowing-card-check" size={16} />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {plan.note ? <p className="glowing-card-note">{plan.note}</p> : null}
-
-                  <GradientButton
-                    disabled={isCurrent}
-                    onClick={() => onSelectPlan(plan.id)}
-                    secondary={!plan.highlight}
-                  >
-                    {isCurrent ? "Current Plan" : plan.cta}
-                  </GradientButton>
-                </GlowingCard>
-              );
-            })}
-          </GlowingCards>
-        </TabsContent>
+        <TabsContent value="annual">{renderCards("annual")}</TabsContent>
       </Tabs>
 
       <div className="pricing-support-copy">
         <p>You’re already sitting on demand. We just surface it.</p>
-        <p>Early users lock in current pricing.</p>
-        <p>No contracts. Cancel anytime.</p>
       </div>
     </motion.div>
   );

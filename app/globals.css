@@ -1126,14 +1126,17 @@ select {
 .pricing-copy {
   display: grid;
   gap: 0.5rem;
-  max-width: 44rem;
+  justify-items: center;
+  max-width: 56rem;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .pricing-copy h2 {
   margin: 0;
-  font-size: clamp(1.9rem, 3vw, 2.8rem);
-  line-height: 1.05;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.95rem, 4vw, 3.2rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
 }
 
 .pricing-context-message {
@@ -1148,6 +1151,11 @@ select {
 .pricing-tabs-shell {
   display: flex;
   justify-content: center;
+}
+
+.pricing02-tabs-shell {
+  position: relative;
+  top: 0.5rem;
 }
 
 .pricing-tabs-list {
@@ -1193,11 +1201,15 @@ select {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.pricing02-cards {
+  align-items: stretch;
+}
+
 .glowing-card {
   position: relative;
   display: grid;
-  gap: 1rem;
-  padding: 1.45rem;
+  gap: 1.25rem;
+  padding: 1.3rem 1.35rem 1.45rem;
   overflow: hidden;
   border-radius: 28px;
   border: 1px solid var(--line);
@@ -1241,45 +1253,64 @@ select {
 .glowing-card-header {
   position: relative;
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
   z-index: 1;
+}
+
+.pricing02-card-header {
+  justify-items: center;
+  text-align: center;
 }
 
 .glowing-card-name {
   margin: 0;
-  font-size: 1.08rem;
+  font-size: 1.45rem;
   font-weight: 700;
 }
 
 .glowing-card-description {
-  margin: 0.45rem 0 0;
+  margin: 0;
   color: var(--muted);
   line-height: 1.55;
+  max-width: 22rem;
 }
 
 .glowing-card-price-row {
   display: flex;
   align-items: flex-end;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pricing02-price-row {
+  position: relative;
+  z-index: 1;
+}
+
+.glowing-card-price-figure {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.14rem;
 }
 
 .glowing-card-currency {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   line-height: 1;
   font-weight: 700;
+  padding-top: 0.38rem;
 }
 
 .glowing-card-price {
-  font-size: clamp(2.4rem, 4vw, 3.4rem);
-  font-weight: 700;
+  font-size: clamp(2.55rem, 4vw, 3.55rem);
+  font-weight: 800;
   line-height: 0.95;
   letter-spacing: -0.05em;
 }
 
 .glowing-card-cycle {
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.45rem;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
@@ -1288,9 +1319,13 @@ select {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.65rem;
   position: relative;
   z-index: 1;
+}
+
+.pricing02-feature-list {
+  margin-top: 0.35rem;
 }
 
 .glowing-card-features li {
@@ -1298,12 +1333,26 @@ select {
   align-items: flex-start;
   gap: 0.65rem;
   color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 700;
   line-height: 1.55;
+}
+
+.glowing-card-check-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  flex: 0 0 auto;
 }
 
 .glowing-card-check {
   flex: 0 0 auto;
-  margin-top: 0.18rem;
+  margin-top: 0;
 }
 
 .glowing-card-note,
@@ -1387,6 +1436,170 @@ select {
   width: min(1120px, 100%);
   max-height: calc(100vh - 2.5rem);
   overflow-y: auto;
+}
+
+.results-cta-section {
+  position: relative;
+}
+
+.results-cta-shell {
+  position: relative;
+}
+
+.results-cta-glow {
+  position: absolute;
+  width: min(24rem, 45vw);
+  height: min(24rem, 45vw);
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(72px);
+  opacity: 0.7;
+}
+
+.results-cta-glow-left {
+  top: -4rem;
+  left: -3rem;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.results-cta-glow-right {
+  right: -3rem;
+  bottom: -4rem;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.results-cta-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4rem);
+  border-color: color-mix(in srgb, var(--line-strong) 36%, transparent);
+  border-radius: 1.75rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 86%, transparent), color-mix(in srgb, var(--bg) 78%, transparent));
+  backdrop-filter: blur(14px);
+  box-shadow: 0 22px 60px rgba(14, 14, 14, 0.08);
+}
+
+.results-cta-content {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 48rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.results-cta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 auto;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.results-cta-badge-icon {
+  width: 0.78rem;
+  height: 0.78rem;
+  fill: currentColor;
+}
+
+.results-cta-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.45rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  font-weight: 900;
+}
+
+.results-cta-title span {
+  color: var(--accent);
+}
+
+.results-cta-copy {
+  max-width: 38rem;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.results-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+}
+
+.results-cta-primary,
+.results-cta-secondary {
+  min-width: 13.5rem;
+  padding: 0.95rem 1.35rem;
+  border-radius: 999px;
+  font-weight: 900;
+  border: 1px solid transparent;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.results-cta-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #09090b 0%, color-mix(in srgb, var(--accent) 72%, #1d4ed8) 100%);
+  box-shadow: 0 22px 44px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+:root[data-theme="dark"] .results-cta-primary {
+  color: #09090b;
+  background: linear-gradient(135deg, #f5f7fb 0%, color-mix(in srgb, var(--accent) 46%, #a5b4fc) 100%);
+}
+
+.results-cta-secondary {
+  color: var(--fg);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--line-strong) 42%, transparent);
+}
+
+.results-cta-primary:hover,
+.results-cta-secondary:hover {
+  transform: translateY(-1px);
+}
+
+.results-cta-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem 2rem;
+  margin-top: 0.35rem;
+}
+
+.results-cta-benefit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.results-cta-benefit-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--accent);
 }
 
 .source-activity-strip {
@@ -2971,6 +3184,23 @@ select {
 
   .pricing-modal-panel {
     max-height: calc(100vh - 1.5rem);
+  }
+
+  .results-cta-card {
+    padding: 2rem 1.4rem;
+  }
+
+  .results-cta-copy {
+    font-size: 0.95rem;
+  }
+
+  .results-cta-actions {
+    flex-direction: column;
+  }
+
+  .results-cta-primary,
+  .results-cta-secondary {
+    width: 100%;
   }
 
   .recent-analysis-item {
