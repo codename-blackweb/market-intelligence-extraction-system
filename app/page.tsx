@@ -1842,25 +1842,25 @@ export default function Home() {
             </section>
           </ScrollReveal>
 
-          <section id="pricing">
-            {showInlinePricing ? (
-              <ScrollReveal eager>
-                <section className="max-w-5xl mx-auto px-6 pb-8" ref={pricingSectionRef}>
-                  <div className="card p-6 pricing-section-shell">
-                    <AnimatedPricingSection
-                      currentPlan={usageState.plan}
-                      focusState={gatedAction !== null}
-                      message={pricingMessage}
-                      onSelectPlan={(plan) => void handlePlanSelection(plan)}
-                    />
-                  </div>
-                </section>
-              </ScrollReveal>
-            ) : null}
-          </section>
-
         </>
       )}
+
+      <section className="mt-24" id="pricing">
+        {showInlinePricing ? (
+          <ScrollReveal eager>
+            <section className="max-w-5xl mx-auto px-6 pb-8" ref={pricingSectionRef}>
+              <div className="card p-6 pricing-section-shell">
+                <AnimatedPricingSection
+                  currentPlan={usageState.plan}
+                  focusState={gatedAction !== null}
+                  message={pricingMessage}
+                  onSelectPlan={(plan) => void handlePlanSelection(plan)}
+                />
+              </div>
+            </section>
+          </ScrollReveal>
+        ) : null}
+      </section>
 
       <section className="mt-24 faq-visibility-shell" id="faq">
         <ScrollReveal eager>

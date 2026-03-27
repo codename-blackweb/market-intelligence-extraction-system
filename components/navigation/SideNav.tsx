@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type MouseEvent as ReactMouseEvent
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeDollarSign,
@@ -118,7 +124,7 @@ function SideNavItem({
   expanded: boolean;
   active: boolean;
   mobile?: boolean;
-  onNavigate?: () => void;
+  onNavigate?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
 }) {
   const Icon = item.icon;
 
@@ -191,6 +197,31 @@ export default function SideNav() {
     };
   }, [mobileOpen]);
 
+  const handleNavigate = (item: NavItem, closeMobile = false) => {
+    return (event: ReactMouseEvent<HTMLAnchorElement>) => {
+      if (closeMobile) {
+        setMobileOpen(false);
+      }
+
+      if (!item.sectionId || pathname !== "/") {
+        return;
+      }
+
+      const target = document.getElementById(item.sectionId);
+
+      if (!target) {
+        return;
+      }
+
+      event.preventDefault();
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+      window.history.replaceState(null, "", item.href);
+    };
+  };
+
   if (hiddenOnRoute) {
     return null;
   }
@@ -232,6 +263,7 @@ export default function SideNav() {
                 index={index}
                 item={item}
                 key={item.label}
+                onNavigate={handleNavigate(item)}
               />
             ))}
           </div>
@@ -316,7 +348,7 @@ export default function SideNav() {
                       index={index}
                       item={item}
                       mobile
-                      onNavigate={() => setMobileOpen(false)}
+                      onNavigate={handleNavigate(item, true)}
                     />
                   </motion.div>
                 ))}

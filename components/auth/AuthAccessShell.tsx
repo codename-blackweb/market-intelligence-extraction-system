@@ -48,6 +48,12 @@ export default function AuthAccessShell() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const passkeySupported = false;
+  const inputClassName =
+    "h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-10 text-xs font-bold text-zinc-900 outline-none transition-all focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100";
+  const primaryButtonClassName =
+    "w-full h-11 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-black rounded-xl shadow-lg transition-all hover:brightness-110 active:scale-[0.98] uppercase tracking-[0.2em]";
+  const secondaryButtonClassName =
+    "h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all font-black text-[9px] uppercase tracking-widest";
 
   const hint = useMemo(() => {
     switch (view) {
@@ -224,28 +230,34 @@ export default function AuthAccessShell() {
   };
 
   return (
-    <section className="min-h-screen bg-white dark:bg-zinc-950 px-4 py-12">
-      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl items-center justify-center">
-        <motion.div
-          className="w-full max-w-md"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="mb-8 text-center">
+    <section className="min-h-screen w-full flex items-center justify-center p-4 bg-white dark:bg-zinc-950">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-sm"
+      >
+        <div className="relative">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-xl backdrop-blur-sm">
+            <div className="text-center mb-8">
               <motion.div
-                animate={{ scale: 1 }}
-                className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900"
                 initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
                 transition={{ delay: 0.1, type: "spring" }}
+                className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-900 dark:bg-zinc-100 mb-4 shadow-lg shadow-zinc-200 dark:shadow-none"
               >
-                {view === "verify" ? <ShieldCheck className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                {view === "verify" ? (
+                  <ShieldCheck className="w-5 h-5 text-white dark:text-zinc-900" />
+                ) : view === "magic" ? (
+                  <Mail className="w-5 h-5 text-white dark:text-zinc-900" />
+                ) : (
+                  <Lock className="w-5 h-5 text-white dark:text-zinc-900" />
+                )}
               </motion.div>
               <h1 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
                 {hint.title}
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+              <p className="text-[10px] font-bold text-zinc-400 mt-2 uppercase tracking-widest leading-relaxed">
                 {hint.copy}
               </p>
             </div>
@@ -253,7 +265,7 @@ export default function AuthAccessShell() {
             <div className="mb-6 grid grid-cols-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
               {segmentedViews.map((item) => (
                 <button
-                  className={`rounded-xl px-2 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-colors ${
+                  className={`rounded-xl px-2 py-2 text-[9px] font-black uppercase tracking-[0.16em] transition-colors ${
                     view === item.id
                       ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -271,32 +283,41 @@ export default function AuthAccessShell() {
               ))}
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                  Work Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-                  <input
-                    className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-10 text-sm font-semibold text-zinc-900 outline-none transition-all focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@workspace.com"
-                    type="email"
-                    value={email}
-                  />
+            <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
+              {view !== "verify" ? (
+                <div className="space-y-1.5">
+                  <label
+                    className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1"
+                    htmlFor="auth-email"
+                  >
+                    Work Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                    <input
+                      id="auth-email"
+                      type="email"
+                      placeholder="user@workspace.com"
+                      className={inputClassName}
+                      onChange={(event) => setEmail(event.target.value)}
+                      value={email}
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               {view === "signin" ? (
                 <>
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between px-1">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    <div className="flex justify-between items-center px-1">
+                      <label
+                        className="text-[10px] font-black uppercase tracking-widest text-zinc-500"
+                        htmlFor="auth-password"
+                      >
                         Password
                       </label>
                       <button
-                        className="text-[10px] font-black uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+                        className="text-[9px] font-black text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors uppercase tracking-widest"
                         onClick={() => setView("recovery")}
                         type="button"
                       >
@@ -304,35 +325,42 @@ export default function AuthAccessShell() {
                       </button>
                     </div>
                     <div className="relative">
-                      <KeyRound className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+                      <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
                       <input
-                        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-10 text-sm font-semibold text-zinc-900 outline-none transition-all focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder="••••••••"
+                        id="auth-password"
                         type="password"
+                        placeholder="••••••••"
+                        className={inputClassName}
+                        onChange={(event) => setPassword(event.target.value)}
                         value={password}
                       />
                     </div>
                   </div>
 
-                  <label className="flex items-center gap-2 px-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                  <div className="flex items-center space-x-2 px-1">
                     <input
+                      id="remember"
                       checked={rememberSession}
-                      className="h-4 w-4 rounded border-zinc-300"
+                      className="h-4 w-4 rounded border border-zinc-300 bg-transparent accent-zinc-900 dark:border-zinc-700 dark:accent-zinc-100"
                       onChange={(event) => setRememberSession(event.target.checked)}
                       type="checkbox"
                     />
-                    Remember session
-                  </label>
+                    <label
+                      htmlFor="remember"
+                      className="text-[10px] font-bold text-zinc-400 cursor-pointer select-none uppercase tracking-wide"
+                    >
+                      Persistent session (30d)
+                    </label>
+                  </div>
 
                   <button
-                    className="flex h-11 w-full items-center justify-center rounded-xl bg-zinc-900 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all hover:brightness-110 dark:bg-zinc-100 dark:text-zinc-900"
+                    className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handlePasswordSignIn}
                     type="button"
                   >
                     {loading ? "Continuing..." : "Continue"}
-                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                    <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
                   </button>
                 </>
               ) : null}
@@ -340,15 +368,15 @@ export default function AuthAccessShell() {
               {view === "magic" ? (
                 <>
                   <button
-                    className="flex h-11 w-full items-center justify-center rounded-xl bg-zinc-900 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all hover:brightness-110 dark:bg-zinc-100 dark:text-zinc-900"
+                    className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handleMagicAccess}
                     type="button"
                   >
                     {loading ? "Sending..." : "Send Magic Access"}
-                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                    <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
                   </button>
-                  <p className="text-center text-xs font-semibold text-zinc-400">
+                  <p className="text-center text-[10px] font-bold text-zinc-400 uppercase tracking-wide">
                     No password required • Secure access flow
                   </p>
                 </>
@@ -357,13 +385,13 @@ export default function AuthAccessShell() {
               {view === "recovery" ? (
                 <>
                   <button
-                    className="flex h-11 w-full items-center justify-center rounded-xl bg-zinc-900 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all hover:brightness-110 dark:bg-zinc-100 dark:text-zinc-900"
+                    className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handleRecovery}
                     type="button"
                   >
                     {loading ? "Sending..." : "Send Recovery Link"}
-                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                    <ArrowRight className="ml-2 h-3.5 w-3.5 inline-flex" />
                   </button>
                   {success === "Recovery Link Sent" ? (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
@@ -381,10 +409,14 @@ export default function AuthAccessShell() {
               {view === "verify" ? (
                 <>
                   <div className="space-y-1.5">
-                    <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    <label
+                      className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1"
+                      htmlFor="verification-code"
+                    >
                       Verification Code
                     </label>
                     <input
+                      id="verification-code"
                       className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-center text-lg font-black tracking-[0.4em] text-zinc-900 outline-none transition-all focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-100"
                       maxLength={6}
                       onChange={(event) => setVerificationCode(event.target.value)}
@@ -394,14 +426,14 @@ export default function AuthAccessShell() {
                     />
                   </div>
                   <button
-                    className="flex h-11 w-full items-center justify-center rounded-xl bg-zinc-900 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-all hover:brightness-110 dark:bg-zinc-100 dark:text-zinc-900"
+                    className={primaryButtonClassName}
                     disabled={loading}
                     onClick={handleVerification}
                     type="button"
                   >
                     {loading ? "Verifying..." : "Verify and Continue"}
                   </button>
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
+                  <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.14em] text-zinc-400">
                     <button onClick={() => setView("magic")} type="button">
                       Resend Code
                     </button>
@@ -418,31 +450,75 @@ export default function AuthAccessShell() {
                   </div>
                 </>
               ) : null}
-            </div>
+            </form>
 
-            {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
+            {error ? <p className="mt-4 text-[11px] font-semibold text-red-500">{error}</p> : null}
             {success && success !== "Recovery Link Sent" ? (
-              <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">{success}</p>
+              <p className="mt-4 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                {success}
+              </p>
             ) : null}
 
             <div className="relative my-7">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-zinc-100 dark:border-zinc-800" />
               </div>
-              <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.24em]">
-                <span className="bg-white px-4 text-zinc-400 dark:bg-zinc-950">Workspace Access</span>
+              <div className="relative flex justify-center text-[8px] uppercase font-black tracking-[0.3em]">
+                <span className="bg-white dark:bg-zinc-950 px-4 text-zinc-400 translate-y-[1px]">
+                  Connected Providers
+                </span>
               </div>
             </div>
 
-            <p className="text-center text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+            <div className="grid grid-cols-2 gap-3">
+              <button className={secondaryButtonClassName} type="button">
+                <span className="inline-flex items-center justify-center">
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 1C5.925 1 1 5.925 1 12c0 4.86 3.149 8.982 7.516 10.436.55.102.75-.239.75-.532 0-.264-.01-.963-.016-1.89-3.058.664-3.703-1.474-3.703-1.474-.5-1.27-1.221-1.608-1.221-1.608-.998-.682.076-.668.076-.668 1.103.078 1.684 1.132 1.684 1.132.98 1.68 2.571 1.194 3.198.913.1-.709.384-1.194.698-1.469-2.441-.278-5.008-1.221-5.008-5.434 0-1.2.429-2.182 1.132-2.951-.113-.278-.49-1.396.108-2.911 0 0 .923-.295 3.025 1.128A10.53 10.53 0 0 1 12 6.32c.936.004 1.879.127 2.758.372 2.1-1.423 3.022-1.128 3.022-1.128.6 1.515.223 2.633.11 2.911.705.769 1.13 1.751 1.13 2.951 0 4.223-2.57 5.153-5.018 5.426.394.34.745 1.01.745 2.036 0 1.469-.013 2.654-.013 3.015 0 .295.198.64.756.531C19.854 20.978 23 16.858 23 12c0-6.075-4.925-11-11-11Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  GitHub
+                </span>
+              </button>
+              <button className={secondaryButtonClassName} type="button">
+                <span className="inline-flex items-center justify-center">
+                  <svg className="mr-2 h-3.5 w-3.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="currentColor"
+                      className="opacity-80"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                      fill="currentColor"
+                      className="opacity-60"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="currentColor"
+                      className="opacity-40"
+                    />
+                  </svg>
+                  Google
+                </span>
+              </button>
+            </div>
+
+            <p className="text-center mt-7 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
               New here?{" "}
-              <Link className="font-black text-zinc-900 dark:text-zinc-100" href="/onboarding">
+              <Link href="/onboarding" className="font-black text-zinc-900 dark:text-zinc-100 hover:underline">
                 Create your account
               </Link>
             </p>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
     </section>
   );
 }
