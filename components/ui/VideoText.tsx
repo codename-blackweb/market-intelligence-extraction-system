@@ -20,7 +20,21 @@ export interface VideoTextProps {
   fontFamily?: string;
   fontStyle?: string;
   maskPosition?: string;
+  maskSize?: string;
+  maskText?: string;
   as?: "div" | "span" | "section" | "article" | "p" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+}
+
+export interface VideoSurfaceProps {
+  src: string;
+  className?: string;
+  autoPlay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
+  preload?: "auto" | "metadata" | "none";
+  children?: ReactNode;
+  overlayClassName?: string;
+  as?: "div" | "span" | "section" | "article" | "p";
 }
 
 export function VideoText({
@@ -39,11 +53,13 @@ export function VideoText({
   fontFamily = "sans-serif",
   fontStyle = "normal",
   maskPosition = "center",
+  maskSize = "contain",
+  maskText,
   as = "div",
   ...motionProps
 }: VideoTextProps & HTMLMotionProps<"div">) {
   const [svgMask, setSvgMask] = useState("");
-  const content = React.Children.toArray(children).join("");
+  const content = maskText ?? React.Children.toArray(children).join("");
 
   useEffect(() => {
     const responsiveFontSize = typeof fontSize === "number" ? `${fontSize}vw` : fontSize;
@@ -104,8 +120,8 @@ export function VideoText({
         style={{
           maskImage: dataUrlMask,
           WebkitMaskImage: dataUrlMask,
-          maskSize: "contain",
-          WebkitMaskSize: "contain",
+          maskSize,
+          WebkitMaskSize: maskSize,
           maskRepeat: "no-repeat",
           WebkitMaskRepeat: "no-repeat",
           maskPosition,
@@ -126,6 +142,47 @@ export function VideoText({
         </video>
       </div>
       <span className="sr-only">{content}</span>
+    </MotionComponent>
+  );
+}
+
+export function VideoSurface({
+  src,
+  className = "",
+  autoPlay = true,
+  muted = true,
+  loop = true,
+  preload = "auto",
+  children,
+  overlayClassName = "",
+  as = "div",
+  ...motionProps
+}: VideoSurfaceProps & HTMLMotionProps<"div">) {
+  const validTags = ["div", "span", "section", "article", "p"] as const;
+  const MotionComponent = motion[validTags.includes(as) ? as : "div"] as React.ElementType;
+
+  return (
+    <MotionComponent className={cn("relative overflow-hidden", className)} {...motionProps}>
+      <video
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover"
+        autoPlay={autoPlay}
+        muted={muted}
+        loop={loop}
+        preload={preload}
+        playsInline
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+      <span className={cn("absolute inset-0", overlayClassName)} aria-hidden="true" />
+      {children ? (
+        <span
+          className="flex h-full w-full items-center justify-center"
+          style={{ position: "relative", zIndex: 1 }}
+        >
+          {children}
+        </span>
+      ) : null}
     </MotionComponent>
   );
 }

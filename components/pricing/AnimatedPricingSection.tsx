@@ -11,6 +11,7 @@ import {
 import { Check } from "lucide-react";
 import { motion, type Variants } from "framer-motion";
 import type { UserPlan } from "@/types/market-analysis";
+import { VideoSurface, VideoText } from "@/components/ui/VideoText";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -31,6 +32,8 @@ type TabsContextValue = {
   value: BillingCycle;
   onValueChange: (nextValue: BillingCycle) => void;
 };
+
+const VIDEO_TEXT_SRC = "/assets/gradient-video.mp4";
 
 const TabsContext = createContext<TabsContextValue | null>(null);
 
@@ -85,7 +88,14 @@ function TabsTrigger({
       onClick={() => onValueChange(value)}
       type="button"
     >
-      {children}
+      {isActive ? (
+        <VideoSurface
+          src={VIDEO_TEXT_SRC}
+          className="pricing-tabs-trigger-surface"
+          overlayClassName="pricing-tabs-trigger-surface-overlay"
+        />
+      ) : null}
+      <span className="pricing-tabs-trigger-label">{children}</span>
     </button>
   );
 }
@@ -153,26 +163,41 @@ function GradientButton({
   children,
   onClick,
   disabled = false,
-  secondary = false
+  secondary = false,
+  videoFill = false
 }: {
   children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
   secondary?: boolean;
+  videoFill?: boolean;
 }) {
   return (
     <button
-      className={`gradient-button ${secondary ? "is-secondary" : ""}`}
+      className={`gradient-button ${secondary ? "is-secondary" : ""} ${videoFill ? "has-video-fill" : ""}`}
       disabled={disabled}
       onClick={onClick}
       type="button"
     >
-      <span>{children}</span>
+      {videoFill ? (
+        <VideoSurface
+          src={VIDEO_TEXT_SRC}
+          className="gradient-button-surface"
+          overlayClassName="gradient-button-surface-overlay"
+        />
+      ) : null}
+      <span className="gradient-button-label">{children}</span>
     </button>
   );
 }
 
-function CountUp({ value }: { value: number }) {
+function CountUp({
+  value,
+  children
+}: {
+  value: number;
+  children: (displayValue: number) => ReactNode;
+}) {
   const [displayValue, setDisplayValue] = useState(value);
 
   useEffect(() => {
@@ -199,7 +224,7 @@ function CountUp({ value }: { value: number }) {
     };
   }, [value]);
 
-  return <>{displayValue}</>;
+  return <>{children(displayValue)}</>;
 }
 
 const plans: PricingPlan[] = [
@@ -299,15 +324,17 @@ type Props = {
   focusState?: boolean;
   message: string;
   onSelectPlan: (plan: UserPlan) => void;
+  initialBillingCycle?: BillingCycle;
 };
 
 export default function AnimatedPricingSection({
   currentPlan,
   focusState = false,
   message,
-  onSelectPlan
+  onSelectPlan,
+  initialBillingCycle = "monthly"
 }: Props) {
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialBillingCycle);
 
   const renderCards = (cycle: BillingCycle) => (
     <GlowingCards className="pricing02-cards">
@@ -323,20 +350,47 @@ export default function AnimatedPricingSection({
             key={`${plan.id}-${cycle}`}
           >
             <div className="glowing-card-header pricing02-card-header">
-              <h3 className="glowing-card-name">{plan.name}</h3>
+              <VideoText
+                as="div"
+                src={VIDEO_TEXT_SRC}
+                className="glowing-card-name glowing-card-name-video"
+                fontSize="clamp(1.15rem, 2.3vw, 1.52rem)"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                dominantBaseline="middle"
+              >
+                {plan.name}
+              </VideoText>
               <p className="glowing-card-description">{plan.description}</p>
             </div>
 
             <div className="glowing-card-price-row pricing02-price-row">
-              <div className="glowing-card-price-figure">
-                <span className="glowing-card-currency">$</span>
-                <span className="glowing-card-price">
-                  <CountUp value={displayPrice} />
-                </span>
-              </div>
-              <span className="glowing-card-cycle">
+              <CountUp value={displayPrice}>
+                {(animatedValue) => (
+                  <VideoText
+                    as="div"
+                    src={VIDEO_TEXT_SRC}
+                    className="glowing-card-price-video"
+                    fontSize="clamp(1.9rem, 4.35vw, 3.3rem)"
+                    fontWeight={800}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    dominantBaseline="middle"
+                  >
+                    {`$${animatedValue}`}
+                  </VideoText>
+                )}
+              </CountUp>
+              <VideoText
+                as="div"
+                src={VIDEO_TEXT_SRC}
+                className="glowing-card-cycle glowing-card-cycle-video"
+                fontSize="clamp(0.86rem, 1.2vw, 0.98rem)"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                dominantBaseline="middle"
+              >
                 {cycle === "monthly" ? "/month" : "/year"}
-              </span>
+              </VideoText>
             </div>
 
             <ul className="glowing-card-features pricing02-feature-list">
@@ -356,6 +410,7 @@ export default function AnimatedPricingSection({
               disabled={isCurrent}
               onClick={() => onSelectPlan(plan.id)}
               secondary={!plan.highlight}
+              videoFill={plan.id !== "free"}
             >
               {isCurrent ? "Current Plan" : plan.cta}
             </GradientButton>
@@ -376,7 +431,17 @@ export default function AnimatedPricingSection({
         {message !== "Unlock full intelligence" ? (
           <p className="pricing-context-message">{message}</p>
         ) : null}
-        <h2>Unlock full intelligence</h2>
+        <VideoText
+          as="div"
+          src={VIDEO_TEXT_SRC}
+          className="pricing-heading-video"
+          fontSize="clamp(1.8rem, 4vw, 3.2rem)"
+          fontWeight={700}
+          fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+          dominantBaseline="middle"
+        >
+          Unlock Full Intelligence
+        </VideoText>
         <p className="field-copy result-copy">
           Start free, validate demand fast, and unlock deeper intelligence when you need it.
         </p>

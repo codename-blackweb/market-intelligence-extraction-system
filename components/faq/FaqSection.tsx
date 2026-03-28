@@ -72,7 +72,7 @@ export default function FaqSection() {
                   as="div"
                   src="/assets/gradient-video.mp4"
                   className="faq-title-video"
-                  fontSize="clamp(1.92rem, 3.6vw, 3.3rem)"
+                  fontSize="clamp(1.1rem, 4.9vw, 2.85rem)"
                   fontWeight={700}
                   fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
                   textAnchor="start"

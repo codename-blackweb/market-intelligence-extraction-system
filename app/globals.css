@@ -1851,6 +1851,12 @@ select {
   letter-spacing: -0.05em;
 }
 
+.pricing-heading-video {
+  width: min(100%, 46rem);
+  height: clamp(3.2rem, 8vw, 6rem);
+  margin: 0 auto;
+}
+
 .pricing-context-message {
   margin: 0;
   font-size: 0.82rem;
@@ -1884,6 +1890,8 @@ select {
 }
 
 .pricing-tabs-trigger {
+  position: relative;
+  isolation: isolate;
   padding: 0.72rem 1.2rem;
   border: 0;
   border-radius: 999px;
@@ -1898,13 +1906,30 @@ select {
 }
 
 .pricing-tabs-trigger.is-active {
-  background: var(--ink);
-  color: var(--bg);
+  background: transparent;
+  color: #09090b;
 }
 
 :root[data-theme="dark"] .pricing-tabs-trigger.is-active {
-  background: #fff;
+  background: transparent;
   color: #09090b;
+}
+
+.pricing-tabs-trigger-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.pricing-tabs-trigger-surface-overlay {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.pricing-tabs-trigger-label {
+  position: relative;
+  z-index: 1;
 }
 
 .glowing-cards {
@@ -1980,6 +2005,13 @@ select {
   font-weight: 700;
 }
 
+.glowing-card-name-video {
+  width: 100%;
+  max-width: 10rem;
+  height: 1.95rem;
+  margin: 0 auto;
+}
+
 .glowing-card-description {
   margin: 0;
   color: var(--muted);
@@ -1992,6 +2024,7 @@ select {
   align-items: flex-end;
   justify-content: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .pricing02-price-row {
@@ -2019,11 +2052,23 @@ select {
   letter-spacing: -0.05em;
 }
 
+.glowing-card-price-video {
+  width: fit-content;
+  min-width: 7.5rem;
+  height: clamp(2.7rem, 5.8vw, 4.1rem);
+}
+
 .glowing-card-cycle {
   padding-bottom: 0.45rem;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.glowing-card-cycle-video {
+  width: fit-content;
+  height: 1.15rem;
+  padding-bottom: 0;
 }
 
 .glowing-card-features {
@@ -2077,6 +2122,7 @@ select {
 
 .gradient-button {
   position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2096,6 +2142,16 @@ select {
     box-shadow 160ms ease;
 }
 
+.gradient-button-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.gradient-button-surface-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.05));
+}
+
 :root[data-theme="dark"] .gradient-button {
   background: linear-gradient(135deg, #f8f8f6 0%, #a5b4fc 48%, #67e8f9 100%);
   color: #09090b;
@@ -2110,6 +2166,16 @@ select {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(232, 232, 232, 0.76));
 }
 
+.gradient-button.has-video-fill {
+  background: transparent;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .gradient-button.has-video-fill {
+  background: transparent;
+  color: #ffffff;
+}
+
 .gradient-button:hover {
   transform: translateY(-1px);
 }
@@ -2121,6 +2187,11 @@ select {
 }
 
 .gradient-button span {
+  position: relative;
+  z-index: 1;
+}
+
+.gradient-button-label {
   position: relative;
   z-index: 1;
 }
@@ -2427,8 +2498,8 @@ select {
 }
 
 .faq-title-video {
-  width: min(100%, 560px);
-  height: 86px;
+  width: min(100%, 34rem);
+  height: clamp(2.6rem, 6vw, 5rem);
   overflow: hidden;
 }
 
@@ -4211,8 +4282,9 @@ select {
   }
 
   .faq-title-video {
-    width: min(100%, 460px);
-    height: 74px;
+    width: 100%;
+    max-width: 30rem;
+    height: clamp(2.2rem, 11vw, 4.2rem);
   }
 
   .faq-trigger {
