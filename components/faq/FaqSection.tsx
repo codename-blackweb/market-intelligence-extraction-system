@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, HelpCircle, Minus, Plus } from "lucide-react";
+import IntentEngineAssistant from "@/components/chat/IntentEngineAssistant";
 import { VideoText } from "@/components/ui/VideoText";
 
 const faqs = [
@@ -50,99 +51,112 @@ const faqs = [
 
 export default function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   return (
-    <section className="faq-section">
-      <div className="faq-container">
-        <div className="faq-grid">
-          <div className="faq-header-shell">
-            <motion.div
-              className="faq-header"
-              initial={{ opacity: 0, x: -20 }}
-              viewport={{ once: true }}
-              whileInView={{ opacity: 1, x: 0 }}
-            >
-              <div className="faq-badge">
-                <HelpCircle className="faq-badge-icon" />
-                <span>Understand the system</span>
-              </div>
+    <>
+      <section className="faq-section">
+        <div className="faq-container">
+          <div className="faq-grid">
+            <div className="faq-header-shell">
+              <motion.div
+                className="faq-header"
+                initial={{ opacity: 0, x: -20 }}
+                viewport={{ once: true }}
+                whileInView={{ opacity: 1, x: 0 }}
+              >
+                <div className="faq-badge">
+                  <HelpCircle className="faq-badge-icon" />
+                  <span>Understand the system</span>
+                </div>
 
-              <div aria-level={2} className="faq-title-video-wrap" role="heading">
-                <VideoText
-                  as="div"
-                  src="/assets/gradient-video.mp4"
-                  className="faq-title-video"
-                  fontSize="clamp(1.1rem, 4.9vw, 2.85rem)"
-                  fontWeight={700}
-                  fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                  textAnchor="start"
-                  textX="0%"
-                  dominantBaseline="middle"
-                  maskPosition="left center"
-                  autoPlay
-                  muted
-                  loop
-                  preload="auto"
-                >
-                  WHAT THIS ACTUALLY DOES
-                </VideoText>
-              </div>
-
-              <p className="faq-copy">
-                This isn’t another keyword tool. It’s a system for extracting real demand
-                signals and turning them into usable strategic direction.
-              </p>
-
-              <button className="faq-support-button" type="button">
-                Need deeper help
-                <ArrowUpRight className="faq-support-icon" />
-              </button>
-            </motion.div>
-          </div>
-
-          <div className="faq-accordion-shell">
-            {faqs.map((faq, index) => {
-              const isOpen = openIndex === index;
-
-              return (
-                <motion.article
-                  className={`faq-item ${isOpen ? "is-open" : ""}`}
-                  key={faq.question}
-                  layout
-                  transition={{ duration: 0.28, ease: "easeOut" }}
-                >
-                  <button
-                    aria-expanded={isOpen}
-                    className="faq-trigger"
-                    onClick={() => setOpenIndex(isOpen ? null : index)}
-                    type="button"
+                <div aria-level={2} className="faq-title-video-wrap" role="heading">
+                  <VideoText
+                    as="div"
+                    src="/assets/gradient-video.mp4"
+                    className="faq-title-video"
+                    fontSize="clamp(1.1rem, 4.9vw, 2.85rem)"
+                    fontWeight={700}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="start"
+                    textX="0%"
+                    dominantBaseline="middle"
+                    maskPosition="left center"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
                   >
-                    <span className="faq-question">{faq.question}</span>
-                    <span className="faq-icon-shell" aria-hidden="true">
-                      {isOpen ? <Minus className="faq-icon" /> : <Plus className="faq-icon" />}
-                    </span>
-                  </button>
+                    WHAT THIS ACTUALLY DOES
+                  </VideoText>
+                </div>
 
-                  <AnimatePresence initial={false}>
-                    {isOpen ? (
-                      <motion.div
-                        className="faq-answer-shell"
-                        exit={{ height: 0, opacity: 0 }}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        transition={{ duration: 0.28, ease: "easeOut" }}
-                      >
-                        <div className="faq-divider" />
-                        <p className="faq-answer">{faq.answer}</p>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                </motion.article>
-              );
-            })}
+                <p className="faq-copy">
+                  This isn’t another keyword tool. It’s a system for extracting real demand
+                  signals and turning them into usable strategic direction.
+                </p>
+
+                <button
+                  aria-haspopup="dialog"
+                  className="faq-support-button"
+                  onClick={() => setIsAssistantOpen(true)}
+                  type="button"
+                >
+                  Need deeper help
+                  <ArrowUpRight className="faq-support-icon" />
+                </button>
+              </motion.div>
+            </div>
+
+            <div className="faq-accordion-shell">
+              {faqs.map((faq, index) => {
+                const isOpen = openIndex === index;
+
+                return (
+                  <motion.article
+                    className={`faq-item ${isOpen ? "is-open" : ""}`}
+                    key={faq.question}
+                    layout
+                    transition={{ duration: 0.28, ease: "easeOut" }}
+                  >
+                    <button
+                      aria-expanded={isOpen}
+                      className="faq-trigger"
+                      onClick={() => setOpenIndex(isOpen ? null : index)}
+                      type="button"
+                    >
+                      <span className="faq-question">{faq.question}</span>
+                      <span className="faq-icon-shell" aria-hidden="true">
+                        {isOpen ? <Minus className="faq-icon" /> : <Plus className="faq-icon" />}
+                      </span>
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {isOpen ? (
+                        <motion.div
+                          className="faq-answer-shell"
+                          exit={{ height: 0, opacity: 0 }}
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          transition={{ duration: 0.28, ease: "easeOut" }}
+                        >
+                          <div className="faq-divider" />
+                          <p className="faq-answer">{faq.answer}</p>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </motion.article>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <IntentEngineAssistant
+        open={isAssistantOpen}
+        onClose={() => setIsAssistantOpen(false)}
+      />
+    </>
   );
 }
