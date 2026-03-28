@@ -70,11 +70,11 @@ type EmotionalTone =
   | "curious"
   | "neutral";
 
-const ASSISTANT_NAME = "Avery";
+const ASSISTANT_NAME = "Signal";
 const ASSISTANT_BADGE = "GUIDE";
 const ASSISTANT_SUBTITLE = "IntentEngine Strategy Guide";
 const INITIAL_MESSAGE =
-  "Hi, I’m Avery. I can help you make sense of search demand, buyer intent, objections, message angles, and what to test next. What are you looking at?";
+  "Hey, I’m Signal. I help make sense of demand patterns, buyer intent, objections, and what to do next. What are you looking at?";
 
 const TOPIC_KEYWORDS: Record<Topic, string[]> = {
   signal: [
