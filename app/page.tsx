@@ -171,7 +171,7 @@ const intelligenceOutputTimelineSteps: IntelligenceTimelineStep[] = [
 const RECENT_ANALYSES_STORAGE_KEY = "market-intelligence:recent-analyses:v1";
 const USAGE_STATE_STORAGE_KEY = "market-intelligence:usage:v1";
 const MAX_SAVED_RUNS = 10;
-const LIVE_DAILY_LIMIT = 5;
+const FREE_ANALYSIS_RUN_LIMIT = 1;
 const CLIENT_MODE = ((process.env.NEXT_PUBLIC_MODE || "DEV").toUpperCase() as
   | "DEV"
   | "HYBRID"
@@ -229,14 +229,16 @@ type SavedAnalysisRun = {
 };
 
 type UsageState = {
+  userId: string | null;
   totalRuns: number;
   runsToday: number;
   lastRunTimestamp: number | null;
   lastRunDay: string;
   plan: UserPlan;
+  freeRunsRemaining: number;
 };
 
-type GatedAction = "export" | "live_limit" | "deep" | "generator" | null;
+type GatedAction = "analysis_limit" | "export" | "live_limit" | "deep" | "generator" | null;
 
 type ActionOutputState = Partial<
   Record<
@@ -364,42 +366,72 @@ function getTodayKey() {
   return new Date().toLocaleDateString("en-CA");
 }
 
-function normalizeUsageState(state?: Partial<UsageState>): UsageState {
+function resolveUsagePlan(state?: Partial<UsageState>, planOverride?: UserPlan): UserPlan {
+  if (planOverride === "pro" || planOverride === "agency") {
+    return planOverride;
+  }
+
+  if (state?.plan === "pro" || state?.plan === "agency") {
+    return state.plan;
+  }
+
+  const storedPlan = loadStoredPlan();
+  return storedPlan === "pro" || storedPlan === "agency" ? storedPlan : "free";
+}
+
+function normalizeUsageState(
+  state?: Partial<UsageState>,
+  currentUserId?: string,
+  planOverride?: UserPlan
+): UsageState {
   const today = getTodayKey();
   const lastRunDay = typeof state?.lastRunDay === "string" ? state.lastRunDay : today;
+  const storedUserId = typeof state?.userId === "string" && state.userId ? state.userId : null;
+  const resolvedUserId = currentUserId || storedUserId;
+  const hasUserMismatch = Boolean(currentUserId && storedUserId !== currentUserId);
+  const plan = resolveUsagePlan(state, planOverride);
+  const defaultFreeRunsRemaining = plan === "free" ? FREE_ANALYSIS_RUN_LIMIT : 0;
 
   return {
-    totalRuns: typeof state?.totalRuns === "number" ? state.totalRuns : 0,
+    userId: resolvedUserId,
+    totalRuns:
+      !hasUserMismatch && typeof state?.totalRuns === "number" ? state.totalRuns : 0,
     runsToday:
-      typeof state?.runsToday === "number" && lastRunDay === today ? state.runsToday : 0,
+      !hasUserMismatch &&
+      typeof state?.runsToday === "number" &&
+      lastRunDay === today
+        ? state.runsToday
+        : 0,
     lastRunTimestamp:
-      typeof state?.lastRunTimestamp === "number" ? state.lastRunTimestamp : null,
-    lastRunDay,
-    plan:
-      state?.plan === "pro" ||
-      state?.plan === "agency" ||
-      loadStoredPlan() === "pro" ||
-      loadStoredPlan() === "agency"
-        ? (state?.plan === "agency" || loadStoredPlan() === "agency" ? "agency" : "pro")
-        : "free"
+      !hasUserMismatch && typeof state?.lastRunTimestamp === "number"
+        ? state.lastRunTimestamp
+        : null,
+    lastRunDay: hasUserMismatch ? today : lastRunDay,
+    plan,
+    freeRunsRemaining:
+      plan === "free"
+        ? !hasUserMismatch && typeof state?.freeRunsRemaining === "number"
+          ? Math.max(0, Math.min(FREE_ANALYSIS_RUN_LIMIT, state.freeRunsRemaining))
+          : defaultFreeRunsRemaining
+        : 0
   };
 }
 
-function loadUsageState() {
+function loadUsageState(currentUserId?: string, planOverride?: UserPlan) {
   if (typeof window === "undefined") {
-    return normalizeUsageState();
+    return normalizeUsageState(undefined, currentUserId, planOverride);
   }
 
   const raw = window.localStorage.getItem(USAGE_STATE_STORAGE_KEY);
 
   if (!raw) {
-    return normalizeUsageState();
+    return normalizeUsageState(undefined, currentUserId, planOverride);
   }
 
   try {
-    return normalizeUsageState(JSON.parse(raw) as Partial<UsageState>);
+    return normalizeUsageState(JSON.parse(raw) as Partial<UsageState>, currentUserId, planOverride);
   } catch {
-    return normalizeUsageState();
+    return normalizeUsageState(undefined, currentUserId, planOverride);
   }
 }
 
@@ -417,6 +449,8 @@ function formatGeneratedTimestamp(timestamp: number) {
 
 function getPricingMessage(gatedAction: GatedAction) {
   switch (gatedAction) {
+    case "analysis_limit":
+      return "Unlock full intelligence";
     case "export":
       return "Full report export is a Pro feature";
     case "live_limit":
@@ -556,8 +590,8 @@ export default function Home() {
 
   useEffect(() => {
     const localRuns = loadSavedRuns();
-    const localUsage = loadUsageState();
     const nextUserId = session?.user.id ?? getOrCreateUserId();
+    const localUsage = loadUsageState(nextUserId);
 
     setUserId(nextUserId);
     setSavedRuns(localRuns);
@@ -595,10 +629,7 @@ export default function Home() {
             profileJson.profile?.plan === "pro" || profileJson.profile?.plan === "agency"
               ? profileJson.profile.plan
               : "free";
-          const nextUsage = normalizeUsageState({
-            ...localUsage,
-            plan: nextPlan
-          });
+          const nextUsage = normalizeUsageState(localUsage, nextUserId, nextPlan);
           persistStoredPlan(nextPlan);
           persistUsageState(nextUsage);
           setUsageState(nextUsage);
@@ -621,10 +652,14 @@ export default function Home() {
   }, [session?.user.id, setAuthPlan]);
 
   const syncPlan = async (plan: UserPlan) => {
-    const nextState = normalizeUsageState({
-      ...usageState,
+    const nextState = normalizeUsageState(
+      {
+        ...usageState,
+        plan
+      },
+      userId,
       plan
-    });
+    );
 
     clearPendingPlan();
     persistStoredPlan(plan);
@@ -755,15 +790,10 @@ export default function Home() {
 
   const runAnalysis = async (modeOverride?: "HYBRID") => {
     const requestMode = modeOverride ?? CLIENT_MODE;
+    const freeRunConsumed = usageState.plan === "free" && usageState.freeRunsRemaining <= 0;
 
-    if (requestMode === "LIVE" && usageState.plan === "free" && usageState.runsToday >= LIVE_DAILY_LIMIT) {
-      setGatedAction("live_limit");
-      setError("");
-      return;
-    }
-
-    if (usageState.plan === "free" && (depth === "deep" || depth === "aggressive")) {
-      setGatedAction("deep");
+    if (freeRunConsumed) {
+      setGatedAction("analysis_limit");
       setError("");
       return;
     }
@@ -858,23 +888,27 @@ export default function Home() {
         return nextRuns;
       });
 
-      if (requestMode === "LIVE") {
-        setUsageState((currentState) => {
-          const normalizedState = normalizeUsageState(currentState);
-          const nextState = normalizeUsageState({
+      setUsageState((currentState) => {
+        const normalizedState = normalizeUsageState(currentState, userId);
+        const nextState = normalizeUsageState(
+          {
             ...normalizedState,
             totalRuns: normalizedState.totalRuns + 1,
-            runsToday: normalizedState.runsToday + 1,
+            runsToday:
+              requestMode === "LIVE" ? normalizedState.runsToday + 1 : normalizedState.runsToday,
             lastRunTimestamp: Date.now(),
-            lastRunDay: getTodayKey()
-          });
-          persistUsageState(nextState);
-          if (nextState.plan === "free" && nextState.runsToday >= LIVE_DAILY_LIMIT) {
-            setGatedAction("live_limit");
-          }
-          return nextState;
-        });
-      }
+            lastRunDay: getTodayKey(),
+            freeRunsRemaining:
+              normalizedState.plan === "free"
+                ? Math.max(0, normalizedState.freeRunsRemaining - 1)
+                : 0
+          },
+          userId,
+          normalizedState.plan
+        );
+        persistUsageState(nextState);
+        return nextState;
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error("analyze error", message);
@@ -1036,8 +1070,8 @@ export default function Home() {
   };
 
   const activeResult = data && data.success ? data : null;
-  const liveLimitReached =
-    CLIENT_MODE === "LIVE" && usageState.plan === "free" && usageState.runsToday >= LIVE_DAILY_LIMIT;
+  const freeAnalysisLimitReached =
+    usageState.plan === "free" && usageState.freeRunsRemaining <= 0;
   const showInlinePricing =
     usageState.plan === "free" && Boolean(activeResult) && (hasCompletedFirstRun || gatedAction !== null);
   const showPricingModal =
@@ -1218,7 +1252,7 @@ export default function Home() {
 
           <button
             className="btn-primary mt-10"
-            disabled={loading || liveLimitReached}
+            disabled={loading}
             onClick={() => runAnalysis()}
             type="button"
           >
@@ -1249,20 +1283,15 @@ export default function Home() {
                   : usageState.plan === "pro"
                     ? "Pro"
                     : "Free"}{" "}
-                • {usageState.runsToday}/
-                {usageState.plan === "free" ? LIVE_DAILY_LIMIT : "∞"} AI analyses used today
+                •{" "}
+                {usageState.plan === "free"
+                  ? `${usageState.freeRunsRemaining}/${FREE_ANALYSIS_RUN_LIMIT} free analysis run remaining`
+                  : "Unlimited analysis runs"}
               </p>
-              {liveLimitReached ? (
+              {freeAnalysisLimitReached ? (
                 <p className="field-copy result-copy" role="status">
-                  Daily AI analysis limit reached
+                  Unlock full intelligence to run another analysis
                 </p>
-              ) : null}
-              {liveLimitReached ? (
-                <div className="upgrade-shell">
-                  <button className="btn-secondary" onClick={() => runAnalysis("HYBRID")} type="button">
-                    Continue in HYBRID
-                  </button>
-                </div>
               ) : null}
             </div>
           ) : null}
