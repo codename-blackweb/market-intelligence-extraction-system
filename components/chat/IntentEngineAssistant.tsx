@@ -27,14 +27,202 @@ type IntentEngineAssistantProps = {
   onClose: () => void;
 };
 
+type AssistantBranch = {
+  id:
+    | "signal"
+    | "intent"
+    | "objection"
+    | "messaging"
+    | "positioning"
+    | "test"
+    | "competition"
+    | "fallback";
+  keywords: string[];
+  respond: () => string;
+};
+
 const INITIAL_MESSAGE =
   "Hi. I can help you go deeper on search demand, buyer intent, message angles, objection patterns, and market signals. What do you want to unpack?";
 
-function buildReply(input: string) {
-  const prompt = input.trim();
-  const subject = prompt.length > 96 ? `${prompt.slice(0, 93)}...` : prompt;
+const RESPONSE_BRANCHES: AssistantBranch[] = [
+  {
+    id: "signal",
+    keywords: [
+      "signal",
+      "signals",
+      "interpret",
+      "meaning",
+      "cluster",
+      "clusters",
+      "pattern",
+      "patterns",
+      "theme",
+      "themes",
+      "demand",
+      "read the market",
+      "read the signals",
+      "what do the signals mean",
+      "decode"
+    ],
+    respond: () =>
+      "Read the signal set in layers: repeated problems show persistence, exact wording shows emotion, and clustered query patterns show where the market keeps circling the same pain. Broad educational searches usually mean curiosity, while repeated solution-aware phrasing usually means demand is consolidating around a clear need. The useful move is to separate noisy interest from repeated friction and let the repeated friction shape the strategy."
+  },
+  {
+    id: "intent",
+    keywords: [
+      "buyer intent",
+      "intent",
+      "purchase intent",
+      "high intent",
+      "ready to buy",
+      "buying",
+      "commercial",
+      "strong intent"
+    ],
+    respond: () =>
+      "Strong buyer intent shows up when people stop describing the category and start describing the decision. Look for queries with urgency, comparisons, implementation language, alternatives, pricing, timelines, or outcome specificity. If those phrases repeat across related searches, you are not looking at casual curiosity anymore. You are looking at people trying to reduce risk before they choose."
+  },
+  {
+    id: "objection",
+    keywords: [
+      "objection",
+      "objections",
+      "hesitation",
+      "hesitations",
+      "resistance",
+      "pushback",
+      "concern",
+      "concerns",
+      "trust issue",
+      "doubt"
+    ],
+    respond: () =>
+      "Objections usually hide inside queries about risk, cost, complexity, time, credibility, or whether the promised result will actually happen. Watch for phrases that imply fear of wasting money, picking the wrong option, taking on extra work, or failing to get the outcome. Those are the lines you want to answer directly in messaging, proof, onboarding, and offer design."
+  },
+  {
+    id: "messaging",
+    keywords: [
+      "message angle",
+      "messaging",
+      "angle",
+      "angles",
+      "copy",
+      "headline",
+      "hook",
+      "ad angle",
+      "email angle"
+    ],
+    respond: () =>
+      "The strongest messaging angles come from the overlap between urgent pain, desired outcome, and the language people already use on their own. Start with the phrase pattern that feels most repeated and emotionally charged, then frame the promise around speed, clarity, or risk reduction. Good angles do not invent desire. They organize demand that is already visible."
+  },
+  {
+    id: "positioning",
+    keywords: [
+      "positioning",
+      "position",
+      "differentiate",
+      "differentiation",
+      "category",
+      "frame the offer",
+      "market position"
+    ],
+    respond: () =>
+      "Positioning should come from where the market feels underserved, not from where the product team feels clever. Find the pain cluster with the highest urgency, compare how competitors frame it, then choose the tension they leave unresolved. If the market keeps repeating the same frustration and nobody owns a clean answer, that is where your position gets sharper."
+  },
+  {
+    id: "test",
+    keywords: [
+      "test",
+      "testing",
+      "experiment",
+      "experiments",
+      "which move should i test",
+      "what should i test",
+      "next step",
+      "next steps",
+      "what next",
+      "what now",
+      "next move",
+      "prioritize",
+      "validation"
+    ],
+    respond: () =>
+      "Test the smallest strategic move that can confirm demand quality fast. Start with one audience, one problem framing, and one promise, then put it into a landing page, ad, or outbound message. Prioritize the experiment that sits closest to repeated high-intent search language, because that is where you get the cleanest feedback on whether the demand is real or just descriptive noise."
+  },
+  {
+    id: "competition",
+    keywords: [
+      "competitor",
+      "competitors",
+      "competition",
+      "compare",
+      "comparison",
+      "alternatives",
+      "vs",
+      "versus"
+    ],
+    respond: () =>
+      "Use competitors as a framing dataset, not just a feature checklist. Look at what promises they repeat, what anxieties they answer, and which outcomes they push hardest. Then compare that against the unmet language in the market. The gap between what buyers keep asking and what competitors keep emphasizing is usually where the strategic opening lives."
+  },
+  {
+    id: "fallback",
+    keywords: [],
+    respond: () =>
+      "Start by isolating the repeated problem language, then separate early curiosity from high-intent search behavior. From there, compare the strongest demand cluster against competitor framing and look for the tension nobody is resolving clearly. If you want, ask me about signals, buyer intent, objections, messaging, positioning, testing, or competitors and I can go narrower."
+  }
+];
 
-  return `Here’s where I’d go deeper on "${subject}": start with the strongest demand clusters, pull out the buyer language that keeps repeating, and map the objections or hesitation signals underneath it. If you want, I can help turn that into positioning, message angles, or the next strategic move to test.`;
+function normalizePrompt(input: string) {
+  return input.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function scoreIntent(prompt: string, keywords: string[]) {
+  return keywords.reduce((score, keyword) => {
+    if (!prompt.includes(keyword)) {
+      return score;
+    }
+
+    if (keyword.includes(" ")) {
+      return score + 3;
+    }
+
+    return score + 1;
+  }, 0);
+}
+
+function buildReply(input: string) {
+  const prompt = normalizePrompt(input);
+  const rankedBranches = RESPONSE_BRANCHES.filter((branch) => branch.id !== "fallback")
+    .map((branch) => ({
+      branch,
+      score: scoreIntent(prompt, branch.keywords)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  const primaryBranch = rankedBranches[0]?.branch;
+
+  if (!primaryBranch) {
+    return RESPONSE_BRANCHES.find((branch) => branch.id === "fallback")!.respond();
+  }
+
+  if (primaryBranch.id === "signal" && prompt.includes("competitor")) {
+    return `${primaryBranch.respond()} ${RESPONSE_BRANCHES.find((branch) => branch.id === "competition")!.respond()}`;
+  }
+
+  if (primaryBranch.id === "positioning" && prompt.includes("message")) {
+    return `${primaryBranch.respond()} ${RESPONSE_BRANCHES.find((branch) => branch.id === "messaging")!.respond()}`;
+  }
+
+  if (primaryBranch.id === "intent" && (prompt.includes("objection") || prompt.includes("hesitation"))) {
+    return `${primaryBranch.respond()} ${RESPONSE_BRANCHES.find((branch) => branch.id === "objection")!.respond()}`;
+  }
+
+  if (primaryBranch.id === "test" && prompt.includes("competitor")) {
+    return `${primaryBranch.respond()} ${RESPONSE_BRANCHES.find((branch) => branch.id === "competition")!.respond()}`;
+  }
+
+  return primaryBranch.respond();
 }
 
 export default function IntentEngineAssistant({
