@@ -145,7 +145,6 @@ function GlowingCard({
     <motion.article
       className={`glowing-card ${highlighted ? "is-highlighted" : ""} ${current ? "is-current" : ""}`}
       variants={cardVariants}
-      whileHover={{ scale: 1.018, y: -4 }}
     >
       <div
         className="glowing-card-aura"

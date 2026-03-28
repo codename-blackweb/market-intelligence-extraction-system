@@ -126,7 +126,10 @@ export function VideoText({
           WebkitMaskRepeat: "no-repeat",
           maskPosition,
           WebkitMaskPosition: maskPosition,
-          opacity: 1
+          opacity: 1,
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          willChange: "transform"
         }}
       >
         <video
@@ -136,6 +139,11 @@ export function VideoText({
           loop={loop}
           preload={preload}
           playsInline
+          style={{
+            transform: "translateZ(0)",
+            backfaceVisibility: "hidden",
+            willChange: "transform"
+          }}
         >
           <source src={src} type="video/mp4" />
           Your browser does not support the video tag.
@@ -171,6 +179,11 @@ export function VideoSurface({
         loop={loop}
         preload={preload}
         playsInline
+        style={{
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          willChange: "transform"
+        }}
       >
         <source src={src} type="video/mp4" />
       </video>
