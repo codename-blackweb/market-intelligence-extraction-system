@@ -1161,15 +1161,19 @@ export default function Home() {
       </div>
 
       <section className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-10 hero-stack">
+        <div className="text-center space-y-12 lg:space-y-16 hero-stack">
           <AuroraTextEffect
             className="hero-aurora-shell bg-transparent dark:bg-transparent"
             textClassName="hero-aurora-headline"
-            fontSize="clamp(1.95rem, 7vw, 6.4rem)"
+            fontSize={
+              motionPolicy.isMobile
+                ? "clamp(1.7rem, 8vw, 3rem)"
+                : "clamp(2.85rem, 6vw, 6.2rem)"
+            }
             text={
               motionPolicy.isMobile
                 ? "TURN DEMAND\nSIGNALS INTO\nPREDICTABLE\nACQUISITION"
-                : "TURN DEMAND SIGNALS INTO PREDICTABLE ACQUISITION"
+                : "TURN DEMAND SIGNALS\nINTO PREDICTABLE\nACQUISITION"
             }
           />
           <div className="hero-orbiter">

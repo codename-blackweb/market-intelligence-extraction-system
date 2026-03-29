@@ -110,7 +110,7 @@ export function AuroraTextEffect({
           >
             <div
               className={cn(
-                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                "absolute h-[90vw] w-[90vw] max-h-[1400px] max-w-[1400px] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
                 colors.first || "bg-cyan-400",
                 blurAmount
               )}
@@ -125,7 +125,7 @@ export function AuroraTextEffect({
 
             <div
               className={cn(
-                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                "absolute h-[90vw] w-[90vw] max-h-[1400px] max-w-[1400px] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
                 colors.second,
                 blurAmount
               )}
@@ -140,7 +140,7 @@ export function AuroraTextEffect({
 
             <div
               className={cn(
-                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                "absolute h-[90vw] w-[90vw] max-h-[1400px] max-w-[1400px] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
                 colors.third,
                 blurAmount
               )}
@@ -155,7 +155,7 @@ export function AuroraTextEffect({
 
             <div
               className={cn(
-                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                "absolute h-[90vw] w-[90vw] max-h-[1400px] max-w-[1400px] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
                 colors.fourth,
                 blurAmount
               )}

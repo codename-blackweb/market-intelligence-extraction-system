@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import KineticFlowBg from "@/components/background/KineticFlowBg";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 const steps = [
@@ -40,6 +41,37 @@ const industryOptions = [
   "Education",
   "Other"
 ];
+
+const fieldLabelClass = "text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500";
+
+const fieldInputClass =
+  "h-12 w-full rounded-2xl border border-white/12 bg-[#070b13] px-4 font-semibold text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none transition-colors focus:border-cyan-200/35 focus:bg-[#050910]";
+
+const fieldTextareaClass =
+  "min-h-[160px] w-full rounded-2xl border border-white/12 bg-[#070b13] px-4 py-3 font-semibold text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none transition-colors focus:border-cyan-200/35 focus:bg-[#050910]";
+
+const secondaryActionClass =
+  "inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-300 transition-colors hover:border-white/20 hover:text-zinc-100";
+
+const primaryActionClass =
+  "inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-950 shadow-[0_18px_42px_rgba(255,255,255,0.12)] transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60";
+
+const pageOverlayStyle = {
+  background:
+    "radial-gradient(circle at top, rgba(34,211,238,0.12), transparent 26%), radial-gradient(circle at 70% 20%, rgba(167,139,250,0.08), transparent 22%), linear-gradient(180deg, rgba(2,6,23,0.44), rgba(2,6,23,0.84))"
+};
+
+const cardShellStyle = {
+  background: "rgba(10, 16, 25, 0.94)"
+};
+
+const fieldSurfaceStyle = {
+  background: "#070b13"
+};
+
+const idleStepStyle = {
+  background: "#0c1420"
+};
 
 export default function WorkspaceOnboarding() {
   const router = useRouter();
@@ -169,38 +201,60 @@ export default function WorkspaceOnboarding() {
   };
 
   return (
-    <section className="min-h-screen bg-zinc-950 px-4 py-12 text-zinc-100">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-10 flex items-center justify-between gap-4">
+    <section className="relative flex min-h-screen items-center overflow-hidden bg-[#04070d] px-4 py-12 text-zinc-100 sm:px-6 lg:px-8">
+      <KineticFlowBg
+        complexity={0.0028}
+        flowSpeed={1.2}
+        particleColors={["#67e8f9", "#7dd3fc", "#a78bfa", "#86efac"]}
+        particleCount={900}
+        trailOpacity={0.04}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={pageOverlayStyle}
+      />
+
+      <div className="relative z-10 mx-auto w-full max-w-[1100px]">
+        <div className="mx-auto mb-8 flex max-w-2xl flex-col items-center gap-4 text-center md:mb-10">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
               Workspace Setup
             </p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">
+            <h1 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">
               Create your account to start turning live demand signals into usable strategic
               direction.
             </h1>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-zinc-400">
+              Set up your profile, define the workspace context, and invite collaborators only if
+              you need them.
+            </p>
           </div>
           <Link
-            className="rounded-full border border-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-400 transition-colors hover:text-zinc-100"
+            className={secondaryActionClass}
             href="/auth"
           >
+            <ArrowLeft className="h-4 w-4" />
             Back to Login
           </Link>
         </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-900/80 p-6 shadow-2xl backdrop-blur-xl md:p-10">
-          <div className="mb-10 grid gap-4 md:grid-cols-3">
+        <div
+          className="mx-auto max-w-[860px] rounded-[2rem] border border-white/14 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.72)] md:p-8"
+          style={cardShellStyle}
+        >
+          <div className="mb-8 grid gap-3 md:grid-cols-3">
             {steps.map((stepLabel, index) => (
               <div
-                className={`rounded-2xl border px-4 py-4 ${
+                className={`rounded-[1.4rem] border px-4 py-4 ${
                   index === step
-                    ? "border-white bg-white text-zinc-950"
+                    ? "border-white/70 bg-white text-zinc-950 shadow-[0_16px_38px_rgba(255,255,255,0.12)]"
                     : index < step
                       ? "border-emerald-400/40 bg-emerald-400/10 text-zinc-100"
-                      : "border-white/10 bg-zinc-950 text-zinc-500"
+                      : "border-white/10 bg-[#0c1420] text-zinc-500"
                 }`}
                 key={stepLabel}
+                style={index === step || index < step ? undefined : idleStepStyle}
               >
                 <p className="text-[10px] font-black uppercase tracking-[0.18em]">
                   Step {index + 1}
@@ -220,47 +274,44 @@ export default function WorkspaceOnboarding() {
             animate={{ opacity: 1, y: 0 }}
             initial={{ opacity: 0, y: 14 }}
             transition={{ duration: 0.3 }}
+            className="mx-auto max-w-xl"
           >
             {step === 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    First Name
-                  </span>
+                  <span className={fieldLabelClass}>First Name</span>
                   <input
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setFirstName(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={firstName}
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Last Name
-                  </span>
+                  <span className={fieldLabelClass}>Last Name</span>
                   <input
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setLastName(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={lastName}
                   />
                 </label>
                 <label className="space-y-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Work Email
-                  </span>
+                  <span className={fieldLabelClass}>Work Email</span>
                   <input
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setEmail(event.target.value)}
+                    style={fieldSurfaceStyle}
                     type="email"
                     value={email}
                   />
                 </label>
                 <label className="space-y-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Password
-                  </span>
+                  <span className={fieldLabelClass}>Password</span>
                   <input
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setPassword(event.target.value)}
+                    style={fieldSurfaceStyle}
                     type="password"
                     value={password}
                   />
@@ -269,24 +320,22 @@ export default function WorkspaceOnboarding() {
             ) : null}
 
             {step === 1 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Workspace Name
-                  </span>
+                  <span className={fieldLabelClass}>Workspace Name</span>
                   <input
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setWorkspaceName(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={workspaceName}
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Primary Use Case
-                  </span>
+                  <span className={fieldLabelClass}>Primary Use Case</span>
                   <select
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setUseCase(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={useCase}
                   >
                     {useCaseOptions.map((option) => (
@@ -297,12 +346,11 @@ export default function WorkspaceOnboarding() {
                   </select>
                 </label>
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Team Size
-                  </span>
+                  <span className={fieldLabelClass}>Team Size</span>
                   <select
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setTeamSize(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={teamSize}
                   >
                     {teamSizeOptions.map((option) => (
@@ -313,12 +361,11 @@ export default function WorkspaceOnboarding() {
                   </select>
                 </label>
                 <label className="space-y-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Industry / Market
-                  </span>
+                  <span className={fieldLabelClass}>Industry / Market</span>
                   <select
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setIndustry(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={industry}
                   >
                     {industryOptions.map((option) => (
@@ -332,25 +379,23 @@ export default function WorkspaceOnboarding() {
             ) : null}
 
             {step === 2 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2 md:col-span-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Invite Emails
-                  </span>
+                  <span className={fieldLabelClass}>Invite Emails</span>
                   <textarea
-                    className="min-h-[160px] w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-3 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldTextareaClass}
                     onChange={(event) => setInviteEmails(event.target.value)}
                     placeholder="name@company.com, strategist@company.com"
+                    style={fieldSurfaceStyle}
                     value={inviteEmails}
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Role
-                  </span>
+                  <span className={fieldLabelClass}>Role</span>
                   <select
-                    className="h-12 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30"
+                    className={fieldInputClass}
                     onChange={(event) => setInviteRole(event.target.value)}
+                    style={fieldSurfaceStyle}
                     value={inviteRole}
                   >
                     <option value="member">Member</option>
@@ -358,7 +403,10 @@ export default function WorkspaceOnboarding() {
                     <option value="admin">Admin</option>
                   </select>
                 </label>
-                <div className="rounded-2xl border border-white/10 bg-zinc-950 p-4 text-sm text-zinc-400">
+                <div
+                  className="rounded-2xl border border-white/10 p-4 text-sm leading-6 text-zinc-400"
+                  style={idleStepStyle}
+                >
                   Step 3 is optional. If you skip it, we’ll create a personal workspace and
                   you can invite teammates later.
                 </div>
@@ -366,13 +414,15 @@ export default function WorkspaceOnboarding() {
             ) : null}
           </motion.div>
 
-          {error ? <p className="mt-6 text-sm text-red-400">{error}</p> : null}
-          {success ? <p className="mt-6 text-sm text-emerald-300">{success}</p> : null}
+          {error ? <p className="mx-auto mt-6 max-w-xl text-sm text-red-400">{error}</p> : null}
+          {success ? (
+            <p className="mx-auto mt-6 max-w-xl text-sm text-emerald-300">{success}</p>
+          ) : null}
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+          <div className="mx-auto mt-8 flex max-w-xl flex-wrap items-center justify-between gap-3">
             {step > 0 ? (
               <button
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-300"
+                className={secondaryActionClass}
                 onClick={() => setStep((current) => Math.max(0, current - 1))}
                 type="button"
               >
@@ -381,7 +431,7 @@ export default function WorkspaceOnboarding() {
               </button>
             ) : (
               <Link
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-300"
+                className={secondaryActionClass}
                 href="/auth"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -391,7 +441,7 @@ export default function WorkspaceOnboarding() {
 
             {step < steps.length - 1 ? (
               <button
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-950"
+                className={primaryActionClass}
                 onClick={continueToNextStep}
                 type="button"
               >
@@ -401,14 +451,14 @@ export default function WorkspaceOnboarding() {
             ) : (
               <div className="flex flex-wrap items-center gap-3">
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-300"
+                  className={secondaryActionClass}
                   onClick={() => void handleCreateWorkspace(true)}
                   type="button"
                 >
                   Skip for Now
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-950"
+                  className={primaryActionClass}
                   disabled={loading}
                   onClick={() => void handleCreateWorkspace(false)}
                   type="button"

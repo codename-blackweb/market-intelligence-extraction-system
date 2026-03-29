@@ -880,42 +880,57 @@ select {
 }
 
 .hero-stack {
-  width: min(1200px, calc(100% - 2rem));
+  width: min(1680px, calc(100vw - 3rem));
 }
 
 .hero-aurora-shell {
   width: 100%;
-  padding-inline: 1rem;
+  padding-inline: clamp(1rem, 3.4vw, 3.25rem);
 }
 
 .hero-orbiter {
-  margin-top: -1.15rem;
+  margin-top: -0.55rem;
   width: 100%;
   display: flex;
   justify-content: center;
 }
 
 .hero-aurora-headline {
-  max-width: min(1120px, 100%);
+  max-width: none;
   margin: 0 auto;
-  line-height: 0.94;
-  letter-spacing: -0.06em;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
   text-wrap: balance;
   white-space: pre-line;
 }
 
 .hero-subtitle-wrap {
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 1.35rem;
 }
 
 .hero-subtitle-copy {
-  max-width: 760px;
-  font-size: clamp(1.08rem, 1.75vw, 1.5rem);
-  line-height: 1.55;
+  max-width: 900px;
+  font-size: clamp(1.08rem, 1.6vw, 1.52rem);
+  line-height: 1.6;
   font-weight: 600;
   color: color-mix(in srgb, var(--foreground) 78%, transparent);
   text-wrap: balance;
+}
+
+@media (max-width: 1180px) {
+  .hero-stack {
+    width: min(1380px, calc(100vw - 2rem));
+  }
+
+  .hero-aurora-shell {
+    padding-inline: clamp(0.8rem, 2.6vw, 1.75rem);
+  }
+
+  .hero-aurora-headline {
+    line-height: 0.99;
+    letter-spacing: -0.05em;
+  }
 }
 
 .ui-button {
@@ -4827,27 +4842,27 @@ select {
   }
 
   .hero-stack {
-    width: min(100%, calc(100% - 1.5rem));
+    width: min(100%, calc(100vw - 1rem));
   }
 
   .hero-aurora-shell {
-    padding-inline: 0.35rem;
+    padding-inline: 0.15rem;
   }
 
   .hero-aurora-headline {
     max-width: 100%;
-    line-height: 1;
-    letter-spacing: -0.045em;
+    line-height: 0.98;
+    letter-spacing: -0.042em;
   }
 
   .hero-subtitle-wrap {
-    margin-top: 0.2rem;
+    margin-top: 1rem;
   }
 
   .hero-subtitle-copy {
-    max-width: min(21rem, calc(100vw - 2rem));
-    font-size: clamp(1rem, 4.3vw, 1.18rem);
-    line-height: 1.5;
+    max-width: min(23rem, calc(100vw - 1.5rem));
+    font-size: clamp(1rem, 4vw, 1.18rem);
+    line-height: 1.52;
   }
 
   .button-video-text-run {
