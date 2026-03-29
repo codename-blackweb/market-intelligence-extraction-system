@@ -1,10 +1,17 @@
-import { Suspense } from "react";
 import WorkspaceOnboarding from "@/components/auth/WorkspaceOnboarding";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams
+}: {
+  searchParams: Promise<{
+    email?: string | string[];
+  }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const emailValue = resolvedSearchParams.email;
+  const initialEmail = Array.isArray(emailValue) ? emailValue[0] ?? "" : emailValue ?? "";
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
-      <WorkspaceOnboarding />
-    </Suspense>
+    <WorkspaceOnboarding initialEmail={initialEmail} />
   );
 }
