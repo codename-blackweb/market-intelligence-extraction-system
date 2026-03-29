@@ -1,4 +1,4 @@
-export type MarketType = "service" | "saas" | "ecommerce" | "product" | "other";
+export type MarketType = string;
 
 export type ReviewSource = "trustpilot" | "google" | "amazon" | "other";
 
@@ -17,4 +17,3 @@ export type AnalyzePayload = {
   marketType: MarketType;
   reviews: ReviewInput[];
 };
-

@@ -177,6 +177,31 @@ const CLIENT_MODE = ((process.env.NEXT_PUBLIC_MODE || "DEV").toUpperCase() as
   | "HYBRID"
   | "LIVE");
 const STRIPE_CHECKOUT_URL = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
+const MARKET_CONTEXT_GROUPS = [
+  {
+    label: "Operational Niches",
+    options: [
+      "Demand Intelligence",
+      "Search Data Infrastructure",
+      "Trend Signal Detection",
+      "Audience Intelligence",
+      "Social Sentiment Monitoring",
+      "AI Reasoning Systems",
+      "Content Generation Systems"
+    ]
+  },
+  {
+    label: "Business Models",
+    options: [
+      "SaaS",
+      "E-commerce",
+      "Service",
+      "Product",
+      "Marketplace",
+      "Agency"
+    ]
+  }
+] as const;
 const NICHE_OPTIONS = [
   "B2B SaaS",
   "Agency",
@@ -1138,34 +1163,22 @@ export default function Home() {
       <section className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-10 hero-stack">
           <AuroraTextEffect
-            className="bg-transparent dark:bg-transparent"
-            text="A Market Intelligence Engine"
+            className="hero-aurora-shell bg-transparent dark:bg-transparent"
+            textClassName="hero-aurora-headline"
+            fontSize="clamp(1.95rem, 7vw, 6.4rem)"
+            text={
+              motionPolicy.isMobile
+                ? "TURN DEMAND\nSIGNALS INTO\nPREDICTABLE\nACQUISITION"
+                : "TURN DEMAND SIGNALS INTO PREDICTABLE ACQUISITION"
+            }
           />
           <div className="hero-orbiter">
             <BeamCircle size={motionPolicy.isMobile ? 320 : 400} />
           </div>
-          <div className="hero-subtitle-video-wrap mx-auto flex justify-center px-6">
-            <VideoText
-              as="div"
-              src="/assets/gradient-video.mp4"
-              className="hero-subtitle-video mx-auto w-full max-w-[980px]"
-              fontSize="clamp(1.22rem, 1.95vw, 1.62rem)"
-              fontWeight={600}
-              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-              textAnchor="middle"
-              dominantBaseline="middle"
-              autoPlay
-              muted
-              loop
-              preload="auto"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-            >
-              {motionPolicy.isMobile
-                ? "Extract real demand.\nDecode intent.\nBuild positioning that converts."
-                : "Extract real demand. Decode intent. Build positioning that converts."}
-            </VideoText>
+          <div className="hero-subtitle-wrap mx-auto px-4 sm:px-6">
+            <p className="hero-subtitle-copy mx-auto">
+              See what the market is actually telling you — and know exactly what to do next.
+            </p>
           </div>
         </div>
       </section>
@@ -1184,19 +1197,23 @@ export default function Home() {
             </div>
 
             <div className="card p-6">
+              <p className="card-label mb-3">Market Context (Optional)</p>
               <select
                 className="surface-input"
                 value={marketType}
                 onChange={(event) => setMarketType(event.target.value)}
+                aria-label="Market Context (Optional)"
               >
-                <option value="">Select Market Type</option>
-                <option value="service">Service</option>
-                <option value="saas">SaaS</option>
-                <option value="ecommerce">E-commerce</option>
-                <option value="product">Product</option>
-                <option value="marketplace">Marketplace</option>
-                <option value="media">Media</option>
-                <option value="other">Other</option>
+                <option value="">Select Market Context (Optional)</option>
+                {MARKET_CONTEXT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
 
@@ -1942,7 +1959,7 @@ export default function Home() {
               <p className="card-label">Market Intelligence Report</p>
               <h1>{activeResult.query}</h1>
               <div className="pdf-export-meta">
-                <span>Market Type: {marketType || activeResult.classification.core_type}</span>
+                <span>Market Context: {marketType || activeResult.classification.core_type}</span>
                 <span>Mode: {activeResult.source_meta.mode}</span>
                 <span>{new Date(activeResult.generatedAt).toLocaleString()}</span>
               </div>

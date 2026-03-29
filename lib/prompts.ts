@@ -50,7 +50,7 @@ export function buildGoogleUserPrompt({
   organicSnippets: Array<{ title: string; snippet: string; link: string }>;
 }) {
   return `Seed Query: ${seedQuery}
-Market Type: ${marketType}
+Market Context: ${marketType || "Not specified"}
 Autocomplete Suggestions:
 ${serialize(autocomplete)}
 
@@ -109,7 +109,7 @@ export function buildRedditUserPrompt({
   }>;
 }) {
   return `Seed Query: ${seedQuery}
-Market Type: ${marketType}
+Market Context: ${marketType || "Not specified"}
 Subreddits Searched: ${serialize(subreddits)}
 Threads:
 ${serialize(threads)}
@@ -151,7 +151,7 @@ export function buildCompetitorUserPrompt({
   }>;
 }) {
   return `Seed Query: ${seedQuery}
-Market Type: ${marketType}
+Market Context: ${marketType || "Not specified"}
 Competitor Messaging Blocks:
 ${serialize(competitorBlocks)}`;
 }
@@ -196,7 +196,7 @@ export function buildLandingPageUserPrompt({
   text: string;
 }) {
   return `Seed Query: ${seedQuery}
-Market Type: ${marketType}
+Market Context: ${marketType || "Not specified"}
 Landing Page URL: ${url}
 Page Title: ${title}
 H1s: ${serialize(h1s)}
@@ -236,7 +236,7 @@ export function buildReviewsUserPrompt({
   const negative = reviews.filter((review) => review.rating <= 3);
 
   return `Seed Query: ${seedQuery}
-Market Type: ${marketType}
+Market Context: ${marketType || "Not specified"}
 Review Sources: ${serialize(Array.from(new Set(reviews.map((review) => review.source))))}
 Positive Reviews:
 ${serialize(positive)}
@@ -294,7 +294,7 @@ export function buildFinalSynthesisUserPrompt({
   reviewsIntel: ReviewsAnalysis;
 }) {
   return `Seed Query: ${seedQuery}
-Market Type: ${marketType}
+Market Context: ${marketType || "Not specified"}
 
 Google Intelligence:
 ${serialize(googleIntel)}
@@ -311,4 +311,3 @@ ${serialize(landingIntel)}
 Review Intelligence:
 ${serialize(reviewsIntel)}`;
 }
-

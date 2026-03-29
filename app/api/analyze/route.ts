@@ -507,11 +507,29 @@ function createMockAnalysisResponse(
 }
 
 function toDisplayMarketType(marketType: string) {
-  if (!marketType) {
-    return "Service";
+  const cleaned = marketType.trim();
+  const legacyLabels: Record<string, string> = {
+    service: "Service",
+    saas: "SaaS",
+    ecommerce: "E-commerce",
+    product: "Product",
+    marketplace: "Marketplace",
+    media: "Media",
+    agency: "Agency",
+    other: "Other"
+  };
+
+  if (!cleaned) {
+    return "General";
   }
 
-  return marketType.charAt(0).toUpperCase() + marketType.slice(1).toLowerCase();
+  const legacyMatch = legacyLabels[cleaned.toLowerCase()];
+
+  if (legacyMatch) {
+    return legacyMatch;
+  }
+
+  return cleaned;
 }
 
 async function collectHybridRedditSignals(query: string) {

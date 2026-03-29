@@ -89,16 +89,16 @@ export function AuroraTextEffect({
     <div
       className={cn(
         // Updated to support light and dark modes
-        "bg-white dark:bg-black flex items-center justify-center overflow-hidden",
+        "bg-white dark:bg-black flex w-full items-center justify-center overflow-hidden",
         className
       )}
     >
       <style>{keyframes /* This injects the keyframes into the DOM */}</style>
-      <div className="text-center">
+      <div className="w-full text-center">
         <h2
           className={cn(
             // Added theme-aware text color for visibility
-            "font-extrabold tracking-tight relative overflow-hidden text-black dark:text-white",
+            "relative w-full overflow-hidden text-black dark:text-white font-extrabold tracking-tight",
             textClassName
           )}
           style={{ fontSize }}
