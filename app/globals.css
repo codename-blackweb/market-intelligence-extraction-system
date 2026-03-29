@@ -898,13 +898,10 @@ select {
 .hero-aurora-headline {
   max-width: none;
   margin: 0 auto;
-  line-height: 1.08;
+  line-height: 1.02;
   letter-spacing: -0.055em;
   text-wrap: balance;
-}
-
-.hero-aurora-headline > span {
-  display: block;
+  white-space: pre-line;
 }
 
 .hero-subtitle-wrap {
@@ -942,7 +939,7 @@ select {
   }
 
   .hero-aurora-headline {
-    line-height: 1.03;
+    line-height: 0.99;
     letter-spacing: -0.05em;
   }
 }

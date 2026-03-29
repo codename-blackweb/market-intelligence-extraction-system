@@ -50,99 +50,118 @@ export function AuroraTextEffect({
     fourth: 13,
   },
 }: AuroraTextEffectProps) {
-  const lines = text.split("\n");
-
-  const resolveColor = (value: string | undefined, fallback: string) => {
-    if (!value) {
-      return fallback;
-    }
-
-    if (value.startsWith("#") || value.startsWith("rgb") || value.startsWith("hsl")) {
-      return value;
-    }
-
-    const tailwindMap: Record<string, string> = {
-      "bg-cyan-400": "#22d3ee",
-      "bg-yellow-400": "#facc15",
-      "bg-green-400": "#4ade80",
-      "bg-purple-500": "#a855f7",
-      "bg-blue-400": "#60a5fa",
-      "bg-emerald-400": "#34d399",
-      "bg-rose-400": "#fb7185"
-    };
-
-    return tailwindMap[value] ?? fallback;
-  };
-
-  const gradientColors = [
-    resolveColor(colors.first, "#7dd3fc"),
-    resolveColor(colors.second, "#fde047"),
-    resolveColor(colors.third, "#86efac"),
-    resolveColor(colors.fourth, "#c084fc")
-  ];
-  const auroraDuration = Math.max(
-    animationSpeed.first ?? 5,
-    animationSpeed.second ?? 5,
-    animationSpeed.third ?? 5,
-    animationSpeed.fourth ?? 5
-  );
-
   const keyframes = `
-    @keyframes aurora-pan {
-      0%, 100% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
+    @keyframes aurora-1 {
+      0% { top: 0; right: 0; }
+      50% { top: 100%; right: 75%; }
+      75% { top: 100%; right: 25%; }
+      100% { top: 0; right: 0; }
+    }
+    @keyframes aurora-2 {
+      0% { top: -50%; left: 0%; }
+      60% { top: 100%; left: 75%; }
+      85% { top: 100%; left: 25%; }
+      100% { top: -50%; left: 0%; }
+    }
+    @keyframes aurora-3 {
+      0% { bottom: 0; left: 0; }
+      40% { bottom: 100%; left: 75%; }
+      65% { bottom: 40%; left: 50%; }
+      100% { bottom: 0; left: 0; }
+    }
+    @keyframes aurora-4 {
+      0% { bottom: -50%; right: 0; }
+      50% { bottom: 0%; right: 40%; }
+      90% { bottom: 50%; right: 25%; }
+      100% { bottom: -50%; right: 0; }
+    }
+    @keyframes aurora-border {
+      0% { border-radius: 37% 29% 27% 27% / 28% 25% 41% 37%; }
+      25% { border-radius: 47% 29% 39% 49% / 61% 19% 66% 26%; }
+      50% { border-radius: 57% 23% 47% 72% / 63% 17% 66% 33%; }
+      75% { border-radius: 28% 49% 29% 100% / 93% 20% 64% 25%; }
+      100% { border-radius: 37% 29% 27% 27% / 28% 25% 41% 37%; }
     }
   `;
-
-  const gradientStyle = {
-    backgroundImage: `linear-gradient(120deg, ${gradientColors[0]} 0%, ${gradientColors[1]} 28%, ${gradientColors[2]} 62%, ${gradientColors[3]} 100%)`,
-    backgroundSize: "220% 220%",
-    WebkitBackgroundClip: "text" as const,
-    backgroundClip: "text" as const,
-    color: "transparent",
-    animation: `aurora-pan ${auroraDuration}s ease-in-out infinite`
-  };
 
   return (
     <div
       className={cn(
-        "flex w-full items-center justify-center overflow-hidden bg-transparent",
+        "bg-white dark:bg-black flex items-center justify-center overflow-hidden",
         className
       )}
     >
       <style>{keyframes}</style>
-      <div className="w-full text-center">
+      <div className="text-center">
         <h2
           className={cn(
-            "relative w-full overflow-hidden font-extrabold tracking-tight",
+            "font-extrabold tracking-tight relative overflow-hidden text-black dark:text-white",
             textClassName
           )}
           style={{ fontSize }}
         >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "pointer-events-none absolute inset-0 opacity-35",
-              blurAmount === "blur-none" ? "" : blurAmount
-            )}
-          >
-            {lines.map((line, index) => (
-              <span key={`glow-${index}`} className="block" style={gradientStyle}>
-                {line}
-              </span>
-            ))}
-          </span>
-          <span className="relative block">
-            {lines.map((line, index) => (
-              <span key={index} className="block" style={gradientStyle}>
-                {line}
-              </span>
-            ))}
-          </span>
+          {text}
+          <div className="absolute inset-0 z-10 mix-blend-lighten dark:mix-blend-darken pointer-events-none">
+            <div
+              className={cn(
+                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                colors.first || "bg-cyan-400",
+                blurAmount
+              )}
+              style={{
+                animationName: "aurora-border, aurora-1",
+                animationDuration: `${animationSpeed.border}s, ${animationSpeed.first}s`,
+                animationTimingFunction: "ease-in-out, ease-in-out",
+                animationIterationCount: "infinite, infinite",
+                animationDirection: "normal, alternate"
+              }}
+            />
+
+            <div
+              className={cn(
+                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                colors.second,
+                blurAmount
+              )}
+              style={{
+                animationName: "aurora-border, aurora-2",
+                animationDuration: `${animationSpeed.border}s, ${animationSpeed.second}s`,
+                animationTimingFunction: "ease-in-out, ease-in-out",
+                animationIterationCount: "infinite, infinite",
+                animationDirection: "normal, alternate"
+              }}
+            />
+
+            <div
+              className={cn(
+                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                colors.third,
+                blurAmount
+              )}
+              style={{
+                animationName: "aurora-border, aurora-3",
+                animationDuration: `${animationSpeed.border}s, ${animationSpeed.third}s`,
+                animationTimingFunction: "ease-in-out, ease-in-out",
+                animationIterationCount: "infinite, infinite",
+                animationDirection: "normal, alternate"
+              }}
+            />
+
+            <div
+              className={cn(
+                "absolute w-[60vw] h-[60vw] rounded-[37%_29%_27%_27%/28%_25%_41%_37%] filter mix-blend-overlay",
+                colors.fourth,
+                blurAmount
+              )}
+              style={{
+                animationName: "aurora-border, aurora-4",
+                animationDuration: `${animationSpeed.border}s, ${animationSpeed.fourth}s`,
+                animationTimingFunction: "ease-in-out, ease-in-out",
+                animationIterationCount: "infinite, infinite",
+                animationDirection: "normal, alternate"
+              }}
+            />
+          </div>
         </h2>
       </div>
     </div>
