@@ -14,6 +14,12 @@ const steps = [
   "Invite Team"
 ] as const;
 
+const stepDescriptions = [
+  "Set the owner identity for this workspace.",
+  "Define the context so the output is tailored from the start.",
+  "Add collaborators now or keep it personal for the first run."
+] as const;
+
 const useCaseOptions = [
   "Founder / Product Validation",
   "Marketing Strategy",
@@ -45,10 +51,10 @@ const industryOptions = [
 const fieldLabelClass = "text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500";
 
 const fieldInputClass =
-  "h-12 w-full rounded-2xl border border-white/10 bg-zinc-950/85 px-4 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30";
+  "h-12 w-full rounded-2xl border border-white/10 bg-zinc-900/90 px-4 font-semibold text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors focus:border-white/30 focus:ring-0 [color-scheme:dark]";
 
 const fieldTextareaClass =
-  "min-h-[160px] w-full rounded-2xl border border-white/10 bg-zinc-950/85 px-4 py-3 font-semibold text-zinc-100 outline-none transition-colors focus:border-white/30";
+  "min-h-[160px] w-full rounded-2xl border border-white/10 bg-zinc-900/90 px-4 py-3 font-semibold text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors focus:border-white/30 focus:ring-0";
 
 const secondaryActionClass =
   "inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-300 transition-colors hover:border-white/20 hover:text-zinc-100";
@@ -190,7 +196,7 @@ export default function WorkspaceOnboarding({
     <section className="auth-page">
       <OrbitsBackground
         accentColors={["#ffffff", "#67e8f9", "#facc15", "#f87171", "#a3e635"]}
-        className="opacity-95"
+        className="opacity-58"
         count={6}
         speed={1.08}
       />
@@ -202,7 +208,7 @@ export default function WorkspaceOnboarding({
           animate={{ opacity: 1, y: 0 }}
           initial={{ opacity: 0, y: 15 }}
           transition={{ duration: 0.4 }}
-          className="relative w-full max-w-3xl"
+          className="relative mx-auto min-w-0 w-full max-w-[52rem]"
         >
           <div
             aria-hidden="true"
@@ -210,14 +216,14 @@ export default function WorkspaceOnboarding({
             style={{ background: "rgba(3, 7, 18, 0.72)" }}
           />
           <div
-            className="relative grid gap-8 rounded-[2rem] border border-white/10 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.52)] backdrop-blur-[20px] md:p-8"
-            style={{ background: "rgba(7, 9, 14, 0.96)" }}
+            className="relative grid min-w-0 gap-7 overflow-hidden rounded-[2rem] border border-white/12 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.52)] backdrop-blur-[20px] md:p-8"
+            style={{ background: "rgba(6, 8, 12, 0.985)" }}
           >
             <div className="grid justify-items-center gap-3 text-center">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
                 Workspace Setup
               </p>
-              <h1 className="max-w-2xl text-3xl font-black tracking-tight text-zinc-100 md:text-4xl">
+              <h1 className="max-w-[14rem] px-2 text-[clamp(1.12rem,4.1vw,1.45rem)] font-black leading-[1.1] tracking-tight text-zinc-100 md:max-w-[34rem] md:px-0 md:text-[clamp(2.25rem,4vw,3.35rem)]">
                 Create your account to start turning live demand signals into usable strategic
                 direction.
               </h1>
@@ -241,7 +247,7 @@ export default function WorkspaceOnboarding({
                     key={stepLabel}
                     className={`rounded-[1.4rem] border px-4 py-4 transition-colors ${
                       isActive
-                        ? "border-white/70 bg-white text-zinc-950"
+                        ? "border-white/75 bg-white text-zinc-950 shadow-[0_14px_34px_rgba(255,255,255,0.12)]"
                         : isComplete
                           ? "border-emerald-400/35 bg-emerald-400/10 text-zinc-100"
                           : "border-white/10 text-zinc-400"
@@ -265,8 +271,8 @@ export default function WorkspaceOnboarding({
             </div>
 
             <div
-              className="mx-auto w-full max-w-xl rounded-[1.6rem] border border-white/10 p-5 md:p-6"
-              style={{ background: "rgba(255,255,255,0.04)" }}
+              className="mx-auto min-w-0 w-full max-w-[39rem] rounded-[1.6rem] border border-white/10 p-5 md:p-6"
+              style={{ background: "rgba(255,255,255,0.05)" }}
             >
               <motion.div
                 key={step}
@@ -275,6 +281,13 @@ export default function WorkspaceOnboarding({
                 transition={{ duration: 0.3 }}
                 className="grid gap-5"
               >
+                <div className="grid gap-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Step {step + 1} of {steps.length}
+                  </p>
+                  <p className="max-w-lg text-sm leading-6 text-zinc-400">{stepDescriptions[step]}</p>
+                </div>
+
                 {step === 0 ? (
                   <div className="grid gap-5 md:grid-cols-2">
                     <label className="space-y-2">
@@ -282,6 +295,7 @@ export default function WorkspaceOnboarding({
                       <input
                         className={fieldInputClass}
                         onChange={(event) => setFirstName(event.target.value)}
+                        placeholder="Jane"
                         value={firstName}
                       />
                     </label>
@@ -290,6 +304,7 @@ export default function WorkspaceOnboarding({
                       <input
                         className={fieldInputClass}
                         onChange={(event) => setLastName(event.target.value)}
+                        placeholder="Doe"
                         value={lastName}
                       />
                     </label>
@@ -298,6 +313,7 @@ export default function WorkspaceOnboarding({
                       <input
                         className={fieldInputClass}
                         onChange={(event) => setEmail(event.target.value)}
+                        placeholder="team@workspace.com"
                         type="email"
                         value={email}
                       />
@@ -307,6 +323,7 @@ export default function WorkspaceOnboarding({
                       <input
                         className={fieldInputClass}
                         onChange={(event) => setPassword(event.target.value)}
+                        placeholder="Create a secure password"
                         type="password"
                         value={password}
                       />
@@ -321,6 +338,7 @@ export default function WorkspaceOnboarding({
                       <input
                         className={fieldInputClass}
                         onChange={(event) => setWorkspaceName(event.target.value)}
+                        placeholder="Intent workspace"
                         value={workspaceName}
                       />
                     </label>
