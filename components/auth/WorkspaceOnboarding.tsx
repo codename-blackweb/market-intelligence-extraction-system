@@ -71,11 +71,11 @@ const industryOptions = [
 ];
 
 const labelClassName = "auth-label !ml-0";
-const inputClassName = "auth-input !pl-4";
+const inputClassName = "auth-input onboarding-input !pl-4";
 const selectClassName =
-  "ui-input min-h-[2.75rem] px-4 text-[0.78rem] font-extrabold text-zinc-100";
+  "ui-input onboarding-select min-h-[2.75rem] px-4";
 const textareaClassName =
-  "ui-input min-h-[8.5rem] resize-none px-4 py-3 text-[0.78rem] font-extrabold text-zinc-100";
+  "ui-input onboarding-textarea min-h-[8.5rem] resize-none px-4 py-3";
 
 type AccountMethod = "password" | "magic";
 
@@ -464,7 +464,7 @@ export default function WorkspaceOnboarding({
 
     return (
       <div className="grid gap-4">
-        <div className="auth-field">
+        <div className="auth-field onboarding-field-unit">
           <label className={labelClassName} htmlFor="invite-emails">
             Invite Emails
           </label>
@@ -478,7 +478,7 @@ export default function WorkspaceOnboarding({
         </div>
 
         <div className="onboarding-invite-grid">
-          <div className="auth-field">
+          <div className="auth-field onboarding-field-unit">
             <label className={labelClassName} htmlFor="invite-role">
               Role
             </label>
@@ -551,8 +551,8 @@ export default function WorkspaceOnboarding({
               </div>
             </div>
 
-            <div className={step === 0 || step === 1 ? "onboarding-owner-section" : "grid gap-4"}>
-              <div className={step === 0 || step === 1 ? "onboarding-owner-section-head text-left" : "grid gap-1 text-left"}>
+            <div className="onboarding-owner-section">
+              <div className="onboarding-owner-section-head text-left">
                 <p className={labelClassName}>{currentStep.sectionLabel}</p>
                 <p className="auth-copy !max-w-none !text-left">{currentStep.sectionHelper}</p>
               </div>

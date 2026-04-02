@@ -1474,6 +1474,23 @@ select {
   padding-bottom: 0.5rem;
 }
 
+.onboarding-input,
+.onboarding-select,
+.onboarding-textarea {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(228, 228, 231, 0.88);
+}
+
+.onboarding-input::placeholder,
+.onboarding-textarea::placeholder {
+  color: rgba(113, 113, 122, 0.88);
+}
+
+.onboarding-select option {
+  color: #e4e4e7;
+}
+
 .onboarding-field-unit {
   gap: 0.6rem;
 }
