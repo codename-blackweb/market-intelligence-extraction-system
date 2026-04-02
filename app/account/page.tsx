@@ -1,5 +1,5 @@
-import WorkspaceProfile from "@/components/account/WorkspaceProfile";
+import LightswindAccountProfile from "@/components/account/LightswindAccountProfile";
 
 export default function AccountPage() {
-  return <WorkspaceProfile />;
+  return <LightswindAccountProfile />;
 }
