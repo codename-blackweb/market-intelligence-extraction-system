@@ -1471,6 +1471,7 @@ select {
 .onboarding-owner-copy-stack {
   display: grid;
   gap: 0.8rem;
+  padding-bottom: 0.5rem;
 }
 
 .onboarding-field-unit {
