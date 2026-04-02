@@ -263,6 +263,39 @@ export async function createWorkspace(input: {
   return mapWorkspace(data);
 }
 
+export async function updateWorkspace(input: {
+  workspaceId: string;
+  name: string;
+  useCase: string;
+  teamSize: string;
+  industry: string;
+  accessToken?: string;
+}) {
+  const client = getPersistenceClient(input.accessToken);
+
+  if (!client) {
+    return null;
+  }
+
+  const { data, error } = await client
+    .from("workspaces")
+    .update({
+      name: input.name,
+      primary_use_case: input.useCase,
+      team_size: input.teamSize,
+      industry: input.industry
+    })
+    .eq("id", input.workspaceId)
+    .select("id,owner_id,name,primary_use_case,team_size,industry,created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapWorkspace(data);
+}
+
 export async function listWorkspacesByOwner(userId: string, accessToken?: string) {
   const client = getPersistenceClient(accessToken);
 
@@ -764,6 +797,21 @@ export async function bootstrapAccountForUser(input: {
       industry: input.industry?.trim() || "General",
       accessToken: input.accessToken
     });
+  } else if (
+    typeof input.workspaceName === "string" ||
+    typeof input.useCase === "string" ||
+    typeof input.teamSize === "string" ||
+    typeof input.industry === "string"
+  ) {
+    workspace =
+      (await updateWorkspace({
+        workspaceId: workspace.id,
+        name: input.workspaceName?.trim() || workspace.name,
+        useCase: input.useCase?.trim() || workspace.primary_use_case,
+        teamSize: input.teamSize?.trim() || workspace.team_size,
+        industry: input.industry?.trim() || workspace.industry,
+        accessToken: input.accessToken
+      })) ?? workspace;
   }
 
   if (workspace) {
