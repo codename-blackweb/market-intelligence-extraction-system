@@ -74,8 +74,6 @@ const labelClassName = "auth-label !ml-0";
 const inputClassName = "auth-input onboarding-input !pl-4";
 const selectClassName =
   "ui-input onboarding-select min-h-[2.75rem] px-4";
-const textareaClassName =
-  "ui-input onboarding-textarea min-h-[8.5rem] resize-none px-4 py-3";
 
 type AccountMethod = "password" | "magic";
 
@@ -463,14 +461,14 @@ export default function WorkspaceOnboarding({
     }
 
     return (
-      <div className="grid gap-4">
+      <div className="onboarding-invite-stack">
         <div className="auth-field onboarding-field-unit">
           <label className={labelClassName} htmlFor="invite-emails">
             Invite Emails
           </label>
-          <textarea
+          <Input
             id="invite-emails"
-            className={textareaClassName}
+            className={inputClassName}
             onChange={(event) => setInviteEmails(event.target.value)}
             placeholder="Enter email addresses (comma-separated)"
             value={inviteEmails}

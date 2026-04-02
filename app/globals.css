@@ -1532,6 +1532,11 @@ select {
   gap: 1.15rem;
 }
 
+.onboarding-invite-stack {
+  display: grid;
+  gap: 1.35rem;
+}
+
 @media (min-width: 720px) {
   .onboarding-owner-grid,
   .onboarding-context-grid {
