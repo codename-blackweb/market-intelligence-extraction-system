@@ -4,17 +4,24 @@ import Link from "next/link";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
+  Building,
   CalendarDays,
+  Camera,
   CheckCircle2,
+  ChevronDown,
   Copy,
   CreditCard,
   ExternalLink,
   FolderKanban,
+  Globe,
   Link2,
   Mail,
+  MapPin,
   MoreHorizontal,
   ShieldCheck,
   Sparkles,
+  User,
   Users,
   type LucideIcon
 } from "lucide-react";
@@ -38,20 +45,25 @@ type WorkspaceProfileTab = (typeof tabs)[number];
 const CHECKOUT_URL = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
 const PORTAL_URL = process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL || "";
 
-const sectionCardClass =
-  "rounded-[1.6rem] border border-zinc-200/80 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[rgba(17,17,20,0.82)] dark:shadow-none";
-const sidebarCardClass =
-  "rounded-[1.5rem] border border-zinc-200/80 bg-zinc-50/85 p-5 dark:border-white/10 dark:bg-[rgba(12,12,14,0.92)]";
-const statCardClass =
-  "rounded-[1.35rem] border border-zinc-200/70 bg-white/88 px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)] dark:border-white/10 dark:bg-[rgba(17,17,20,0.82)] dark:shadow-none";
-const labelClass =
-  "text-[0.66rem] font-black uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-500";
-const inputClassName =
-  "h-12 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 text-[0.95rem] font-medium text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-0 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-white/25";
-const textareaClassName =
-  "min-h-[120px] w-full rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-[0.95rem] font-medium text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-0 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-white/25";
-const selectClassName =
-  "h-12 w-full rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 text-[0.95rem] font-medium text-zinc-900 outline-none transition-colors focus:border-zinc-400 focus:ring-0 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-100 dark:focus:border-white/25";
+type SettingsFormState = {
+  firstName: string;
+  lastName: string;
+  workEmail: string;
+  workspaceName: string;
+  primaryUseCase: string;
+  teamSize: string;
+  industry: string;
+};
+
+const emptySettingsForm: SettingsFormState = {
+  firstName: "",
+  lastName: "",
+  workEmail: "",
+  workspaceName: "",
+  primaryUseCase: "",
+  teamSize: "",
+  industry: ""
+};
 
 function formatPlan(plan: UserPlan) {
   if (plan === "agency") {
@@ -126,110 +138,206 @@ async function fetchAccountSummary(accessToken: string) {
   return json;
 }
 
-function FieldGroup({
-  label,
-  className,
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-xs font-bold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-500">
+      {children}
+    </p>
+  );
+}
+
+function ProfileSection({
+  title,
   children
 }: {
-  label: string;
-  className?: string;
+  title: string;
   children: ReactNode;
 }) {
   return (
-    <div className={cn("space-y-2.5", className)}>
-      <label className={labelClass}>{label}</label>
+    <section>
+      <h3 className="mb-4 text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+        {title}
+      </h3>
       {children}
+    </section>
+  );
+}
+
+function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
+  return (
+    <label
+      className="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-500"
+      htmlFor={htmlFor}
+    >
+      {children}
+    </label>
+  );
+}
+
+function IconInput({
+  id,
+  label,
+  icon: Icon,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <FieldLabel htmlFor={id ?? label.toLowerCase()}>{label}</FieldLabel>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <Input
+          {...props}
+          id={id}
+          className={cn(
+            "h-11 rounded-xl border-zinc-200 bg-zinc-50 pl-10 text-sm font-medium text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20",
+            className
+          )}
+        />
+      </div>
     </div>
   );
 }
 
-function StatCard({
+function TextAreaField({
+  id,
   label,
+  icon: Icon,
   value,
-  hint
+  onChange,
+  placeholder,
+  rows = 4,
+  className
 }: {
+  id: string;
   label: string;
-  value: string | number;
-  hint?: string;
+  icon: LucideIcon;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  rows?: number;
+  className?: string;
 }) {
   return (
-    <div className={statCardClass}>
-      <p className={labelClass}>{label}</p>
-      <p className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-        {value}
-      </p>
-      {hint ? <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{hint}</p> : null}
+    <div className={cn("space-y-2", className)}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-zinc-400" />
+        <textarea
+          className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 text-sm font-medium text-zinc-900 outline-none transition-all placeholder:text-zinc-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+          id={id}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          value={value}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SelectField({
+  id,
+  label,
+  icon: Icon,
+  value,
+  onChange,
+  options,
+  className
+}: {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+  className?: string;
+}) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <select
+          className="h-11 w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 py-0 pl-10 pr-10 text-sm font-medium text-zinc-900 outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+          id={id}
+          onChange={(event) => onChange(event.target.value)}
+          value={value}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      </div>
     </div>
   );
 }
 
 function SidebarCard({
-  icon: Icon,
-  eyebrow,
   title,
-  copy,
-  accent = "default",
+  icon: Icon,
+  tone = "default",
   children
 }: {
-  icon: LucideIcon;
-  eyebrow: string;
   title: string;
-  copy: string;
-  accent?: "default" | "success" | "brand";
-  children?: ReactNode;
+  icon: LucideIcon;
+  tone?: "default" | "brand" | "success";
+  children: ReactNode;
 }) {
-  const accentClasses =
-    accent === "success"
-      ? "border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-400/20 dark:bg-emerald-400/10"
-      : accent === "brand"
-        ? "border-sky-200/80 bg-sky-50/90 dark:border-sky-400/20 dark:bg-sky-400/10"
-        : "border-zinc-200/80 bg-zinc-50/85 dark:border-white/10 dark:bg-[rgba(12,12,14,0.92)]";
-
-  const iconClasses =
-    accent === "success"
-      ? "text-emerald-600 dark:text-emerald-300"
-      : accent === "brand"
-        ? "text-sky-600 dark:text-sky-300"
+  const toneClass =
+    tone === "brand"
+      ? "bg-indigo-50 border-indigo-100 dark:bg-indigo-500/5 dark:border-indigo-500/20"
+      : tone === "success"
+        ? "bg-emerald-50 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20"
+        : "bg-zinc-50 border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800";
+  const iconClass =
+    tone === "brand"
+      ? "text-indigo-500"
+      : tone === "success"
+        ? "text-emerald-500"
         : "text-zinc-500 dark:text-zinc-300";
 
   return (
-    <div className={cn(sidebarCardClass, accentClasses)}>
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-current/15 bg-white/70 dark:bg-white/5">
-          <Icon className={cn("h-5 w-5", iconClasses)} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className={labelClass}>{eyebrow}</p>
-          <h3 className="mt-2 text-lg font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-            {title}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">{copy}</p>
-        </div>
+    <div className={cn("rounded-[24px] border p-6", toneClass)}>
+      <div className="mb-4 flex items-center gap-3">
+        <Icon className={cn("h-5 w-5", iconClass)} />
+        <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">{title}</h4>
       </div>
-      {children ? <div className="mt-5">{children}</div> : null}
+      {children}
     </div>
   );
 }
 
-type SettingsFormState = {
-  firstName: string;
-  lastName: string;
-  workEmail: string;
-  workspaceName: string;
-  primaryUseCase: string;
-  teamSize: string;
-  industry: string;
-};
-
-const emptySettingsForm: SettingsFormState = {
-  firstName: "",
-  lastName: "",
-  workEmail: "",
-  workspaceName: "",
-  primaryUseCase: "",
-  teamSize: "",
-  industry: ""
-};
+function TabButton({
+  isActive,
+  onClick,
+  children
+}: {
+  isActive: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      className={cn(
+        "relative rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-[0.18em] transition-all",
+        isActive
+          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+          : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function WorkspaceProfile({
   initialTab = "Workspace"
@@ -335,7 +443,7 @@ export default function WorkspaceProfile({
     summary?.profile
       ? `${summary.profile.first_name} ${summary.profile.last_name}`.trim()
       : "";
-  const displayName = profileName || session?.user.full_name || "Workspace User";
+  const displayName = profileName || session?.user.full_name || "Workspace Owner";
   const workspaceName = summary?.workspace?.name || "Personal Workspace";
   const joinedDate = summary?.profile?.created_at ?? session?.user.created_at;
   const workEmail = summary?.profile?.work_email || session?.user.email || "";
@@ -346,6 +454,8 @@ export default function WorkspaceProfile({
       report: analysis.shared_report,
       shareUrl: `/analysis/${analysis.id}`
     }));
+  const ownerMember =
+    members.find((member) => member.user_id === summary?.profile?.id && member.status === "active") ?? null;
 
   const completionChecks = [
     isFilled(settings.firstName),
@@ -359,16 +469,10 @@ export default function WorkspaceProfile({
   const completionPercent = Math.round(
     (completionChecks.filter(Boolean).length / completionChecks.length) * 100
   );
-  const missingSetupItems = [
-    !isFilled(settings.workspaceName) ? "workspace name" : null,
-    !isFilled(settings.primaryUseCase) ? "primary use case" : null,
-    !isFilled(settings.teamSize) ? "team size" : null,
-    !isFilled(settings.industry) ? "industry" : null
-  ].filter(Boolean) as string[];
 
   const billingCopy = useMemo(() => {
     if (profilePlan === "agency") {
-      return "Agency unlocks multi-workspace delivery, team roles, and white-label report control.";
+      return "Agency unlocks multi-workspace delivery, team roles, and white-label report controls.";
     }
 
     if (profilePlan === "pro") {
@@ -396,12 +500,6 @@ export default function WorkspaceProfile({
       enabled: Boolean(usage?.competitor_inputs_enabled)
     }
   ];
-
-  const analysisModes = analyses.reduce<Record<string, number>>((accumulator, analysis) => {
-    const mode = analysis.result_json.source_meta.mode;
-    accumulator[mode] = (accumulator[mode] ?? 0) + 1;
-    return accumulator;
-  }, {});
 
   const handleRestoreAnalysis = (analysisId: string) => {
     persistPendingAnalysisRestore(analysisId);
@@ -546,18 +644,18 @@ export default function WorkspaceProfile({
 
   if (!isAuthenticated || !session) {
     return (
-      <main className="min-h-screen bg-zinc-100 px-4 py-16 text-zinc-950 dark:bg-[#050505] dark:text-zinc-100">
-        <div className="mx-auto max-w-3xl rounded-[2rem] border border-zinc-200/80 bg-white/95 p-10 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[rgba(9,9,12,0.92)] dark:shadow-[0_30px_80px_rgba(0,0,0,0.48)]">
-          <p className={labelClass}>Account Access</p>
-          <h1 className="mt-4 text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
+      <main className="min-h-screen bg-zinc-50 px-4 py-16 text-zinc-950 dark:bg-[#050505] dark:text-zinc-100">
+        <div className="mx-auto max-w-3xl rounded-[32px] border border-zinc-200 bg-white p-10 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <SectionLabel>Account Access</SectionLabel>
+          <h1 className="mt-4 text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
             Sign in to access your workspace.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-            Your saved analyses, billing state, shared reports, and workspace configuration live
-            behind your account.
+            Saved analyses, team access, billing state, and workspace settings live behind your
+            account.
           </p>
           <Link
-            className="mt-8 inline-flex h-11 items-center justify-center rounded-xl bg-zinc-950 px-6 text-xs font-black uppercase tracking-[0.16em] text-white dark:bg-white dark:text-zinc-950"
+            className="mt-8 inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-6 text-xs font-bold uppercase tracking-[0.18em] text-white dark:bg-zinc-100 dark:text-zinc-900"
             href="/auth"
           >
             Continue to Login
@@ -567,164 +665,121 @@ export default function WorkspaceProfile({
     );
   }
 
-  const renderWorkspaceTab = () => (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-6">
-        <section className={sectionCardClass}>
-          <div className="mb-6">
-            <p className={labelClass}>Owner Identity</p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-              Workspace owner settings
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-              Keep the owner record, recovery email, and workspace identity aligned to the person
-              actually steering analyses and billing.
-            </p>
-          </div>
+  const renderWorkspaceContent = () => (
+    <div className="space-y-8">
+      <ProfileSection title="Owner Information">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <IconInput
+            icon={User}
+            label="First Name"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, firstName: event.target.value }))
+            }
+            placeholder="First name"
+            value={settings.firstName}
+          />
+          <IconInput
+            icon={User}
+            label="Last Name"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, lastName: event.target.value }))
+            }
+            placeholder="Last name"
+            value={settings.lastName}
+          />
+          <IconInput
+            className="sm:col-span-2"
+            icon={Mail}
+            label="Email Address"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, workEmail: event.target.value }))
+            }
+            placeholder="owner@workspace.com"
+            type="email"
+            value={settings.workEmail}
+          />
+        </div>
+      </ProfileSection>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <FieldGroup label="First Name">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, firstName: event.target.value }))
-                }
-                placeholder="Signal"
-                value={settings.firstName}
-              />
-            </FieldGroup>
-            <FieldGroup label="Last Name">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, lastName: event.target.value }))
-                }
-                placeholder="Owner"
-                value={settings.lastName}
-              />
-            </FieldGroup>
-            <FieldGroup className="md:col-span-2" label="Work Email">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, workEmail: event.target.value }))
-                }
-                placeholder="owner@workspace.com"
-                type="email"
-                value={settings.workEmail}
-              />
-            </FieldGroup>
-          </div>
-        </section>
+      <hr className="border-zinc-100 dark:border-zinc-800" />
 
-        <section className={sectionCardClass}>
-          <div className="mb-6">
-            <p className={labelClass}>Workspace Context</p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-              Define the workspace operating context
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-              These fields drive plan display, saved analysis labeling, and team context across
-              the product.
-            </p>
-          </div>
+      <ProfileSection title="Workspace Information">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <IconInput
+            className="sm:col-span-2"
+            icon={Building}
+            label="Workspace Name"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, workspaceName: event.target.value }))
+            }
+            placeholder="Workspace name"
+            value={settings.workspaceName}
+          />
+          <IconInput
+            icon={Sparkles}
+            label="Primary Use Case"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, primaryUseCase: event.target.value }))
+            }
+            placeholder="Primary use case"
+            value={settings.primaryUseCase}
+          />
+          <IconInput
+            icon={Users}
+            label="Team Size"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, teamSize: event.target.value }))
+            }
+            placeholder="Team size"
+            value={settings.teamSize}
+          />
+          <IconInput
+            className="sm:col-span-2"
+            icon={MapPin}
+            label="Industry"
+            onChange={(event) =>
+              setSettings((current) => ({ ...current, industry: event.target.value }))
+            }
+            placeholder="Industry"
+            value={settings.industry}
+          />
+        </div>
+      </ProfileSection>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <FieldGroup className="md:col-span-2" label="Workspace Name">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, workspaceName: event.target.value }))
-                }
-                placeholder="SignalForge Strategy"
-                value={settings.workspaceName}
-              />
-            </FieldGroup>
-            <FieldGroup label="Primary Use Case">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, primaryUseCase: event.target.value }))
-                }
-                placeholder="Founder / Product Validation"
-                value={settings.primaryUseCase}
-              />
-            </FieldGroup>
-            <FieldGroup label="Team Size">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, teamSize: event.target.value }))
-                }
-                placeholder="2-5"
-                value={settings.teamSize}
-              />
-            </FieldGroup>
-            <FieldGroup className="md:col-span-2" label="Industry">
-              <Input
-                className={inputClassName}
-                onChange={(event) =>
-                  setSettings((current) => ({ ...current, industry: event.target.value }))
-                }
-                placeholder="Demand intelligence"
-                value={settings.industry}
-              />
-            </FieldGroup>
-          </div>
+      <hr className="border-zinc-100 dark:border-zinc-800" />
 
-          <div className="mt-8 flex justify-end">
-            <Button
-              className="h-11 rounded-xl bg-zinc-950 px-6 text-xs font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-              disabled={savePending}
-              onClick={() => void handleSaveSettings()}
-            >
-              {savePending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </section>
+      <ProfileSection title="Team Access">
+        <div className="space-y-5">
+          <TextAreaField
+            className="sm:col-span-2"
+            icon={Mail}
+            id="invite-emails"
+            label="Invite Emails"
+            onChange={setInviteEmails}
+            placeholder="Enter email addresses (comma-separated)"
+            rows={4}
+            value={inviteEmails}
+          />
 
-        <section className={sectionCardClass}>
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className={labelClass}>Team Access</p>
-              <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-                Members and invitations
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-                Keep workspace ownership clean, invite collaborators when you need them, and use
-                roles to control who touches strategy operations.
-              </p>
-            </div>
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em] text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
-              {activeMembers.length} active • {invites.length} pending
-            </span>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_210px_auto]">
-            <FieldGroup label="Invite Emails">
-              <textarea
-                className={textareaClassName}
-                onChange={(event) => setInviteEmails(event.target.value)}
-                placeholder="Enter email addresses (comma-separated)"
-                ref={inviteInputRef}
-                value={inviteEmails}
-              />
-            </FieldGroup>
-            <FieldGroup label="Role">
-              <select
-                className={selectClassName}
-                onChange={(event) => setInviteRole(event.target.value)}
-                value={inviteRole}
-              >
-                <option value="member">Member</option>
-                <option value="strategist">Strategist</option>
-                <option value="admin">Admin</option>
-              </select>
-            </FieldGroup>
-            <div className="flex items-end">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1fr)_220px]">
+            <SelectField
+              icon={ShieldCheck}
+              id="invite-role"
+              label="Role"
+              onChange={setInviteRole}
+              options={[
+                { label: "Member", value: "member" },
+                { label: "Strategist", value: "strategist" },
+                { label: "Admin", value: "admin" }
+              ]}
+              value={inviteRole}
+            />
+            <div className="space-y-2">
+              <FieldLabel htmlFor="invite-submit">Invite Action</FieldLabel>
               <Button
-                className="h-12 w-full rounded-xl bg-zinc-950 px-5 text-xs font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
+                className="h-11 w-full rounded-xl bg-zinc-900 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                 disabled={inviteSaving}
+                id="invite-submit"
                 onClick={() => void handleInviteSubmit()}
               >
                 {inviteSaving ? "Saving..." : "Send Invite"}
@@ -732,549 +787,320 @@ export default function WorkspaceProfile({
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 xl:grid-cols-2">
-            <div className="space-y-3">
-              <p className={labelClass}>Active Members</p>
-              {activeMembers.length ? (
-                activeMembers.map((member) => {
-                  const label =
-                    member.user_id === summary?.profile?.id
-                      ? displayName
-                      : member.invited_email || "Workspace member";
-
-                  return (
-                    <div
-                      className="flex items-center justify-between rounded-[1.15rem] border border-zinc-200/80 bg-zinc-50 px-4 py-3 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]"
-                      key={member.id}
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-zinc-950 dark:text-zinc-100">
-                          {label}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">{member.status}</p>
-                      </div>
-                      <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em] text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
-                        {getRoleLabel(member.role)}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-[1.15rem] border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-500 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-400">
-                  No active members yet.
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <p className={labelClass}>Pending Invites</p>
-              {invites.length ? (
-                invites.map((invite) => (
-                  <div
-                    className="flex items-center justify-between rounded-[1.15rem] border border-zinc-200/80 bg-zinc-50 px-4 py-3 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]"
-                    key={invite.id}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-zinc-950 dark:text-zinc-100">
-                        {invite.invited_email || "Pending invite"}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">{invite.status}</p>
-                    </div>
-                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em] text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
-                      {getRoleLabel(invite.role)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[1.15rem] border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-500 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-400">
-                  No pending team invites. This workspace is still personal.
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <aside className="space-y-5">
-        <SidebarCard
-          accent="success"
-          copy={
-            missingSetupItems.length
-              ? `Complete ${missingSetupItems.join(", ")} to finish the workspace setup surface.`
-              : "Owner identity and workspace context are fully set. This workspace is ready for persisted runs."
-          }
-          eyebrow="Setup Status"
-          icon={CheckCircle2}
-          title={`${completionPercent}% complete`}
-        >
-          <div className="h-2 overflow-hidden rounded-full bg-white/60 dark:bg-white/10">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-[width]"
-              style={{ width: `${completionPercent}%` }}
-            />
-          </div>
-        </SidebarCard>
-
-        <SidebarCard
-          accent="brand"
-          copy={billingCopy}
-          eyebrow="Plan / Billing"
-          icon={CreditCard}
-          title={`${formatPlan(profilePlan)} plan`}
-        >
           <div className="space-y-3">
-            <div className="rounded-[1rem] border border-sky-200/80 bg-white/70 px-4 py-3 dark:border-sky-400/20 dark:bg-white/5">
-              <p className={labelClass}>LIVE runs remaining today</p>
-              <p className="mt-2 text-xl font-black text-zinc-950 dark:text-zinc-100">
-                {typeof usage?.live_runs_remaining === "number" ? usage.live_runs_remaining : "Unlimited"}
-              </p>
-            </div>
-            {profilePlan === "free" ? (
-              <Button
-                className="h-11 w-full rounded-xl bg-zinc-950 text-xs font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                onClick={() => handleUpgrade("pro")}
-              >
-                Upgrade to Pro
-              </Button>
-            ) : PORTAL_URL ? (
-              <Button
-                className="h-11 w-full rounded-xl bg-zinc-950 text-xs font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                onClick={() => {
-                  window.location.href = PORTAL_URL;
-                }}
-              >
-                Manage Billing
-              </Button>
-            ) : null}
-          </div>
-        </SidebarCard>
-
-        <SidebarCard
-          copy="Shared reports, invited collaborators, and saved analyses all resolve from the same live account record."
-          eyebrow="Workspace Reach"
-          icon={ShieldCheck}
-          title="Live account state"
-        >
-          <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-            <div className="flex items-center justify-between rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <span>Saved analyses</span>
-              <span className="font-black text-zinc-950 dark:text-zinc-100">
-                {summary?.savedAnalysesCount ?? analyses.length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <span>Shared links</span>
-              <span className="font-black text-zinc-950 dark:text-zinc-100">
-                {summary?.sharedReportsCount ?? sharedReportEntries.length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <span>Members</span>
-              <span className="font-black text-zinc-950 dark:text-zinc-100">{activeMembers.length}</span>
-            </div>
-          </div>
-        </SidebarCard>
-      </aside>
-    </div>
-  );
-
-  const renderAnalysesTab = () => (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-6">
-        <section className={sectionCardClass}>
-          <div className="mb-6">
-            <p className={labelClass}>Saved Analyses</p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-              Persisted market intelligence runs
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-              Restore previous runs into the engine without rerunning demand collection, or jump
-              into the public view when a report has already been shared.
-            </p>
-          </div>
-
-          {analyses.length ? (
-            <div className="space-y-4">
-              {analyses.map((analysis) => (
+            {invites.length ? (
+              invites.map((invite) => (
                 <div
-                  className="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]"
-                  key={analysis.id}
+                  className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/50"
+                  key={invite.id}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-                        {analysis.query}
-                      </p>
-                      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
-                        {analysis.market_type || "No market context"} • {analysis.depth} •{" "}
-                        {analysis.result_json.source_meta.mode}
-                      </p>
-                    </div>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                      {formatDateTime(analysis.created_at)}
-                    </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {invite.invited_email || "Pending invite"}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">{invite.status}</p>
                   </div>
-
-                  <p className="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                    {analysis.result_json.dominant_narrative}
-                  </p>
-
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <Button
-                      className="h-10 rounded-xl bg-zinc-950 px-4 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                      onClick={() => handleRestoreAnalysis(analysis.id)}
-                    >
-                      Restore in Engine
-                    </Button>
-                    {analysis.is_public ? (
-                      <Link
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-[0.68rem] font-black uppercase tracking-[0.16em] text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
-                        href={`/analysis/${analysis.id}`}
-                      >
-                        Open Shared View
-                      </Link>
-                    ) : null}
-                  </div>
+                  <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                    {getRoleLabel(invite.role)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[1.35rem] border border-dashed border-zinc-200 bg-zinc-50/90 p-6 text-sm text-zinc-500 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-400">
-              No saved analyses yet.
-            </div>
-          )}
-        </section>
-      </div>
-
-      <aside className="space-y-5">
-        <SidebarCard
-          accent="success"
-          copy="Every saved run is tied to the live workspace account and can be restored without rerunning acquisition analysis."
-          eyebrow="Run Volume"
-          icon={FolderKanban}
-          title={`${summary?.savedAnalysesCount ?? analyses.length} saved analyses`}
-        />
-        <SidebarCard
-          copy="Mode mix shows how much of your current history came from live collection versus hybrid or development runs."
-          eyebrow="Mode Mix"
-          icon={Sparkles}
-          title="Acquisition coverage"
-        >
-          <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-            {["LIVE", "HYBRID", "DEV"].map((mode) => (
-              <div
-                className="flex items-center justify-between rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5"
-                key={mode}
-              >
-                <span>{mode}</span>
-                <span className="font-black text-zinc-950 dark:text-zinc-100">
-                  {analysisModes[mode] ?? 0}
-                </span>
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+                No pending team invites yet.
               </div>
-            ))}
+            )}
           </div>
-        </SidebarCard>
-      </aside>
+        </div>
+      </ProfileSection>
+
+      <div className="flex justify-end pt-2">
+        <Button
+          className="h-12 rounded-xl bg-indigo-500 px-8 text-sm font-bold text-white shadow-md transition-all hover:bg-indigo-600"
+          disabled={savePending}
+          onClick={() => void handleSaveSettings()}
+        >
+          {savePending ? "Saving Changes..." : "Save Changes"}
+        </Button>
+      </div>
     </div>
   );
 
-  const renderReportsTab = () => (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-6">
-        <section className={sectionCardClass}>
-          <div className="mb-6">
-            <p className={labelClass}>Shared Reports</p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-              Public and private share links
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-              Reports reflect real persisted analyses. Copy links when public sharing is enabled,
-              or keep them private until the narrative is ready to circulate.
-            </p>
-          </div>
-
-          {sharedReportEntries.length ? (
-            <div className="space-y-4">
-              {sharedReportEntries.map(({ analysis, report, shareUrl }) => (
-                <div
-                  className="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]"
-                  key={analysis.id}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-                        {analysis.query}
-                      </p>
-                      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
-                        {report?.is_public ? "Public" : "Private"} • {formatDateTime(report?.created_at)}
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em] text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
-                      {report?.is_public ? "Public" : "Private"}
-                    </span>
+  const renderAnalysesContent = () => (
+    <div className="space-y-8">
+      <ProfileSection title="Recent Analyses">
+        {analyses.length ? (
+          <div className="space-y-4">
+            {analyses.map((analysis) => (
+              <div
+                className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40"
+                key={analysis.id}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+                      {analysis.query}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                      {analysis.market_type || "No market context"} • {analysis.depth} •{" "}
+                      {analysis.result_json.source_meta.mode}
+                    </p>
                   </div>
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <Button
-                      className="h-10 rounded-xl bg-zinc-950 px-4 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white hover:bg-black disabled:opacity-40 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                      disabled={!report?.is_public}
-                      onClick={() => void handleCopyLink(analysis.id)}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copy Link
-                    </Button>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                    {formatDateTime(analysis.created_at)}
+                  </span>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+                  {analysis.result_json.dominant_narrative}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    className="h-10 rounded-xl bg-zinc-900 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                    onClick={() => handleRestoreAnalysis(analysis.id)}
+                  >
+                    Restore Analysis
+                  </Button>
+                  {analysis.is_public ? (
                     <Link
-                      className={cn(
-                        "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-[0.68rem] font-black uppercase tracking-[0.16em] dark:border-white/10 dark:bg-white/5",
-                        report?.is_public
-                          ? "text-zinc-900 dark:text-zinc-100"
-                          : "pointer-events-none text-zinc-400 dark:text-zinc-500"
-                      )}
-                      href={report?.is_public ? `/analysis/${analysis.id}` : "#"}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                      href={`/analysis/${analysis.id}`}
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Open Link
+                      Open Shared View
                     </Link>
-                  </div>
-                  {report?.is_public ? (
-                    <p className="mt-3 truncate text-xs text-zinc-500 dark:text-zinc-500">{shareUrl}</p>
                   ) : null}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[1.35rem] border border-dashed border-zinc-200 bg-zinc-50/90 p-6 text-sm text-zinc-500 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)] dark:text-zinc-400">
-              No shared reports yet. Public analyses will appear here automatically.
-            </div>
-          )}
-        </section>
-      </div>
-
-      <aside className="space-y-5">
-        <SidebarCard
-          accent="brand"
-          copy="Shared reports use persisted analysis state, so the dashboard and public report view stay tied to the same source of truth."
-          eyebrow="Report Count"
-          icon={Link2}
-          title={`${summary?.sharedReportsCount ?? sharedReportEntries.length} report links`}
-        />
-        <SidebarCard
-          copy="Private analyses stay inside the workspace. Public reports are available for copied links and direct review routes."
-          eyebrow="Visibility"
-          icon={ShieldCheck}
-          title="Controlled distribution"
-        >
-          <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-            <div className="flex items-center justify-between rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <span>Public</span>
-              <span className="font-black text-zinc-950 dark:text-zinc-100">
-                {sharedReportEntries.filter((entry) => entry.report?.is_public).length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <span>Private</span>
-              <span className="font-black text-zinc-950 dark:text-zinc-100">
-                {sharedReportEntries.filter((entry) => !entry.report?.is_public).length}
-              </span>
-            </div>
-          </div>
-        </SidebarCard>
-      </aside>
-    </div>
-  );
-
-  const renderBillingTab = () => (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="space-y-6">
-        <section className={sectionCardClass}>
-          <div className="mb-6">
-            <p className={labelClass}>Current Plan</p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-              {formatPlan(profilePlan)} plan status
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-              Real gating and feature access resolve from the live persisted subscription state.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]">
-              <p className={labelClass}>Subscription Status</p>
-              <p className="mt-3 text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-                {summary?.subscription?.status || "active"}
-              </p>
-              <p className="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{billingCopy}</p>
-            </div>
-            <div className="rounded-[1.35rem] border border-zinc-200/80 bg-zinc-50/90 p-5 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]">
-              <p className={labelClass}>Usage Summary</p>
-              <div className="mt-4 grid gap-3">
-                <div className="rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                  <p className={labelClass}>LIVE Analyses Today</p>
-                  <p className="mt-2 text-xl font-black text-zinc-950 dark:text-zinc-100">
-                    {usage?.live_runs_today ?? 0}
-                    {typeof usage?.live_runs_limit === "number" ? ` / ${usage.live_runs_limit}` : ""}
-                  </p>
-                </div>
-                <div className="rounded-[1rem] border border-zinc-200/80 bg-white/75 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                  <p className={labelClass}>Remaining Today</p>
-                  <p className="mt-2 text-xl font-black text-zinc-950 dark:text-zinc-100">
-                    {typeof usage?.live_runs_remaining === "number" ? usage.live_runs_remaining : "Unlimited"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className={sectionCardClass}>
-          <div className="mb-6">
-            <p className={labelClass}>Entitlements</p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-              Feature access mapped to subscription
-            </h2>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {usageFeatureRows.map((row) => (
-              <div
-                className="flex items-center justify-between rounded-[1.1rem] border border-zinc-200/80 bg-zinc-50/90 px-4 py-3 dark:border-white/10 dark:bg-[rgba(12,12,14,0.94)]"
-                key={row.label}
-              >
-                <span className="text-sm font-semibold text-zinc-950 dark:text-zinc-100">{row.label}</span>
-                <span
-                  className={cn(
-                    "rounded-full px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em]",
-                    row.enabled
-                      ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200"
-                      : "border border-zinc-200 bg-white text-zinc-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400"
-                  )}
-                >
-                  {row.enabled ? "Enabled" : "Locked"}
-                </span>
               </div>
             ))}
           </div>
-        </section>
-      </div>
-
-      <aside className="space-y-5">
-        <SidebarCard
-          accent="brand"
-          copy="Move into paid plans only when you need unlimited LIVE collection, deeper synthesis, and advanced generators."
-          eyebrow="Plan Controls"
-          icon={CreditCard}
-          title={formatPlan(profilePlan)}
-        >
-          <div className="space-y-3">
-            {profilePlan === "free" ? (
-              <Button
-                className="h-11 w-full rounded-xl bg-zinc-950 text-xs font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                onClick={() => handleUpgrade("pro")}
-              >
-                Upgrade to Pro
-              </Button>
-            ) : null}
-            {profilePlan !== "free" && PORTAL_URL ? (
-              <Button
-                className="h-11 w-full rounded-xl bg-zinc-950 text-xs font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                onClick={() => {
-                  window.location.href = PORTAL_URL;
-                }}
-              >
-                Manage Billing
-              </Button>
-            ) : null}
-            <Link
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-zinc-200 bg-white text-xs font-black uppercase tracking-[0.16em] text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
-              href="/"
-            >
-              Return to Engine
-            </Link>
+        ) : (
+          <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+            No saved analyses yet.
           </div>
-        </SidebarCard>
-      </aside>
+        )}
+      </ProfileSection>
     </div>
   );
 
+  const renderReportsContent = () => (
+    <div className="space-y-8">
+      <ProfileSection title="Shared Reports">
+        {sharedReportEntries.length ? (
+          <div className="space-y-4">
+            {sharedReportEntries.map(({ analysis, report, shareUrl }) => (
+              <div
+                className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40"
+                key={analysis.id}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-base font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+                      {analysis.query}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                      {report?.is_public ? "Public" : "Private"} • {formatDateTime(report?.created_at)}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                    {report?.is_public ? "Public" : "Private"}
+                  </span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    className="h-10 rounded-xl bg-zinc-900 px-4 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-black disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                    disabled={!report?.is_public}
+                    onClick={() => void handleCopyLink(analysis.id)}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy Link
+                  </Button>
+                  <Link
+                    className={cn(
+                      "inline-flex h-10 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] dark:border-zinc-800 dark:bg-zinc-950",
+                      report?.is_public
+                        ? "text-zinc-900 dark:text-zinc-100"
+                        : "pointer-events-none text-zinc-400 dark:text-zinc-500"
+                    )}
+                    href={report?.is_public ? `/analysis/${analysis.id}` : "#"}
+                  >
+                    <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                    Open Link
+                  </Link>
+                </div>
+                {report?.is_public ? (
+                  <p className="mt-3 truncate text-xs text-zinc-500 dark:text-zinc-500">{shareUrl}</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+            No shared reports yet.
+          </div>
+        )}
+      </ProfileSection>
+    </div>
+  );
+
+  const renderBillingContent = () => (
+    <div className="space-y-8">
+      <ProfileSection title="Plan and Billing">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+            <SectionLabel>Current Plan</SectionLabel>
+            <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+              {formatPlan(profilePlan)}
+            </p>
+            <p className="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-400">{billingCopy}</p>
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+            <SectionLabel>Usage Summary</SectionLabel>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-500">
+                  Live Analyses Today
+                </p>
+                <p className="mt-2 text-xl font-black text-zinc-900 dark:text-zinc-100">
+                  {usage?.live_runs_today ?? 0}
+                  {typeof usage?.live_runs_limit === "number" ? ` / ${usage.live_runs_limit}` : ""}
+                </p>
+              </div>
+              <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-500">
+                  Remaining Today
+                </p>
+                <p className="mt-2 text-xl font-black text-zinc-900 dark:text-zinc-100">
+                  {typeof usage?.live_runs_remaining === "number" ? usage.live_runs_remaining : "Unlimited"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ProfileSection>
+
+      <hr className="border-zinc-100 dark:border-zinc-800" />
+
+      <ProfileSection title="Entitlements">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {usageFeatureRows.map((row) => (
+            <div
+              className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40"
+              key={row.label}
+            >
+              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{row.label}</span>
+              <span
+                className={cn(
+                  "rounded-full px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em]",
+                  row.enabled
+                    ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+                    : "border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400"
+                )}
+              >
+                {row.enabled ? "Enabled" : "Locked"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </ProfileSection>
+    </div>
+  );
+
+  const renderMainColumn = () => {
+    if (activeTab === "Analyses") {
+      return renderAnalysesContent();
+    }
+
+    if (activeTab === "Reports") {
+      return renderReportsContent();
+    }
+
+    if (activeTab === "Billing") {
+      return renderBillingContent();
+    }
+
+    return renderWorkspaceContent();
+  };
+
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-8 text-zinc-950 transition-colors dark:bg-[#050505] dark:text-zinc-100 md:px-6 md:py-10">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-950 dark:bg-[#050505] dark:text-zinc-100">
+      <div className="mx-auto w-full max-w-5xl">
         <motion.div
           animate={{ opacity: 1, y: 0 }}
-          className="overflow-hidden rounded-[2.2rem] border border-zinc-200/80 bg-white/92 shadow-[0_30px_90px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(9,9,12,0.92)] dark:shadow-[0_38px_100px_rgba(0,0,0,0.52)]"
+          className="overflow-hidden rounded-[32px] border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
           initial={{ opacity: 0, y: 18 }}
-          transition={{ duration: 0.35 }}
+          transition={{ duration: 0.3 }}
         >
-          <div className="relative h-52 overflow-hidden sm:h-56">
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,#38bdf8_0%,#6366f1_45%,#f59e0b_100%)] dark:bg-[linear-gradient(135deg,#4f46e5_0%,#8b5cf6_45%,#ec4899_100%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(255,255,255,0.42),transparent_28%),radial-gradient(circle_at_80%_22%,rgba(255,255,255,0.18),transparent_32%)] opacity-90" />
-            <div className="absolute inset-0 bg-gradient-to-t from-white/30 via-transparent to-transparent dark:from-black/35" />
-            <div className="absolute right-4 top-4 rounded-xl border border-white/25 bg-white/15 px-4 py-2 text-[0.62rem] font-black uppercase tracking-[0.16em] text-white backdrop-blur-md">
-              Live Workspace State
+          <div className="relative h-48 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.35),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_36%)]" />
+            <div className="absolute bottom-4 right-4 flex items-center gap-2">
+              <span className="rounded-xl bg-white/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur-md">
+                {formatPlan(profilePlan)}
+              </span>
+              <Link
+                className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/30"
+                href="/"
+              >
+                <Camera className="h-4 w-4" />
+                Return to Engine
+              </Link>
             </div>
           </div>
 
-          <div className="px-5 pb-8 md:px-8 lg:px-10">
-            <div className="flex flex-col gap-6 border-b border-zinc-200/80 pb-8 dark:border-white/10 lg:flex-row lg:items-end lg:justify-between">
-              <div className="-mt-16 flex flex-col gap-5 sm:flex-row sm:items-end">
-                <div className="relative z-10 flex h-28 w-28 items-center justify-center rounded-[2rem] border-[6px] border-white bg-zinc-950 text-3xl font-black tracking-tight text-white shadow-[0_20px_45px_rgba(15,23,42,0.12)] dark:border-[#09090c] dark:bg-[#121216]">
+          <div className="px-6 pb-8 md:px-8">
+            <div className="relative z-10 mb-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+              <div className="-mt-16 flex h-32 w-32 shrink-0 items-center justify-center rounded-[32px] border-4 border-white bg-zinc-100 shadow-lg dark:border-zinc-950 dark:bg-zinc-900">
+                <span className="text-4xl font-black tracking-tight text-zinc-300 dark:text-zinc-700">
                   {getInitials(displayName)}
-                </div>
+                </span>
+              </div>
 
-                <div className="pb-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em] text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
-                      {formatPlan(profilePlan)}
-                    </span>
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[0.62rem] font-black uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
-                      {summary?.subscription?.status || "active"}
-                    </span>
-                  </div>
-                  <h1 className="mt-4 text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-                    {workspaceName}
-                  </h1>
-                  <p className="mt-1 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                    Owned by {displayName}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500 dark:text-zinc-500">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5" />
-                      {workEmail || "No work email"}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Link2 className="h-3.5 w-3.5" />
-                      {workspaceName.replace(/\s+/g, "-").toLowerCase()}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      Joined {formatDate(joinedDate)}
-                    </span>
-                  </div>
+              <div className="min-w-0 flex-1 text-center sm:text-left">
+                <div className="mb-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                  <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    {summary?.subscription?.status || "active"}
+                  </span>
+                  <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    {getRoleLabel(ownerMember?.role || "owner")}
+                  </span>
+                </div>
+                <h1 className="truncate text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
+                  {workspaceName}
+                </h1>
+                <p className="mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                  {displayName} · Workspace Owner
+                </p>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-zinc-500 dark:text-zinc-500 sm:justify-start">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" />
+                    {workEmail || "No email on file"}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5" />
+                    {activeMembers.length} active members
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Joined {formatDate(joinedDate)}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-950 px-5 text-[0.68rem] font-black uppercase tracking-[0.16em] text-white hover:bg-black dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
-                  href="/"
-                >
-                  Return to Engine
-                </Link>
+              <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
                 <Button
-                  className="h-11 rounded-xl border border-zinc-200 bg-white px-5 text-[0.68rem] font-black uppercase tracking-[0.16em] text-zinc-900 shadow-none hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
+                  className="h-10 rounded-xl bg-zinc-900 px-5 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
                   onClick={() => setActiveTab("Billing")}
-                  variant="outline"
                 >
-                  Billing
+                  Manage Billing
                 </Button>
                 <Button
-                  className="h-11 rounded-xl border border-zinc-200 bg-white px-5 text-[0.68rem] font-black uppercase tracking-[0.16em] text-zinc-900 shadow-none hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
+                  className="h-10 rounded-xl border-zinc-200 bg-white px-5 text-xs font-bold uppercase tracking-[0.18em] text-zinc-900 shadow-none hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   onClick={focusInviteSection}
                   variant="outline"
                 >
                   Invite Team
                 </Button>
                 <Button
-                  className="h-11 w-11 rounded-xl border border-zinc-200 bg-white px-0 text-zinc-900 shadow-none hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
+                  aria-label="Sign out"
+                  className="h-10 w-10 rounded-xl border-zinc-200 bg-white px-0 text-zinc-900 shadow-none hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   onClick={() => void signOut()}
                   variant="outline"
                 >
@@ -1283,69 +1109,149 @@ export default function WorkspaceProfile({
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                hint="Supabase-backed analyses"
-                label="Analyses"
-                value={summary?.savedAnalysesCount ?? analyses.length}
-              />
-              <StatCard
-                hint="Public and private links"
-                label="Shared Links"
-                value={summary?.sharedReportsCount ?? sharedReportEntries.length}
-              />
-              <StatCard hint="Active seats" label="Members" value={activeMembers.length} />
-              <StatCard hint="First workspace record" label="Joined" value={formatDate(joinedDate)} />
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-2 rounded-[1.3rem] border border-zinc-200/80 bg-zinc-50/80 p-2 dark:border-white/10 dark:bg-[rgba(12,12,14,0.92)]">
+            <div className="mb-8 flex flex-wrap gap-2 rounded-[20px] border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-800 dark:bg-zinc-900/40">
               {tabs.map((tab) => (
-                <button
-                  className={cn(
-                    "relative flex h-11 items-center justify-center rounded-[1rem] px-4 text-[0.7rem] font-black uppercase tracking-[0.16em] transition-colors",
-                    activeTab === tab
-                      ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
-                      : "text-zinc-500 hover:bg-white hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
-                  )}
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  type="button"
-                >
+                <TabButton isActive={activeTab === tab} key={tab} onClick={() => setActiveTab(tab)}>
                   {tab}
-                  {activeTab === tab ? (
-                    <motion.span
-                      className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-current opacity-60"
-                      layoutId="workspace-profile-tab"
-                    />
-                  ) : null}
-                </button>
+                </TabButton>
               ))}
             </div>
 
-            <div className="mt-8">
-              {loading ? (
-                <div className={sectionCardClass}>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading your workspace...</p>
-                </div>
-              ) : null}
+            {workspaceMessage ? (
+              <div
+                aria-live="polite"
+                className="mb-6 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-300"
+              >
+                {workspaceMessage}
+              </div>
+            ) : null}
 
-              {!loading && error ? (
-                <div className={sectionCardClass}>
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-                </div>
-              ) : null}
+            {loading ? (
+              <div className="rounded-[24px] border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400">
+                Loading your workspace...
+              </div>
+            ) : null}
 
-              {!loading && !error && workspaceMessage ? (
-                <div className="mb-6 rounded-[1.2rem] border border-zinc-200/80 bg-zinc-50/90 px-4 py-3 text-sm text-zinc-600 dark:border-white/10 dark:bg-[rgba(12,12,14,0.92)] dark:text-zinc-300">
-                  {workspaceMessage}
-                </div>
-              ) : null}
+            {!loading && error ? (
+              <div className="rounded-[24px] border border-red-200 bg-red-50 p-6 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+                {error}
+              </div>
+            ) : null}
 
-              {!loading && !error && activeTab === "Workspace" ? renderWorkspaceTab() : null}
-              {!loading && !error && activeTab === "Analyses" ? renderAnalysesTab() : null}
-              {!loading && !error && activeTab === "Reports" ? renderReportsTab() : null}
-              {!loading && !error && activeTab === "Billing" ? renderBillingTab() : null}
-            </div>
+            {!loading && !error ? (
+              <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
+                <div className="space-y-8 md:col-span-8">{renderMainColumn()}</div>
+
+                <aside className="space-y-6 md:col-span-4">
+                  <SidebarCard icon={CheckCircle2} title="Workspace Completeness" tone="success">
+                    <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                      <div
+                        className="h-full rounded-full bg-emerald-500"
+                        style={{ width: `${completionPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs font-medium leading-6 text-zinc-500 dark:text-zinc-400">
+                      {completionPercent}% complete. Finish the owner and workspace context fields to
+                      lock in a clean account surface.
+                    </p>
+                  </SidebarCard>
+
+                  <SidebarCard icon={AlertCircle} title="Email / Account Status" tone="brand">
+                    <p className="text-xs font-medium leading-6 text-zinc-600 dark:text-zinc-300">
+                      Signed in as <span className="font-bold">{workEmail || "workspace owner"}</span>.
+                      This workspace is backed by live Supabase auth and persisted account records.
+                    </p>
+                    <Button
+                      className="mt-4 h-10 w-full rounded-xl border-indigo-200 bg-white text-xs font-bold uppercase tracking-[0.18em] text-indigo-700 shadow-none hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-zinc-950 dark:text-indigo-300 dark:hover:bg-indigo-500/10"
+                      onClick={() => {
+                        window.location.href = "/auth";
+                      }}
+                      variant="outline"
+                    >
+                      Review Access
+                    </Button>
+                  </SidebarCard>
+
+                  <SidebarCard icon={CreditCard} title="Plan / Billing Summary">
+                    <div className="space-y-3">
+                      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-500">
+                          Current Plan
+                        </p>
+                        <p className="mt-2 text-xl font-black text-zinc-900 dark:text-zinc-100">
+                          {formatPlan(profilePlan)}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-500">
+                          Remaining Live Runs
+                        </p>
+                        <p className="mt-2 text-xl font-black text-zinc-900 dark:text-zinc-100">
+                          {typeof usage?.live_runs_remaining === "number" ? usage.live_runs_remaining : "Unlimited"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-xs font-medium leading-6 text-zinc-500 dark:text-zinc-400">
+                      {billingCopy}
+                    </p>
+                    {profilePlan === "free" ? (
+                      <Button
+                        className="mt-4 h-10 w-full rounded-xl bg-zinc-900 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                        onClick={() => handleUpgrade("pro")}
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    ) : PORTAL_URL ? (
+                      <Button
+                        className="mt-4 h-10 w-full rounded-xl bg-zinc-900 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-black dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                        onClick={() => {
+                          window.location.href = PORTAL_URL;
+                        }}
+                      >
+                        Open Billing Portal
+                      </Button>
+                    ) : null}
+                  </SidebarCard>
+
+                  <SidebarCard icon={FolderKanban} title="Quick Stats">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500">
+                          Analyses
+                        </p>
+                        <p className="mt-2 text-lg font-black text-zinc-900 dark:text-zinc-100">
+                          {summary?.savedAnalysesCount ?? analyses.length}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500">
+                          Reports
+                        </p>
+                        <p className="mt-2 text-lg font-black text-zinc-900 dark:text-zinc-100">
+                          {summary?.sharedReportsCount ?? sharedReportEntries.length}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500">
+                          Members
+                        </p>
+                        <p className="mt-2 text-lg font-black text-zinc-900 dark:text-zinc-100">
+                          {activeMembers.length}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-500">
+                          Shared
+                        </p>
+                        <p className="mt-2 text-lg font-black text-zinc-900 dark:text-zinc-100">
+                          {sharedReportEntries.filter((entry) => entry.report?.is_public).length}
+                        </p>
+                      </div>
+                    </div>
+                  </SidebarCard>
+                </aside>
+              </div>
+            ) : null}
           </div>
         </motion.div>
       </div>
