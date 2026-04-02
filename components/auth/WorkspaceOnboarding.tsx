@@ -472,7 +472,7 @@ export default function WorkspaceOnboarding({
             id="invite-emails"
             className={textareaClassName}
             onChange={(event) => setInviteEmails(event.target.value)}
-            placeholder="name@company.com, strategist@company.com"
+            placeholder="Enter email addresses (comma-separated)"
             value={inviteEmails}
           />
         </div>

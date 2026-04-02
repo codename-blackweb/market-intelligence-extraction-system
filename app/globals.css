@@ -1480,11 +1480,24 @@ select {
   font-size: 0.78rem;
   font-weight: 600;
   color: rgba(228, 228, 231, 0.88);
+  line-height: 1.4;
 }
 
 .onboarding-input::placeholder,
 .onboarding-textarea::placeholder {
   color: rgba(113, 113, 122, 0.88);
+}
+
+.onboarding-select {
+  padding-left: 1rem;
+  padding-right: 2.5rem;
+  background-position: right 0.95rem center;
+}
+
+.onboarding-textarea {
+  display: block;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
 }
 
 .onboarding-select option {
