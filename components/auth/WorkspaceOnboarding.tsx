@@ -297,31 +297,29 @@ export default function WorkspaceOnboarding({
     if (step === 0) {
       return (
         <div className="grid gap-4">
-          <Button
-            className="auth-provider-button !min-h-[2.8rem]"
-            disabled={!magicAccessEnabled || loading}
-            onClick={() => setAccountMethod("magic")}
-            type="button"
-            variant={accountMethod === "magic" ? "default" : "outline"}
-          >
-            <span className="auth-provider-inner">
-              <Mail className="auth-provider-svg h-4 w-4" />
-              Magic Access
-            </span>
-          </Button>
+          {magicAccessEnabled ? (
+            <>
+              <Button
+                className="auth-provider-button !min-h-[2.8rem]"
+                disabled={loading}
+                onClick={() => setAccountMethod("magic")}
+                type="button"
+                variant={accountMethod === "magic" ? "default" : "outline"}
+              >
+                <span className="auth-provider-inner">
+                  <Mail className="auth-provider-svg h-4 w-4" />
+                  Magic Access
+                </span>
+              </Button>
 
-          {!magicAccessEnabled ? (
-            <p className="auth-message auth-message-warning">
-              {MAGIC_ACCESS_UNAVAILABLE_MESSAGE}
-            </p>
+              <div className="auth-divider">
+                <div className="auth-divider-line" />
+                <div className="auth-divider-label">
+                  <span>or</span>
+                </div>
+              </div>
+            </>
           ) : null}
-
-          <div className="auth-divider">
-            <div className="auth-divider-line" />
-            <div className="auth-divider-label">
-              <span>or</span>
-            </div>
-          </div>
 
           <p className="auth-copy !max-w-none !text-left">
             Create an account with email and password.
@@ -508,14 +506,14 @@ export default function WorkspaceOnboarding({
   };
 
   return (
-    <div className="grid w-full gap-4">
-      <div className="flex items-center justify-start">
+    <div className="onboarding-layout">
+      <div className="onboarding-back-row">
         <Link
-          className="auth-inline-link inline-flex items-center gap-2"
+          className="auth-inline-link onboarding-back-link"
           href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Login
+          <span>Back to Login</span>
         </Link>
       </div>
 
@@ -563,7 +561,7 @@ export default function WorkspaceOnboarding({
             {error ? <p className="auth-message auth-message-error">{error}</p> : null}
             {success ? <p className="auth-message auth-message-success">{success}</p> : null}
 
-            <div className="flex items-center justify-between gap-4 pt-1">
+            <div className="onboarding-actions">
               {step === 0 ? (
                 <Link
                   className="auth-inline-link inline-flex items-center gap-2"
@@ -584,7 +582,7 @@ export default function WorkspaceOnboarding({
 
               {step < steps.length - 1 ? (
                 <Button
-                  className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
+                  className="auth-primary-button onboarding-primary-action !min-h-[2.8rem]"
                   disabled={loading}
                   onClick={continueToNextStep}
                 >
@@ -593,7 +591,7 @@ export default function WorkspaceOnboarding({
                 </Button>
               ) : (
                 <Button
-                  className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
+                  className="auth-primary-button onboarding-primary-action !min-h-[2.8rem]"
                   disabled={loading}
                   onClick={() => void handleCreateWorkspace(false)}
                 >

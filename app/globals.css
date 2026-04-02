@@ -1426,9 +1426,52 @@ select {
   width: min(100%, 29rem);
 }
 
+.onboarding-layout {
+  display: grid;
+  width: 100%;
+  gap: 1.35rem;
+}
+
+.onboarding-back-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 0.15rem;
+}
+
+.onboarding-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  line-height: 1;
+}
+
+.onboarding-back-link svg {
+  flex: 0 0 auto;
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
 .onboarding-card-inner {
   width: min(100%, 24rem);
   margin-inline: auto;
+}
+
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding-top: 0.25rem;
+}
+
+.onboarding-primary-action {
+  width: auto !important;
+  min-width: 10.5rem;
+  justify-content: center;
+  padding-inline: 1.35rem;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .onboarding-owner-grid,
