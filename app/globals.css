@@ -1457,6 +1457,26 @@ select {
   margin-inline: auto;
 }
 
+.onboarding-owner-section {
+  display: grid;
+  gap: 1.1rem;
+  padding-block: 0.2rem 0.45rem;
+}
+
+.onboarding-owner-section-head {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.onboarding-owner-copy-stack {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.onboarding-field-unit {
+  gap: 0.6rem;
+}
+
 .onboarding-actions {
   display: flex;
   align-items: center;
@@ -1478,7 +1498,7 @@ select {
 .onboarding-context-grid,
 .onboarding-invite-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.15rem;
 }
 
 @media (min-width: 720px) {
@@ -1494,6 +1514,10 @@ select {
 
   .onboarding-grid-full {
     grid-column: 1 / -1;
+  }
+
+  .onboarding-owner-grid {
+    column-gap: 1.2rem;
   }
 }
 

@@ -321,12 +321,14 @@ export default function WorkspaceOnboarding({
             </>
           ) : null}
 
-          <p className="auth-copy !max-w-none !text-left">
-            Create an account with email and password.
-          </p>
+          <div className="onboarding-owner-copy-stack">
+            <p className="auth-copy !max-w-none !text-left">
+              Create an account with email and password.
+            </p>
+          </div>
 
           <div className="onboarding-owner-grid">
-            <div className="auth-field">
+            <div className="auth-field onboarding-field-unit">
               <label className={labelClassName} htmlFor="onboarding-first-name">
                 First Name
               </label>
@@ -339,7 +341,7 @@ export default function WorkspaceOnboarding({
               />
             </div>
 
-            <div className="auth-field">
+            <div className="auth-field onboarding-field-unit">
               <label className={labelClassName} htmlFor="onboarding-last-name">
                 Last Name
               </label>
@@ -352,7 +354,7 @@ export default function WorkspaceOnboarding({
               />
             </div>
 
-            <div className="auth-field onboarding-grid-full">
+            <div className="auth-field onboarding-field-unit onboarding-grid-full">
               <label className={labelClassName} htmlFor="onboarding-email">
                 Work Email
               </label>
@@ -366,7 +368,7 @@ export default function WorkspaceOnboarding({
               />
             </div>
 
-            <div className="auth-field onboarding-grid-full">
+            <div className="auth-field onboarding-field-unit onboarding-grid-full">
               <label className={labelClassName} htmlFor="onboarding-password">
                 Password
               </label>
@@ -549,8 +551,8 @@ export default function WorkspaceOnboarding({
               </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="grid gap-1 text-left">
+            <div className={step === 0 ? "onboarding-owner-section" : "grid gap-4"}>
+              <div className={step === 0 ? "onboarding-owner-section-head text-left" : "grid gap-1 text-left"}>
                 <p className={labelClassName}>{currentStep.sectionLabel}</p>
                 <p className="auth-copy !max-w-none !text-left">{currentStep.sectionHelper}</p>
               </div>
