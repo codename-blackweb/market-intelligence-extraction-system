@@ -12,6 +12,9 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json()) as {
       email?: string;
+      createUser?: boolean;
+      firstName?: string;
+      lastName?: string;
     };
     const email = body.email?.trim().toLowerCase();
 
@@ -22,7 +25,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await sendMagicAccess(email, `${request.nextUrl.origin}/auth/callback`);
+    await sendMagicAccess({
+      email,
+      emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
+      createUser: body.createUser ?? false,
+      firstName: body.firstName?.trim(),
+      lastName: body.lastName?.trim()
+    });
 
     return NextResponse.json({
       success: true

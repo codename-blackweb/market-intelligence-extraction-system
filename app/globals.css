@@ -1342,6 +1342,10 @@ select {
   color: #a1a1aa;
 }
 
+.auth-message-warning {
+  color: #fcd34d;
+}
+
 .auth-divider {
   position: relative;
   margin-top: 0.15rem;

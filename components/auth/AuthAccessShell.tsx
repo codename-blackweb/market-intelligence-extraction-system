@@ -4,34 +4,27 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  KeyRound,
-  Lock,
-  Mail,
-  ShieldCheck
-} from "lucide-react";
+import { ArrowRight, KeyRound, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import {
+  isMagicAccessEnabled,
+  MAGIC_ACCESS_UNAVAILABLE_MESSAGE
+} from "@/lib/auth-capabilities";
+import { getOAuthProviderAvailability } from "@/lib/supabase-core";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import type { AuthSession } from "@/types/market-analysis";
 
 type AuthView = "signin" | "magic" | "recovery" | "verify";
 
-const segmentedViews: Array<{ id: AuthView; label: string }> = [
-  { id: "signin", label: "Password" },
-  { id: "magic", label: "Magic Access" },
-  { id: "recovery", label: "Recover" },
-  { id: "verify", label: "Verify" }
-];
+function getInitialView(viewParam: string | null, magicAccessEnabled: boolean): AuthView {
+  if (viewParam === "signin" || viewParam === "recovery") {
+    return viewParam;
+  }
 
-function getInitialView(viewParam: string | null): AuthView {
-  if (
-    viewParam === "signin" ||
-    viewParam === "magic" ||
-    viewParam === "recovery" ||
-    viewParam === "verify"
-  ) {
+  if (magicAccessEnabled && (viewParam === "magic" || viewParam === "verify")) {
     return viewParam;
   }
 
@@ -45,7 +38,16 @@ export default function AuthAccessShell() {
   const requestedPlan = searchParams.get("plan");
   const upgradePlan =
     requestedPlan === "pro" || requestedPlan === "agency" ? requestedPlan : null;
-  const [view, setView] = useState<AuthView>(getInitialView(searchParams.get("view")));
+  const magicAccessEnabled = isMagicAccessEnabled();
+  const providerAvailability = getOAuthProviderAvailability();
+  const enabledProviders = [
+    providerAvailability.github ? "github" : null,
+    providerAvailability.google ? "google" : null
+  ].filter(Boolean) as Array<"github" | "google">;
+  const checkoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
+  const [view, setView] = useState<AuthView>(
+    getInitialView(searchParams.get("view"), magicAccessEnabled)
+  );
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [rememberSession, setRememberSession] = useState(true);
@@ -54,14 +56,21 @@ export default function AuthAccessShell() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const passkeySupported = false;
-  const inputClassName =
-    "auth-input";
-  const primaryButtonClassName =
-    "auth-primary-button";
-  const secondaryButtonClassName =
-    "auth-provider-button";
+  const inputClassName = "auth-input";
+  const primaryButtonClassName = "auth-primary-button";
+  const secondaryButtonClassName = "auth-provider-button";
   const planLabel =
     upgradePlan === "pro" ? "Unlocking Pro" : upgradePlan === "agency" ? "Unlocking Agency" : null;
+  const segmentedViews: Array<{ id: AuthView; label: string }> = magicAccessEnabled
+    ? [
+        { id: "signin", label: "Password" },
+        { id: "magic", label: "Magic Access" },
+        { id: "recovery", label: "Recover" }
+      ]
+    : [
+        { id: "signin", label: "Password" },
+        { id: "recovery", label: "Recover" }
+      ];
 
   const hint = useMemo(() => {
     switch (view) {
@@ -96,9 +105,102 @@ export default function AuthAccessShell() {
       ? `${hint.copy} Continue to unlock ${upgradePlan === "agency" ? "Agency" : "Pro"}.`
       : hint.copy;
 
-  const handleProviderClick = (provider: "GitHub" | "Google") => {
+  useEffect(() => {
+    const nextView = getInitialView(searchParams.get("view"), magicAccessEnabled);
+    setView(nextView);
+    setEmail(searchParams.get("email") ?? "");
+    if (!magicAccessEnabled) {
+      const requestedView = searchParams.get("view");
+
+      if (requestedView === "magic" || requestedView === "verify") {
+        setError(MAGIC_ACCESS_UNAVAILABLE_MESSAGE);
+      }
+    }
+  }, [magicAccessEnabled, searchParams]);
+
+  useEffect(() => {
+    const previousBodyBackground = document.body.style.background;
+    const previousBodyColor = document.body.style.color;
+    const previousHtmlBackground = document.documentElement.style.background;
+
+    document.body.style.background = "#050505";
+    document.body.style.color = "#f4f4f5";
+    document.documentElement.style.background = "#050505";
+
+    return () => {
+      document.body.style.background = previousBodyBackground;
+      document.body.style.color = previousBodyColor;
+      document.documentElement.style.background = previousHtmlBackground;
+    };
+  }, []);
+
+  const bootstrapAuthenticatedAccount = async (accessToken: string) => {
+    const response = await fetch("/api/account", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({})
+    });
+
+    if (!response.ok) {
+      const json = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(json?.error || "Unable to initialize your account.");
+    }
+  };
+
+  const routePostAuth = () => {
+    if (upgradePlan) {
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
+
+      router.push("/upgrade/success");
+      return;
+    }
+
+    router.push("/account");
+  };
+
+  const finalizeSession = async (session: AuthSession | null) => {
+    if (!session) {
+      throw new Error("Unable to continue.");
+    }
+
+    await setSession(session);
+    await bootstrapAuthenticatedAccount(session.access_token);
+    routePostAuth();
+  };
+
+  const handleProviderClick = async (provider: "github" | "google") => {
+    setLoading(true);
     setSuccess("");
-    setError(`${provider} sign-in is not configured yet. Continue with email access for now.`);
+    setError("");
+
+    try {
+      const client = getSupabaseBrowserClient();
+
+      if (!client) {
+        throw new Error("Supabase auth is not configured.");
+      }
+
+      const { error: oauthError } = await client.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (oauthError) {
+        throw oauthError;
+      }
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : "Unable to continue.";
+      setError(message);
+      setLoading(false);
+    }
   };
 
   const handlePasswordSignIn = async () => {
@@ -122,7 +224,7 @@ export default function AuthAccessShell() {
 
       const json = (await response.json()) as {
         success: boolean;
-        session?: Parameters<typeof setSession>[0];
+        session?: AuthSession | null;
         error?: string;
       };
 
@@ -130,8 +232,7 @@ export default function AuthAccessShell() {
         throw new Error(json.error || "Unable to continue.");
       }
 
-      setSession(json.session);
-      router.push("/account");
+      await finalizeSession(json.session);
     } catch (authError) {
       const message = authError instanceof Error ? authError.message : "Unable to continue.";
       setError(message);
@@ -141,6 +242,12 @@ export default function AuthAccessShell() {
   };
 
   const handleMagicAccess = async () => {
+    if (!magicAccessEnabled) {
+      setError(MAGIC_ACCESS_UNAVAILABLE_MESSAGE);
+      setView("signin");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -164,7 +271,7 @@ export default function AuthAccessShell() {
         throw new Error(json.error || "Unable to send magic access.");
       }
 
-      setSuccess("Magic access sent. Check your inbox for a secure sign-in link.");
+      setSuccess("Magic access sent. Check your inbox for a secure sign-in link or code.");
       setView("verify");
     } catch (authError) {
       const message =
@@ -210,6 +317,12 @@ export default function AuthAccessShell() {
   };
 
   const handleVerification = async () => {
+    if (!magicAccessEnabled) {
+      setError(MAGIC_ACCESS_UNAVAILABLE_MESSAGE);
+      setView("signin");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -223,12 +336,12 @@ export default function AuthAccessShell() {
         body: JSON.stringify({
           email,
           token: verificationCode,
-          type: "magiclink"
+          type: "email"
         })
       });
       const json = (await response.json()) as {
         success: boolean;
-        session?: Parameters<typeof setSession>[0];
+        session?: AuthSession | null;
         error?: string;
       };
 
@@ -236,8 +349,7 @@ export default function AuthAccessShell() {
         throw new Error(json.error || "Unable to verify access.");
       }
 
-      setSession(json.session);
-      router.push("/account");
+      await finalizeSession(json.session);
     } catch (authError) {
       const message =
         authError instanceof Error ? authError.message : "Unable to verify access.";
@@ -247,41 +359,21 @@ export default function AuthAccessShell() {
     }
   };
 
-  useEffect(() => {
-    const previousBodyBackground = document.body.style.background;
-    const previousBodyColor = document.body.style.color;
-    const previousHtmlBackground = document.documentElement.style.background;
-
-    document.body.style.background = "#050505";
-    document.body.style.color = "#f4f4f5";
-    document.documentElement.style.background = "#050505";
-
-    return () => {
-      document.body.style.background = previousBodyBackground;
-      document.body.style.color = previousBodyColor;
-      document.documentElement.style.background = previousHtmlBackground;
-    };
-  }, []);
-
   return (
     <section className="auth-page">
       <div className="auth-page-glow auth-page-glow-left" aria-hidden="true" />
       <div className="auth-page-glow auth-page-glow-right" aria-hidden="true" />
 
       <div className="auth-page-center">
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="auth-shell"
-      >
-        <div className="auth-card">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="auth-shell"
+        >
+          <div className="auth-card">
             <div className="auth-header">
-              {planLabel ? (
-                <div className="auth-plan-pill">
-                  {planLabel}
-                </div>
-              ) : null}
+              {planLabel ? <div className="auth-plan-pill">{planLabel}</div> : null}
               <motion.div
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
@@ -296,12 +388,8 @@ export default function AuthAccessShell() {
                   <Lock className="auth-icon" />
                 )}
               </motion.div>
-              <h1 className="auth-title">
-                {hint.title}
-              </h1>
-              <p className="auth-copy">
-                {hintCopy}
-              </p>
+              <h1 className="auth-title">{hint.title}</h1>
+              <p className="auth-copy">{hintCopy}</p>
             </div>
 
             <div className="auth-segments">
@@ -320,6 +408,10 @@ export default function AuthAccessShell() {
                 </button>
               ))}
             </div>
+
+            {!magicAccessEnabled ? (
+              <p className="auth-message auth-message-warning">{MAGIC_ACCESS_UNAVAILABLE_MESSAGE}</p>
+            ) : null}
 
             <form className="auth-form" onSubmit={(event) => event.preventDefault()}>
               {view !== "verify" ? (
@@ -402,9 +494,7 @@ export default function AuthAccessShell() {
                     {loading ? "Sending..." : "Send Magic Access"}
                     <ArrowRight className="auth-button-arrow" />
                   </Button>
-                  <p className="auth-magic-note">
-                    No password required • Secure access flow
-                  </p>
+                  <p className="auth-magic-note">No password required • Secure access flow</p>
                 </>
               ) : null}
 
@@ -420,9 +510,7 @@ export default function AuthAccessShell() {
                   </Button>
                   {success === "Recovery Link Sent" ? (
                     <div className="auth-success-card">
-                      <p className="auth-success-title">
-                        Recovery Link Sent
-                      </p>
+                      <p className="auth-success-title">Recovery Link Sent</p>
                       <p className="auth-success-copy">
                         Check your inbox for a secure password reset link.
                       </p>
@@ -455,17 +543,27 @@ export default function AuthAccessShell() {
                     {loading ? "Verifying..." : "Verify and Continue"}
                   </Button>
                   <div className="auth-verify-actions">
-                    <button className="auth-inline-link" onClick={() => setView("magic")} type="button">
+                    <button
+                      className="auth-inline-link"
+                      onClick={() => void handleMagicAccess()}
+                      type="button"
+                    >
                       Resend Code
                     </button>
                     {passkeySupported ? (
-                      <button className="auth-inline-link" type="button">Use Passkey</button>
+                      <button className="auth-inline-link" type="button">
+                        Use Passkey
+                      </button>
                     ) : (
                       <button className="auth-inline-link is-disabled" disabled type="button">
                         Use Passkey
                       </button>
                     )}
-                    <button className="auth-inline-link" onClick={() => setView("signin")} type="button">
+                    <button
+                      className="auth-inline-link"
+                      onClick={() => setView("signin")}
+                      type="button"
+                    >
                       Back to Login
                     </button>
                   </div>
@@ -475,69 +573,88 @@ export default function AuthAccessShell() {
 
             {error ? <p className="auth-message auth-message-error">{error}</p> : null}
             {success && success !== "Recovery Link Sent" ? (
-              <p className="auth-message auth-message-success">
-                {success}
-              </p>
+              <p className="auth-message auth-message-success">{success}</p>
             ) : null}
 
-            <div className="auth-divider">
-              <div className="auth-divider-line" />
-              <div className="auth-divider-label">
-                <span>
-                  Workspace Providers
-                </span>
-              </div>
-            </div>
+            {enabledProviders.length ? (
+              <>
+                <div className="auth-divider">
+                  <div className="auth-divider-line" />
+                  <div className="auth-divider-label">
+                    <span>Workspace Providers</span>
+                  </div>
+                </div>
 
-            <div className="auth-provider-grid">
-              <Button
-                className={secondaryButtonClassName}
-                onClick={() => handleProviderClick("GitHub")}
-                type="button"
-                variant="outline"
-              >
-                <span className="auth-provider-inner">
-                  <svg className="auth-provider-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M12 1C5.925 1 1 5.925 1 12c0 4.86 3.149 8.982 7.516 10.436.55.102.75-.239.75-.532 0-.264-.01-.963-.016-1.89-3.058.664-3.703-1.474-3.703-1.474-.5-1.27-1.221-1.608-1.221-1.608-.998-.682.076-.668.076-.668 1.103.078 1.684 1.132 1.684 1.132.98 1.68 2.571 1.194 3.198.913.1-.709.384-1.194.698-1.469-2.441-.278-5.008-1.221-5.008-5.434 0-1.2.429-2.182 1.132-2.951-.113-.278-.49-1.396.108-2.911 0 0 .923-.295 3.025 1.128A10.53 10.53 0 0 1 12 6.32c.936.004 1.879.127 2.758.372 2.1-1.423 3.022-1.128 3.022-1.128.6 1.515.223 2.633.11 2.911.705.769 1.13 1.751 1.13 2.951 0 4.223-2.57 5.153-5.018 5.426.394.34.745 1.01.745 2.036 0 1.469-.013 2.654-.013 3.015 0 .295.198.64.756.531C19.854 20.978 23 16.858 23 12c0-6.075-4.925-11-11-11Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  GitHub
-                </span>
-              </Button>
-              <Button
-                className={secondaryButtonClassName}
-                onClick={() => handleProviderClick("Google")}
-                type="button"
-                variant="outline"
-              >
-                <span className="auth-provider-inner">
-                  <svg className="auth-provider-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      fill="currentColor"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="currentColor"
-                      className="opacity-80"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-                      fill="currentColor"
-                      className="opacity-60"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="currentColor"
-                      className="opacity-40"
-                    />
-                  </svg>
-                  Google
-                </span>
-              </Button>
-            </div>
+                <div className="auth-provider-grid">
+                  {providerAvailability.github ? (
+                    <Button
+                      className={secondaryButtonClassName}
+                      disabled={loading}
+                      onClick={() => void handleProviderClick("github")}
+                      type="button"
+                      variant="outline"
+                    >
+                      <span className="auth-provider-inner">
+                        <svg
+                          className="auth-provider-svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M12 1C5.925 1 1 5.925 1 12c0 4.86 3.149 8.982 7.516 10.436.55.102.75-.239.75-.532 0-.264-.01-.963-.016-1.89-3.058.664-3.703-1.474-3.703-1.474-.5-1.27-1.221-1.608-1.221-1.608-.998-.682.076-.668.076-.668 1.103.078 1.684 1.132 1.684 1.132.98 1.68 2.571 1.194 3.198.913.1-.709.384-1.194.698-1.469-2.441-.278-5.008-1.221-5.008-5.434 0-1.2.429-2.182 1.132-2.951-.113-.278-.49-1.396.108-2.911 0 0 .923-.295 3.025 1.128A10.53 10.53 0 0 1 12 6.32c.936.004 1.879.127 2.758.372 2.1-1.423 3.022-1.128 3.022-1.128.6 1.515.223 2.633.11 2.911.705.769 1.13 1.751 1.13 2.951 0 4.223-2.57 5.153-5.018 5.426.394.34.745 1.01.745 2.036 0 1.469-.013 2.654-.013 3.015 0 .295.198.64.756.531C19.854 20.978 23 16.858 23 12c0-6.075-4.925-11-11-11Z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        GitHub
+                      </span>
+                    </Button>
+                  ) : null}
+                  {providerAvailability.google ? (
+                    <Button
+                      className={secondaryButtonClassName}
+                      disabled={loading}
+                      onClick={() => void handleProviderClick("google")}
+                      type="button"
+                      variant="outline"
+                    >
+                      <span className="auth-provider-inner">
+                        <svg
+                          className="auth-provider-svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="currentColor"
+                            className="opacity-80"
+                          />
+                          <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                            fill="currentColor"
+                            className="opacity-60"
+                          />
+                          <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="currentColor"
+                            className="opacity-40"
+                          />
+                        </svg>
+                        Google
+                      </span>
+                    </Button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
 
             <p className="auth-footer-copy">
               New here?{" "}
@@ -548,8 +665,8 @@ export default function AuthAccessShell() {
                 Create your account
               </Link>
             </p>
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

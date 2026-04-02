@@ -70,6 +70,35 @@ export function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      message?: unknown;
+      details?: unknown;
+      hint?: unknown;
+      code?: unknown;
+      error_description?: unknown;
+      msg?: unknown;
+    };
+
+    const parts = [
+      candidate.message,
+      candidate.error_description,
+      candidate.details,
+      candidate.hint,
+      candidate.code
+    ]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim());
+
+    if (parts.length > 0) {
+      return parts.join(" | ");
+    }
+
+    if (typeof candidate.msg === "string" && candidate.msg.trim().length > 0) {
+      return candidate.msg.trim();
+    }
+  }
+
   return "An unexpected error occurred.";
 }
 

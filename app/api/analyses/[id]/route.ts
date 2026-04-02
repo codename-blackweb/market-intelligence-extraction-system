@@ -4,6 +4,8 @@ import {
   isPersistenceConfigured,
   setPersistedAnalysisVisibility
 } from "@/lib/persistence";
+import { getAuthenticatedRequestUser } from "@/lib/request-auth";
+import { getErrorMessage } from "@/lib/utils";
 
 type RouteProps = {
   params: Promise<{
@@ -14,9 +16,23 @@ type RouteProps = {
 export async function GET(request: NextRequest, { params }: RouteProps) {
   try {
     const { id } = await params;
-    const userId = request.nextUrl.searchParams.get("userId")?.trim();
     const publicOnly = request.nextUrl.searchParams.get("public") === "1";
-    const analysis = await getPersistedAnalysisById(id, userId, publicOnly);
+
+    let userId: string | undefined;
+    let accessToken: string | undefined;
+
+    if (!publicOnly) {
+      const auth = await getAuthenticatedRequestUser(request);
+
+      if (!auth) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+
+      userId = auth.user.id;
+      accessToken = auth.accessToken;
+    }
+
+    const analysis = await getPersistedAnalysisById(id, userId, publicOnly, accessToken);
 
     if (!analysis) {
       return NextResponse.json({ success: false, error: "Analysis not found" }, { status: 404 });
@@ -28,20 +44,24 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       analysis
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteProps) {
   try {
     const { id } = await params;
+    const auth = await getAuthenticatedRequestUser(request);
+
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as {
-      userId?: string;
       isPublic?: boolean;
     };
 
-    if (!body.userId || typeof body.isPublic !== "boolean") {
+    if (typeof body.isPublic !== "boolean") {
       return NextResponse.json(
         { success: false, error: "Missing visibility payload" },
         { status: 400 }
@@ -50,9 +70,14 @@ export async function PATCH(request: NextRequest, { params }: RouteProps) {
 
     const analysis = await setPersistedAnalysisVisibility({
       id,
-      userId: body.userId,
-      isPublic: body.isPublic
+      userId: auth.user.id,
+      isPublic: body.isPublic,
+      accessToken: auth.accessToken
     });
+
+    if (!analysis) {
+      return NextResponse.json({ success: false, error: "Analysis not found" }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -60,7 +85,6 @@ export async function PATCH(request: NextRequest, { params }: RouteProps) {
       analysis
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

@@ -13,10 +13,11 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       email?: string;
       token?: string;
-      type?: "magiclink" | "recovery" | "signup";
+      type?: "magiclink" | "recovery" | "signup" | "email";
+      tokenHash?: string;
     };
 
-    if (!body.email || !body.token || !body.type) {
+    if ((!body.email || !body.token) && !body.tokenHash) {
       return NextResponse.json(
         { success: false, error: "Missing verification payload." },
         { status: 400 }
@@ -24,9 +25,10 @@ export async function POST(request: NextRequest) {
     }
 
     const session = await verifyEmailOtp({
-      email: body.email.trim().toLowerCase(),
-      token: body.token.trim(),
-      type: body.type
+      email: body.email?.trim().toLowerCase(),
+      token: body.token?.trim(),
+      tokenHash: body.tokenHash?.trim(),
+      type: body.type ?? "magiclink"
     });
 
     if (!session) {

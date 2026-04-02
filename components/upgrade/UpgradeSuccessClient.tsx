@@ -2,41 +2,64 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  clearPendingPlan,
-  getOrCreateUserId,
-  loadPendingPlan,
-  persistStoredPlan
-} from "@/lib/client-identity";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { clearPendingPlan, loadPendingPlan, persistStoredPlan } from "@/lib/client-identity";
 
 export default function UpgradeSuccessClient() {
-  const [isReady, setIsReady] = useState(false);
+  const { isReady, session, setPlan } = useAuth();
+  const [isComplete, setIsComplete] = useState(false);
   const [planLabel, setPlanLabel] = useState("Pro");
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
     let isMounted = true;
 
     async function completeUpgrade() {
-      const userId = getOrCreateUserId();
+      if (!session?.access_token) {
+        setError("Sign in again to finish applying your plan.");
+        setIsComplete(true);
+        return;
+      }
+
       const plan = loadPendingPlan();
       setPlanLabel(plan === "agency" ? "Agency" : "Pro");
-      persistStoredPlan(plan);
 
       try {
-        await fetch("/api/profile", {
+        const response = await fetch("/api/profile", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
-            userId,
             plan
           })
         });
+        const json = (await response.json()) as {
+          success: boolean;
+          error?: string;
+        };
+
+        if (!response.ok || !json.success) {
+          throw new Error(json.error || "Unable to apply your plan.");
+        }
+
+        persistStoredPlan(plan);
+        setPlan(plan);
+      } catch (upgradeError) {
+        if (isMounted) {
+          setError(
+            upgradeError instanceof Error ? upgradeError.message : "Unable to apply your plan."
+          );
+        }
       } finally {
         clearPendingPlan();
         if (isMounted) {
-          setIsReady(true);
+          setIsComplete(true);
         }
       }
     }
@@ -46,15 +69,17 @@ export default function UpgradeSuccessClient() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isReady, session?.access_token, setPlan]);
 
   return (
     <main className="empty-state stack">
       <p className="eyebrow">Upgrade</p>
-      <h1>{isReady ? `${planLabel} unlocked.` : "Finalizing upgrade..."}</h1>
+      <h1>
+        {isComplete ? (error ? "Upgrade needs attention." : `${planLabel} unlocked.`) : "Finalizing upgrade..."}
+      </h1>
       <p>
-        {isReady
-          ? `${planLabel} capabilities are now available for this user identity.`
+        {isComplete
+          ? error || `${planLabel} capabilities are now available for this account.`
           : "Applying your plan and syncing it to the intelligence system."}
       </p>
       <div className="button-row">

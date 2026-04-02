@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { clearPendingOnboarding, loadPendingOnboarding } from "@/lib/pending-onboarding";
+import { normalizeAuthSession } from "@/lib/supabase-core";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { PENDING_PLAN_STORAGE_KEY } from "@/lib/client-identity";
+import type { AuthSession } from "@/types/market-analysis";
 
 function parseHashParams(hash: string) {
   const normalized = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -18,11 +23,17 @@ export default function AuthCallbackClient() {
     let isMounted = true;
 
     void (async () => {
+      const client = getSupabaseBrowserClient();
+
+      if (!client) {
+        if (isMounted) {
+          setMessage("Supabase auth is not configured.");
+        }
+        return;
+      }
+
       const hashParams = parseHashParams(window.location.hash);
       const queryParams = new URLSearchParams(window.location.search);
-      const accessToken = hashParams.get("access_token") || queryParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token");
-      const expiresAtRaw = hashParams.get("expires_at") || queryParams.get("expires_at");
       const error = hashParams.get("error_description") || queryParams.get("error_description");
 
       if (error) {
@@ -32,37 +43,109 @@ export default function AuthCallbackClient() {
         return;
       }
 
-      if (!accessToken) {
-        if (isMounted) {
-          setMessage("No secure session was found in the callback.");
-        }
-        return;
-      }
-
       try {
-        const response = await fetch("/api/auth/session", {
+        let resolvedSession: AuthSession | null = null;
+        const tokenHash = queryParams.get("token_hash");
+        const type = queryParams.get("type");
+        const code = queryParams.get("code");
+        const hashAccessToken = hashParams.get("access_token");
+
+        if (tokenHash && type) {
+          const response = await fetch("/api/auth/verify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              tokenHash,
+              type
+            })
+          });
+          const json = (await response.json()) as {
+            success: boolean;
+            session?: AuthSession | null;
+            error?: string;
+          };
+
+          if (!response.ok || !json.success || !json.session) {
+            throw new Error(json.error || "Unable to verify secure access.");
+          }
+
+          resolvedSession = json.session;
+        } else if (code) {
+          const { data, error: exchangeError } = await client.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            throw exchangeError;
+          }
+
+          resolvedSession = normalizeAuthSession(data.session);
+        } else if (hashAccessToken) {
+          const response = await fetch("/api/auth/session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              accessToken: hashAccessToken,
+              refreshToken: hashParams.get("refresh_token") ?? undefined,
+              expiresAt: hashParams.get("expires_at")
+                ? Number(hashParams.get("expires_at"))
+                : undefined
+            })
+          });
+          const json = (await response.json()) as {
+            success: boolean;
+            session?: AuthSession | null;
+            error?: string;
+          };
+
+          if (!response.ok || !json.success || !json.session) {
+            throw new Error(json.error || "Unable to initialize your session.");
+          }
+
+          resolvedSession = json.session;
+        } else {
+          const {
+            data: { session }
+          } = await client.auth.getSession();
+          resolvedSession = normalizeAuthSession(session);
+        }
+
+        if (!resolvedSession) {
+          throw new Error("No secure session was found in the callback.");
+        }
+
+        await setSession(resolvedSession);
+
+        const pendingOnboarding = loadPendingOnboarding();
+        const bootstrapResponse = await fetch("/api/account", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${resolvedSession.access_token}`
           },
-          body: JSON.stringify({
-            accessToken,
-            refreshToken: refreshToken ?? undefined,
-            expiresAt: expiresAtRaw ? Number(expiresAtRaw) : undefined
-          })
+          body: JSON.stringify(pendingOnboarding ?? {})
         });
-        const json = (await response.json()) as {
+        const bootstrapJson = (await bootstrapResponse.json()) as {
           success: boolean;
-          session?: Parameters<typeof setSession>[0];
           error?: string;
         };
 
-        if (!response.ok || !json.success || !json.session) {
-          throw new Error(json.error || "Unable to initialize your session.");
+        if (!bootstrapResponse.ok || !bootstrapJson.success) {
+          throw new Error(bootstrapJson.error || "Unable to initialize your workspace.");
         }
 
-        setSession(json.session);
-        router.replace("/account");
+        clearPendingOnboarding();
+
+        const pendingPlan =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem(PENDING_PLAN_STORAGE_KEY)
+            : null;
+
+        router.replace(
+          pendingPlan === "pro" || pendingPlan === "agency" ? "/upgrade/success" : "/account"
+        );
       } catch (callbackError) {
         if (isMounted) {
           const nextMessage =

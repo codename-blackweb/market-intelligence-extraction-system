@@ -80,8 +80,11 @@ export default function WorkspaceProfile({
     void (async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/account?userId=${encodeURIComponent(session.user.id)}`, {
-          cache: "no-store"
+        const response = await fetch("/api/account", {
+          cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
         });
         const json = (await response.json()) as AccountSummaryResponse;
 
@@ -91,9 +94,9 @@ export default function WorkspaceProfile({
 
         if (isMounted) {
           setSummary(json);
-          if (json.profile?.plan === "pro" || json.profile?.plan === "agency") {
-            setPlan(json.profile.plan);
-            persistStoredPlan(json.profile.plan);
+          if (json.subscription?.plan) {
+            setPlan(json.subscription.plan);
+            persistStoredPlan(json.subscription.plan);
           }
         }
       } catch (summaryError) {
@@ -119,9 +122,25 @@ export default function WorkspaceProfile({
   }, [initialTab]);
 
   const analyses = summary?.analyses ?? [];
-  const publicReports = analyses.filter((item) => item.is_public);
-  const profilePlan = summary?.profile?.plan ?? plan;
-  const displayName = session?.user.full_name || "Workspace User";
+  const reportEntries =
+    summary?.sharedReports?.map((report) => ({
+      id: report.id,
+      title: `Report ${report.analysis_id.slice(0, 8)}`,
+      href: `/analysis/${report.analysis_id}`
+    })) ??
+    analyses
+      .filter((item) => item.is_public)
+      .map((analysis) => ({
+        id: analysis.id,
+        title: analysis.query,
+        href: `/analysis/${analysis.id}`
+      }));
+  const profilePlan = summary?.subscription?.plan ?? plan;
+  const profileName =
+    summary?.profile
+      ? `${summary.profile.first_name} ${summary.profile.last_name}`.trim()
+      : "";
+  const displayName = profileName || session?.user.full_name || "Workspace User";
   const workspaceName = summary?.workspace?.name || "Personal Workspace";
   const joinedDate = summary?.profile?.created_at ?? session?.user.created_at;
 
@@ -237,7 +256,7 @@ export default function WorkspaceProfile({
               <p className="mb-3 text-sm font-medium text-zinc-500">{workspaceName}</p>
               <p className="mb-3 text-[14px] leading-snug text-zinc-100">
                 {summary?.workspace
-                  ? `Built for ${summary.workspace.use_case.toLowerCase()} teams working inside ${summary.workspace.industry.toLowerCase()} markets and turning live demand into strategic output.`
+                  ? `Built for ${summary.workspace.primary_use_case.toLowerCase()} teams working inside ${summary.workspace.industry.toLowerCase()} markets and turning live demand into strategic output.`
                   : "Turning live demand signals into usable strategic direction."}
               </p>
 
@@ -262,7 +281,9 @@ export default function WorkspaceProfile({
                   <span className="font-medium text-zinc-500">Analyses</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-zinc-100">{summary?.sharedReportsCount ?? publicReports.length}</span>
+                  <span className="font-bold text-zinc-100">
+                    {summary?.sharedReportsCount ?? reportEntries.length}
+                  </span>
                   <span className="font-medium text-zinc-500">Shared Reports</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -337,19 +358,19 @@ export default function WorkspaceProfile({
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                     Shared Reports
                   </p>
-                  <p className="mt-3 text-3xl font-black text-zinc-100">{publicReports.length}</p>
+                  <p className="mt-3 text-3xl font-black text-zinc-100">{reportEntries.length}</p>
                 </div>
                 <div className="space-y-3">
-                  {publicReports.length ? (
-                    publicReports.map((report) => (
+                  {reportEntries.length ? (
+                    reportEntries.map((report) => (
                       <div
                         className="rounded-2xl border border-white/10 bg-zinc-900/60 p-4"
                         key={report.id}
                       >
-                        <p className="font-bold text-zinc-100">{report.query}</p>
+                        <p className="font-bold text-zinc-100">{report.title}</p>
                         <p className="mt-2 text-sm text-zinc-400">
-                          <Link className="underline" href={`/analysis/${report.id}`}>
-                            /analysis/{report.id}
+                          <Link className="underline" href={report.href}>
+                            {report.href}
                           </Link>
                         </p>
                       </div>
@@ -371,7 +392,7 @@ export default function WorkspaceProfile({
                       Primary Use Case
                     </p>
                     <p className="mt-3 text-lg font-black text-zinc-100">
-                      {summary?.workspace?.use_case || "Not set"}
+                      {summary?.workspace?.primary_use_case || "Not set"}
                     </p>
                   </div>
                   <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-5">
@@ -399,7 +420,9 @@ export default function WorkspaceProfile({
                               <Mail className="h-4 w-4" />
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-zinc-100">{invite.email}</p>
+                              <p className="text-sm font-bold text-zinc-100">
+                                {invite.invited_email || "Pending invite"}
+                              </p>
                               <p className="text-xs text-zinc-500">
                                 {invite.role} • {invite.status}
                               </p>

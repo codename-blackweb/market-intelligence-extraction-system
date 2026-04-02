@@ -35,7 +35,6 @@ import { VideoText } from "@/components/ui/VideoText";
 import {
   clearPendingPlan,
   getOrCreateUserId,
-  loadStoredPlan,
   persistPendingPlan,
   persistStoredPlan
 } from "@/lib/client-identity";
@@ -400,8 +399,7 @@ function resolveUsagePlan(state?: Partial<UsageState>, planOverride?: UserPlan):
     return state.plan;
   }
 
-  const storedPlan = loadStoredPlan();
-  return storedPlan === "pro" || storedPlan === "agency" ? storedPlan : "free";
+  return "free";
 }
 
 function normalizeUsageState(
@@ -503,7 +501,7 @@ function savedRunFromPersisted(record: PersistedAnalysisRecord): SavedAnalysisRu
   return {
     id: record.id,
     databaseId: record.id,
-    isPublic: record.is_public,
+    isPublic: Boolean(record.is_public),
     query: record.query,
     marketType: record.market_type,
     depth: record.depth,
@@ -584,6 +582,20 @@ function persistSavedRuns(runs: SavedAnalysisRun[]) {
   );
 }
 
+function buildAuthHeaders(accessToken?: string, includeJson = false) {
+  const headers: Record<string, string> = {};
+
+  if (includeJson) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return headers;
+}
+
 export default function Home() {
   const motionPolicy = useMotionPolicy();
   const { isAuthenticated, session, setPlan: setAuthPlan } = useAuth();
@@ -598,6 +610,7 @@ export default function Home() {
   const [savedRuns, setSavedRuns] = useState<SavedAnalysisRun[]>([]);
   const [usageState, setUsageState] = useState<UsageState>(normalizeUsageState());
   const [persistenceConfigured, setPersistenceConfigured] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [activeAnalysisId, setActiveAnalysisId] = useState<string | null>(null);
   const [activeAnalysisPublic, setActiveAnalysisPublic] = useState(false);
   const [selectedComparisonIds, setSelectedComparisonIds] = useState<string[]>([]);
@@ -623,46 +636,46 @@ export default function Home() {
     setUsageState(localUsage);
     setHasCompletedFirstRun(localRuns.length > 0);
 
+    if (!session?.access_token) {
+      setPersistenceConfigured(false);
+      setWorkspaceId(null);
+      return;
+    }
+
     void (async () => {
       try {
-        const [profileResponse, analysesResponse] = await Promise.all([
-          fetch(`/api/profile?userId=${encodeURIComponent(nextUserId)}`, {
-            cache: "no-store"
-          }),
-          fetch(`/api/analyses?userId=${encodeURIComponent(nextUserId)}`, {
-            cache: "no-store"
-          })
-        ]);
-
-        const profileJson = (await profileResponse.json()) as {
+        const accountResponse = await fetch("/api/account", {
+          cache: "no-store",
+          headers: buildAuthHeaders(session.access_token)
+        });
+        const accountJson = (await accountResponse.json()) as {
           success: boolean;
           persistenceConfigured?: boolean;
-          profile?: { plan?: UserPlan } | null;
-        };
-        const analysesJson = (await analysesResponse.json()) as {
-          success: boolean;
-          persistenceConfigured?: boolean;
+          subscription?: { plan?: UserPlan } | null;
+          workspace?: { id?: string | null } | null;
           analyses?: PersistedAnalysisRecord[];
+          error?: string;
         };
 
-        setPersistenceConfigured(
-          Boolean(profileJson.persistenceConfigured || analysesJson.persistenceConfigured)
-        );
-
-        if (profileJson.success) {
-          const nextPlan =
-            profileJson.profile?.plan === "pro" || profileJson.profile?.plan === "agency"
-              ? profileJson.profile.plan
-              : "free";
-          const nextUsage = normalizeUsageState(localUsage, nextUserId, nextPlan);
-          persistStoredPlan(nextPlan);
-          persistUsageState(nextUsage);
-          setUsageState(nextUsage);
-          setAuthPlan(nextPlan);
+        if (!accountResponse.ok || !accountJson.success) {
+          throw new Error(accountJson.error || "Unable to load account state.");
         }
 
-        if (analysesJson.success && Array.isArray(analysesJson.analyses)) {
-          const remoteRuns = analysesJson.analyses.map(savedRunFromPersisted);
+        setPersistenceConfigured(Boolean(accountJson.persistenceConfigured));
+        setWorkspaceId(accountJson.workspace?.id ?? null);
+
+        const nextPlan =
+          accountJson.subscription?.plan === "pro" || accountJson.subscription?.plan === "agency"
+            ? accountJson.subscription.plan
+            : "free";
+        const nextUsage = normalizeUsageState(localUsage, nextUserId, nextPlan);
+        persistStoredPlan(nextPlan);
+        persistUsageState(nextUsage);
+        setUsageState(nextUsage);
+        setAuthPlan(nextPlan);
+
+        if (Array.isArray(accountJson.analyses)) {
+          const remoteRuns = accountJson.analyses.map(savedRunFromPersisted);
           const mergedRuns = mergeSavedRuns(localRuns, remoteRuns);
           persistSavedRuns(mergedRuns);
           setSavedRuns(mergedRuns);
@@ -672,9 +685,10 @@ export default function Home() {
         }
       } catch {
         setPersistenceConfigured(false);
+        setWorkspaceId(null);
       }
     })();
-  }, [session?.user.id, setAuthPlan]);
+  }, [session?.access_token, session?.user.id, setAuthPlan]);
 
   const syncPlan = async (plan: UserPlan) => {
     const nextState = normalizeUsageState(
@@ -693,18 +707,15 @@ export default function Home() {
     setGatedAction(null);
     setAuthPlan(plan);
 
-    if (!userId) {
+    if (!session?.access_token) {
       return;
     }
 
     try {
       const response = await fetch("/api/profile", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: buildAuthHeaders(session.access_token, true),
         body: JSON.stringify({
-          userId,
           plan
         })
       });
@@ -768,14 +779,12 @@ export default function Home() {
     setShareMessage("");
     setGatedAction(null);
 
-    if (savedRun.databaseId && userId) {
+    if (savedRun.databaseId && session?.access_token) {
       try {
-        const response = await fetch(
-          `/api/analyses/${savedRun.databaseId}?userId=${encodeURIComponent(userId)}`,
-          {
-            cache: "no-store"
-          }
-        );
+        const response = await fetch(`/api/analyses/${savedRun.databaseId}`, {
+          cache: "no-store",
+          headers: buildAuthHeaders(session.access_token)
+        });
         const json = (await response.json()) as {
           success: boolean;
           analysis?: PersistedAnalysisRecord;
@@ -872,20 +881,17 @@ export default function Home() {
         result: normalized
       };
 
-      if (userId) {
+      if (session?.access_token) {
         try {
           const persistenceResponse = await fetch("/api/analyses", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
+            headers: buildAuthHeaders(session.access_token, true),
             body: JSON.stringify({
-              userId,
               query: normalized.query,
               marketType,
               depth,
               result: normalized,
-              isPublic: false
+              workspaceId
             })
           });
           const persistenceJson = (await persistenceResponse.json()) as {
@@ -1021,7 +1027,7 @@ export default function Home() {
   };
 
   const toggleShareVisibility = async () => {
-    if (!activeAnalysisId || !userId) {
+    if (!activeAnalysisId || !session?.access_token) {
       setShareMessage("Share links require a persisted analysis.");
       return;
     }
@@ -1029,11 +1035,8 @@ export default function Home() {
     try {
       const response = await fetch(`/api/analyses/${activeAnalysisId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: buildAuthHeaders(session.access_token, true),
         body: JSON.stringify({
-          userId,
           isPublic: !activeAnalysisPublic
         })
       });

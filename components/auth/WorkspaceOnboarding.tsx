@@ -7,12 +7,14 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import OrbitsBackground from "@/components/background/OrbitsBackground";
 import { useAuth } from "@/components/providers/AuthProvider";
+import {
+  isMagicAccessEnabled,
+  MAGIC_ACCESS_UNAVAILABLE_MESSAGE
+} from "@/lib/auth-capabilities";
+import { persistPendingOnboarding } from "@/lib/pending-onboarding";
+import type { AuthSession, UserPlan } from "@/types/market-analysis";
 
-const steps = [
-  "Your Profile",
-  "Workspace",
-  "Invite Team"
-] as const;
+const steps = ["Your Profile", "Workspace", "Invite Team"] as const;
 
 const stepDescriptions = [
   "Set the owner identity for this workspace.",
@@ -28,13 +30,7 @@ const useCaseOptions = [
   "Messaging / Positioning"
 ];
 
-const teamSizeOptions = [
-  "Just me",
-  "2-5",
-  "6-15",
-  "16-50",
-  "50+"
-];
+const teamSizeOptions = ["Just me", "2-5", "6-15", "16-50", "50+"] as const;
 
 const industryOptions = [
   "SaaS",
@@ -62,22 +58,28 @@ const secondaryActionClass =
 const primaryActionClass =
   "inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-950 shadow-[0_18px_42px_rgba(255,255,255,0.12)] transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60";
 
+type AccountMethod = "password" | "magic";
+
 export default function WorkspaceOnboarding({
-  initialEmail = ""
+  initialEmail = "",
+  initialPlan = null
 }: {
   initialEmail?: string;
+  initialPlan?: Exclude<UserPlan, "free"> | null;
 }) {
   const router = useRouter();
   const { setSession } = useAuth();
+  const magicAccessEnabled = isMagicAccessEnabled();
   const [step, setStep] = useState(0);
+  const [accountMethod, setAccountMethod] = useState<AccountMethod>("password");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
-  const [useCase, setUseCase] = useState(useCaseOptions[0]);
-  const [teamSize, setTeamSize] = useState(teamSizeOptions[0]);
-  const [industry, setIndustry] = useState(industryOptions[0]);
+  const [useCase, setUseCase] = useState<string>(useCaseOptions[0]);
+  const [teamSize, setTeamSize] = useState<string>(teamSizeOptions[0]);
+  const [industry, setIndustry] = useState<string>(industryOptions[0]);
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [loading, setLoading] = useState(false);
@@ -93,10 +95,22 @@ export default function WorkspaceOnboarding({
     [inviteEmails]
   );
 
+  const routePostAuth = () => {
+    if (initialPlan) {
+      router.push("/upgrade/success");
+      return;
+    }
+
+    router.push("/account");
+  };
+
   const continueToNextStep = () => {
     setError("");
 
-    if (step === 0 && (!firstName || !lastName || !email || !password)) {
+    if (
+      step === 0 &&
+      (!firstName || !lastName || !email || (accountMethod === "password" && !password))
+    ) {
       setError("Complete your profile details before continuing.");
       return;
     }
@@ -114,7 +128,54 @@ export default function WorkspaceOnboarding({
     setError("");
     setSuccess("");
 
+    const inviteList = skipInvites ? [] : parsedInviteEmails;
+
     try {
+      if (accountMethod === "magic") {
+        persistPendingOnboarding({
+          email,
+          firstName,
+          lastName,
+          workspaceName,
+          useCase,
+          teamSize,
+          industry,
+          inviteEmails: inviteList,
+          inviteRole
+        });
+
+        const magicResponse = await fetch("/api/auth/magic", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email,
+            createUser: true,
+            firstName,
+            lastName
+          })
+        });
+        const magicJson = (await magicResponse.json()) as {
+          success: boolean;
+          error?: string;
+        };
+
+        if (!magicResponse.ok || !magicJson.success) {
+          throw new Error(magicJson.error || "Unable to send magic access.");
+        }
+
+        setSuccess("Magic access sent. Finish account creation from your inbox.");
+        const authUrl = new URL("/auth", window.location.origin);
+        authUrl.searchParams.set("view", "magic");
+        authUrl.searchParams.set("email", email);
+        if (initialPlan) {
+          authUrl.searchParams.set("plan", initialPlan);
+        }
+        router.push(`${authUrl.pathname}?${authUrl.searchParams.toString()}`);
+        return;
+      }
+
       const signupResponse = await fetch("/api/auth/password", {
         method: "POST",
         headers: {
@@ -125,12 +186,18 @@ export default function WorkspaceOnboarding({
           email,
           password,
           firstName,
-          lastName
+          lastName,
+          workspaceName,
+          useCase,
+          teamSize,
+          industry,
+          inviteEmails: inviteList,
+          inviteRole
         })
       });
       const signupJson = (await signupResponse.json()) as {
         success: boolean;
-        session?: Parameters<typeof setSession>[0];
+        session?: AuthSession | null;
         user?: { id: string; email: string } | null;
         emailConfirmationRequired?: boolean;
         error?: string;
@@ -140,47 +207,48 @@ export default function WorkspaceOnboarding({
         throw new Error(signupJson.error || "Unable to create your account.");
       }
 
-      const userId = signupJson.session?.user.id ?? signupJson.user?.id;
-
-      if (!userId) {
-        throw new Error("Unable to initialize your workspace user.");
-      }
-
-      const onboardingResponse = await fetch("/api/account", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userId,
-          email,
-          firstName,
-          lastName,
-          workspaceName,
-          useCase,
-          teamSize,
-          industry,
-          inviteEmails: skipInvites ? [] : parsedInviteEmails,
-          inviteRole
-        })
-      });
-      const onboardingJson = (await onboardingResponse.json()) as {
-        success: boolean;
-        error?: string;
-      };
-
-      if (!onboardingResponse.ok || !onboardingJson.success) {
-        throw new Error(onboardingJson.error || "Unable to create your workspace.");
-      }
-
       if (signupJson.session) {
-        setSession(signupJson.session);
-        router.push("/account");
+        await setSession(signupJson.session);
+        const bootstrapResponse = await fetch("/api/account", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${signupJson.session.access_token}`
+          },
+          body: JSON.stringify({
+            email,
+            firstName,
+            lastName,
+            workspaceName,
+            useCase,
+            teamSize,
+            industry,
+            inviteEmails: inviteList,
+            inviteRole
+          })
+        });
+        const bootstrapJson = (await bootstrapResponse.json()) as {
+          success: boolean;
+          error?: string;
+        };
+
+        if (!bootstrapResponse.ok || !bootstrapJson.success) {
+          throw new Error(bootstrapJson.error || "Unable to initialize your workspace.");
+        }
+        routePostAuth();
         return;
       }
 
-      setSuccess("Account created. Check your inbox to confirm access, then return to continue.");
-      router.push(`/auth?view=signin&email=${encodeURIComponent(email)}`);
+      setSuccess(
+        "Account created. Check your inbox to confirm access, then return to continue."
+      );
+      const authUrl = new URL("/auth", window.location.origin);
+      authUrl.searchParams.set("view", "signin");
+      authUrl.searchParams.set("email", email);
+      if (initialPlan) {
+        authUrl.searchParams.set("plan", initialPlan);
+      }
+      router.push(`${authUrl.pathname}?${authUrl.searchParams.toString()}`);
     } catch (onboardingError) {
       const message =
         onboardingError instanceof Error
@@ -231,7 +299,7 @@ export default function WorkspaceOnboarding({
                 Set up your profile, define the workspace context, and invite collaborators only if
                 you need them.
               </p>
-              <Link className={secondaryActionClass} href="/auth">
+              <Link className={secondaryActionClass} href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}>
                 <ArrowLeft className="h-4 w-4" />
                 Back to Login
               </Link>
@@ -252,7 +320,9 @@ export default function WorkspaceOnboarding({
                           ? "border-emerald-400/35 bg-emerald-400/10 text-zinc-100"
                           : "border-white/10 text-zinc-400"
                     }`}
-                    style={!isActive && !isComplete ? { background: "rgba(255,255,255,0.03)" } : undefined}
+                    style={
+                      !isActive && !isComplete ? { background: "rgba(255,255,255,0.03)" } : undefined
+                    }
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-current/20 text-sm font-black">
@@ -289,46 +359,87 @@ export default function WorkspaceOnboarding({
                 </div>
 
                 {step === 0 ? (
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <label className="space-y-2">
-                      <span className={fieldLabelClass}>First Name</span>
-                      <input
-                        className={fieldInputClass}
-                        onChange={(event) => setFirstName(event.target.value)}
-                        placeholder="Jane"
-                        value={firstName}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className={fieldLabelClass}>Last Name</span>
-                      <input
-                        className={fieldInputClass}
-                        onChange={(event) => setLastName(event.target.value)}
-                        placeholder="Doe"
-                        value={lastName}
-                      />
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <span className={fieldLabelClass}>Work Email</span>
-                      <input
-                        className={fieldInputClass}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder="team@workspace.com"
-                        type="email"
-                        value={email}
-                      />
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <span className={fieldLabelClass}>Password</span>
-                      <input
-                        className={fieldInputClass}
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder="Create a secure password"
-                        type="password"
-                        value={password}
-                      />
-                    </label>
-                  </div>
+                  <>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {(["password"] as const).map((method) => (
+                        <button
+                          key={method}
+                          type="button"
+                          className={`rounded-[1.2rem] border px-4 py-4 text-left transition-colors ${
+                            accountMethod === method
+                              ? "border-white bg-white text-zinc-950"
+                              : "border-white/10 bg-white/[0.03] text-zinc-300"
+                          }`}
+                          onClick={() => setAccountMethod(method)}
+                        >
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
+                            {method === "password" ? "Password Login" : "Magic Access"}
+                          </p>
+                          <p className="mt-2 text-sm font-black">
+                            {method === "password"
+                              ? "Create an account with email and password."
+                              : "Start with a secure magic link instead."}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                    {!magicAccessEnabled ? (
+                      <p className="text-sm font-semibold leading-6 text-amber-300/90">
+                        {MAGIC_ACCESS_UNAVAILABLE_MESSAGE}
+                      </p>
+                    ) : null}
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <label className="space-y-2">
+                        <span className={fieldLabelClass}>First Name</span>
+                        <input
+                          className={fieldInputClass}
+                          onChange={(event) => setFirstName(event.target.value)}
+                          placeholder="Jane"
+                          value={firstName}
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className={fieldLabelClass}>Last Name</span>
+                        <input
+                          className={fieldInputClass}
+                          onChange={(event) => setLastName(event.target.value)}
+                          placeholder="Doe"
+                          value={lastName}
+                        />
+                      </label>
+                      <label className="space-y-2 md:col-span-2">
+                        <span className={fieldLabelClass}>Work Email</span>
+                        <input
+                          className={fieldInputClass}
+                          onChange={(event) => setEmail(event.target.value)}
+                          placeholder="team@workspace.com"
+                          type="email"
+                          value={email}
+                        />
+                      </label>
+                      {accountMethod === "password" ? (
+                        <label className="space-y-2 md:col-span-2">
+                          <span className={fieldLabelClass}>Password</span>
+                          <input
+                            className={fieldInputClass}
+                            onChange={(event) => setPassword(event.target.value)}
+                            placeholder="Create a secure password"
+                            type="password"
+                            value={password}
+                          />
+                        </label>
+                      ) : (
+                        <div
+                          className="rounded-2xl border border-white/10 p-4 text-sm leading-6 text-zinc-400 md:col-span-2"
+                          style={{ background: "rgba(255,255,255,0.03)" }}
+                        >
+                          We’ll send a secure magic link when you finish setup, then complete the
+                          account and workspace creation after verification.
+                        </div>
+                      )}
+                    </div>
+                  </>
                 ) : null}
 
                 {step === 1 ? (
@@ -435,7 +546,10 @@ export default function WorkspaceOnboarding({
                     Back
                   </button>
                 ) : (
-                  <Link className={secondaryActionClass} href="/auth">
+                  <Link
+                    className={secondaryActionClass}
+                    href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
+                  >
                     <ArrowLeft className="h-4 w-4" />
                     Cancel
                   </Link>
@@ -461,7 +575,11 @@ export default function WorkspaceOnboarding({
                       onClick={() => void handleCreateWorkspace(false)}
                       type="button"
                     >
-                      {loading ? "Creating..." : "Create Workspace"}
+                      {loading
+                        ? accountMethod === "magic"
+                          ? "Sending..."
+                          : "Creating..."
+                        : "Create Workspace"}
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>

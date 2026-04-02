@@ -87,7 +87,7 @@ export type CompetitorContext = {
   niche: string;
 };
 
-export type UserPlan = "free" | "starter" | "growth" | "pro" | "agency";
+export type UserPlan = "free" | "pro" | "agency";
 
 export type MarketPositioningStrategy = {
   emphasize: string[];
@@ -142,41 +142,62 @@ export type MarketAnalysisReport = {
 export type PersistedAnalysisRecord = {
   id: string;
   user_id: string;
+  workspace_id: string | null;
   query: string;
   market_type: string;
   depth: string;
   result_json: MarketAnalysisSuccessResponse;
-  is_public: boolean;
   created_at: string;
+  shared_report?: SharedReportRecord | null;
+  is_public?: boolean;
 };
 
 export type UserProfileRecord = {
-  user_id: string;
-  plan: UserPlan;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  default_workspace_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  id: string;
+  first_name: string;
+  last_name: string;
+  work_email: string;
+  avatar_url?: string | null;
+  created_at: string;
 };
 
 export type WorkspaceRecord = {
   id: string;
   owner_id: string;
   name: string;
-  use_case: string;
+  primary_use_case: string;
   team_size: string;
   industry: string;
   created_at: string;
 };
 
-export type WorkspaceInviteRecord = {
+export type WorkspaceMemberRecord = {
   id: string;
   workspace_id: string;
-  email: string;
+  user_id: string | null;
   role: string;
+  invited_email: string | null;
   status: string;
+  created_at: string;
+};
+
+export type WorkspaceInviteRecord = WorkspaceMemberRecord;
+
+export type SubscriptionRecord = {
+  id: string;
+  user_id: string;
+  plan: UserPlan;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SharedReportRecord = {
+  id: string;
+  analysis_id: string;
+  user_id: string;
+  public_token: string;
+  is_public: boolean;
   created_at: string;
 };
 
@@ -186,6 +207,7 @@ export type AuthSessionUser = {
   first_name: string;
   last_name: string;
   full_name: string;
+  avatar_url?: string | null;
   created_at?: string;
 };
 
@@ -200,10 +222,13 @@ export type AccountSummaryResponse = {
   success: boolean;
   persistenceConfigured?: boolean;
   profile?: UserProfileRecord | null;
+  subscription?: SubscriptionRecord | null;
   workspace?: WorkspaceRecord | null;
   workspaces?: WorkspaceRecord[];
+  members?: WorkspaceMemberRecord[];
   invites?: WorkspaceInviteRecord[];
   analyses?: PersistedAnalysisRecord[];
+  sharedReports?: SharedReportRecord[];
   sharedReportsCount?: number;
   savedAnalysesCount?: number;
   error?: string;

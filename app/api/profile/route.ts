@@ -1,58 +1,78 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getPersistedProfile,
+  getPersistedSubscription,
   isPersistenceConfigured,
-  upsertPersistedProfile
+  upsertPersistedSubscription
 } from "@/lib/persistence";
+import { getAuthenticatedRequestUser } from "@/lib/request-auth";
 import type { UserPlan } from "@/types/market-analysis";
+import { getErrorMessage } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId")?.trim();
+    const auth = await getAuthenticatedRequestUser(request);
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "Missing userId" }, { status: 400 });
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const profile = await getPersistedProfile(userId);
+    const [profile, subscription] = await Promise.all([
+      getPersistedProfile(auth.user.id, auth.accessToken),
+      getPersistedSubscription(auth.user.id, auth.accessToken)
+    ]);
 
     return NextResponse.json({
       success: true,
       persistenceConfigured: isPersistenceConfigured(),
-      profile
+      profile,
+      subscription
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedRequestUser(request);
+
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as {
-      userId?: string;
       plan?: UserPlan;
+      status?: string;
     };
 
-    if (!body.userId || (body.plan !== "free" && body.plan !== "pro" && body.plan !== "agency")) {
+    if (body.plan !== "free" && body.plan !== "pro" && body.plan !== "agency") {
       return NextResponse.json(
         { success: false, error: "Missing profile payload" },
         { status: 400 }
       );
     }
 
-    const profile = await upsertPersistedProfile({
-      userId: body.userId,
-      plan: body.plan
+    const subscription = await upsertPersistedSubscription({
+      userId: auth.user.id,
+      plan: body.plan,
+      status: body.status?.trim() || "active",
+      accessToken: auth.accessToken
     });
+
+    if (!subscription) {
+      return NextResponse.json(
+        { success: false, error: "Subscription persistence is not configured." },
+        { status: 503 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       persistenceConfigured: isPersistenceConfigured(),
-      profile
+      subscription
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

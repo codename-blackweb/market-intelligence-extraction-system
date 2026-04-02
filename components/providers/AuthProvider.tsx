@@ -9,18 +9,15 @@ import {
   useState,
   type ReactNode
 } from "react";
-import {
-  clearStoredAuthSession,
-  loadStoredAuthSession,
-  persistAuthSession
-} from "@/lib/auth-session";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { isSupabaseConfigured, normalizeAuthSession } from "@/lib/supabase-core";
 import type { AuthSession, UserPlan } from "@/types/market-analysis";
 
 type AuthContextValue = {
   session: AuthSession | null;
   isAuthenticated: boolean;
   isReady: boolean;
-  setSession: (session: AuthSession | null) => void;
+  setSession: (session: AuthSession | null) => Promise<void>;
   signOut: () => Promise<void>;
   plan: UserPlan;
   setPlan: (plan: UserPlan) => void;
@@ -28,83 +25,106 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function derivePlan(session: AuthSession | null): UserPlan {
-  if (!session) {
-    return "free";
-  }
-
-  const rawPlan = (session.user as AuthSession["user"] & { plan?: UserPlan }).plan;
-  return rawPlan === "pro" || rawPlan === "agency" ? rawPlan : "free";
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSessionState] = useState<AuthSession | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [plan, setPlanState] = useState<UserPlan>("free");
 
   useEffect(() => {
-    const storedSession = loadStoredAuthSession();
-    setSessionState(storedSession);
-    setPlanState(derivePlan(storedSession));
-    setIsReady(true);
-  }, []);
-
-  const setSession = useCallback((nextSession: AuthSession | null) => {
-    if (nextSession) {
-      persistAuthSession(nextSession);
-      setPlanState(derivePlan(nextSession));
-    } else {
-      clearStoredAuthSession();
+    if (!isSupabaseConfigured()) {
+      setSessionState(null);
       setPlanState("free");
-    }
-
-    setSessionState(nextSession);
-  }, []);
-
-  const setPlan = useCallback((nextPlan: UserPlan) => {
-    setPlanState(nextPlan);
-
-    setSessionState((currentSession) => {
-      if (!currentSession) {
-        return currentSession;
-      }
-
-      const nextSession = {
-        ...currentSession,
-        user: {
-          ...currentSession.user,
-          plan: nextPlan
-        }
-      } as AuthSession;
-
-      persistAuthSession(nextSession);
-      return nextSession;
-    });
-  }, []);
-
-  const signOut = useCallback(async () => {
-    const accessToken = session?.access_token;
-
-    setSession(null);
-
-    if (!accessToken) {
+      setIsReady(true);
       return;
     }
 
-    try {
-      await fetch("/api/auth/signout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          accessToken
-        })
-      });
-    } catch {
-      // Session is already cleared locally.
+    const client = getSupabaseBrowserClient();
+
+    if (!client) {
+      setIsReady(true);
+      return;
     }
-  }, [session?.access_token, setSession]);
+
+    let isMounted = true;
+
+    void client.auth.getSession().then(({ data }) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setSessionState(normalizeAuthSession(data.session));
+      setIsReady(true);
+    });
+
+    const {
+      data: { subscription }
+    } = client.auth.onAuthStateChange((_event, nextSession) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setSessionState(normalizeAuthSession(nextSession));
+      if (!nextSession) {
+        setPlanState("free");
+      }
+      setIsReady(true);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const setSession = useCallback(async (nextSession: AuthSession | null) => {
+    const client = getSupabaseBrowserClient();
+
+    if (!client) {
+      setSessionState(nextSession);
+      setPlanState(nextSession ? plan : "free");
+      return;
+    }
+
+    if (!nextSession) {
+      await client.auth.signOut();
+      setSessionState(null);
+      setPlanState("free");
+      return;
+    }
+
+    if (nextSession.refresh_token) {
+      const { data, error } = await client.auth.setSession({
+        access_token: nextSession.access_token,
+        refresh_token: nextSession.refresh_token
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSessionState(normalizeAuthSession(data.session) ?? nextSession);
+      return;
+    }
+
+    setSessionState(nextSession);
+  }, [plan]);
+
+  const setPlan = useCallback((nextPlan: UserPlan) => {
+    setPlanState(nextPlan);
+  }, []);
+
+  const signOut = useCallback(async () => {
+    const client = getSupabaseBrowserClient();
+
+    setSessionState(null);
+    setPlanState("free");
+
+    if (!client) {
+      return;
+    }
+
+    await client.auth.signOut();
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -116,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       plan,
       setPlan
     }),
-    [isReady, plan, session]
+    [isReady, plan, session, setSession, signOut, setPlan]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

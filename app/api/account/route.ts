@@ -1,115 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  createWorkspace,
-  createWorkspaceInvites,
-  getPersistedProfile,
-  isPersistenceConfigured,
-  listPersistedAnalyses,
-  listWorkspaceInvites,
-  listWorkspacesByOwner,
-  upsertPersistedProfile
-} from "@/lib/persistence";
+import { bootstrapAccountForUser, getAccountSummary, isPersistenceConfigured } from "@/lib/persistence";
+import { getAuthenticatedRequestUser } from "@/lib/request-auth";
+import { getErrorMessage } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId")?.trim();
+    const auth = await getAuthenticatedRequestUser(request);
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "Missing userId" }, { status: 400 });
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const [profile, analyses, workspaces] = await Promise.all([
-      getPersistedProfile(userId),
-      listPersistedAnalyses(userId),
-      listWorkspacesByOwner(userId)
-    ]);
-
-    const workspace =
-      workspaces.find((item) => item.id === profile?.default_workspace_id) ?? workspaces[0] ?? null;
-    const invites = workspace ? await listWorkspaceInvites(workspace.id) : [];
+    const summary = await getAccountSummary(auth.user.id, auth.accessToken);
 
     return NextResponse.json({
       success: true,
       persistenceConfigured: isPersistenceConfigured(),
-      profile,
-      workspace,
-      workspaces,
-      invites,
-      analyses,
-      sharedReportsCount: analyses.filter((analysis) => analysis.is_public).length,
-      savedAnalysesCount: analyses.length
+      ...summary
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedRequestUser(request);
+
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as {
-      userId?: string;
-      email?: string;
       firstName?: string;
       lastName?: string;
+      email?: string;
+      avatarUrl?: string | null;
       workspaceName?: string;
       useCase?: string;
       teamSize?: string;
       industry?: string;
       inviteEmails?: string[];
+      inviteRole?: string;
     };
 
-    if (
-      !body.userId ||
-      !body.email ||
-      !body.workspaceName ||
-      !body.useCase ||
-      !body.teamSize ||
-      !body.industry
-    ) {
-      return NextResponse.json(
-        { success: false, error: "Missing onboarding payload" },
-        { status: 400 }
-      );
-    }
-
-    const workspace = await createWorkspace({
-      ownerId: body.userId,
-      name: body.workspaceName.trim(),
-      useCase: body.useCase.trim(),
-      teamSize: body.teamSize.trim(),
-      industry: body.industry.trim()
+    const summary = await bootstrapAccountForUser({
+      userId: auth.user.id,
+      email: body.email?.trim() ?? auth.user.email,
+      firstName: body.firstName?.trim() ?? auth.user.first_name,
+      lastName: body.lastName?.trim() ?? auth.user.last_name,
+      avatarUrl: body.avatarUrl ?? auth.user.avatar_url ?? null,
+      workspaceName: body.workspaceName?.trim(),
+      useCase: body.useCase?.trim(),
+      teamSize: body.teamSize?.trim(),
+      industry: body.industry?.trim(),
+      inviteEmails: Array.isArray(body.inviteEmails)
+        ? body.inviteEmails.map((email) => email.trim().toLowerCase()).filter(Boolean)
+        : [],
+      inviteRole: body.inviteRole?.trim() || "member",
+      accessToken: auth.accessToken
     });
-
-    const profile = await upsertPersistedProfile({
-      userId: body.userId,
-      plan: "free",
-      email: body.email.trim().toLowerCase(),
-      firstName: body.firstName?.trim() ?? "",
-      lastName: body.lastName?.trim() ?? "",
-      defaultWorkspaceId: workspace?.id ?? null
-    });
-
-    const invites = workspace
-      ? await createWorkspaceInvites({
-          workspaceId: workspace.id,
-          emails: Array.isArray(body.inviteEmails)
-            ? body.inviteEmails
-                .map((email) => email.trim().toLowerCase())
-                .filter(Boolean)
-            : []
-        })
-      : [];
 
     return NextResponse.json({
       success: true,
       persistenceConfigured: isPersistenceConfigured(),
-      profile,
-      workspace,
-      invites
+      ...summary
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

@@ -4,17 +4,19 @@ import {
   isPersistenceConfigured,
   listPersistedAnalyses
 } from "@/lib/persistence";
+import { getAuthenticatedRequestUser } from "@/lib/request-auth";
 import type { MarketAnalysisSuccessResponse } from "@/types/market-analysis";
+import { getErrorMessage } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId")?.trim();
+    const auth = await getAuthenticatedRequestUser(request);
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "Missing userId" }, { status: 400 });
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const analyses = await listPersistedAnalyses(userId);
+    const analyses = await listPersistedAnalyses(auth.user.id, auth.accessToken);
 
     return NextResponse.json({
       success: true,
@@ -22,23 +24,27 @@ export async function GET(request: NextRequest) {
       analyses
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedRequestUser(request);
+
+    if (!auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as {
-      userId?: string;
       query?: string;
       marketType?: string;
       depth?: string;
       result?: MarketAnalysisSuccessResponse;
-      isPublic?: boolean;
+      workspaceId?: string | null;
     };
 
-    if (!body.userId || !body.query || !body.result) {
+    if (!body.query || !body.result) {
       return NextResponse.json(
         { success: false, error: "Missing analysis persistence payload" },
         { status: 400 }
@@ -46,13 +52,21 @@ export async function POST(request: NextRequest) {
     }
 
     const analysis = await createPersistedAnalysis({
-      user_id: body.userId,
+      user_id: auth.user.id,
+      workspace_id: body.workspaceId ?? null,
       query: body.query,
       market_type: body.marketType ?? "",
       depth: body.depth ?? "standard",
       result_json: body.result,
-      is_public: body.isPublic ?? false
+      accessToken: auth.accessToken
     });
+
+    if (!analysis) {
+      return NextResponse.json(
+        { success: false, error: "Analysis persistence is not configured." },
+        { status: 503 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -60,7 +74,6 @@ export async function POST(request: NextRequest) {
       analysis
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

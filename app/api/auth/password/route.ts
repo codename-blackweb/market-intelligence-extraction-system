@@ -20,6 +20,12 @@ export async function POST(request: NextRequest) {
       password?: string;
       firstName?: string;
       lastName?: string;
+      workspaceName?: string;
+      useCase?: string;
+      teamSize?: string;
+      industry?: string;
+      inviteEmails?: string[];
+      inviteRole?: string;
     };
 
     const email = body.email?.trim().toLowerCase();
