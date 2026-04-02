@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -120,22 +120,6 @@ export default function WorkspaceOnboarding({
         .filter(Boolean),
     [inviteEmails]
   );
-
-  useEffect(() => {
-    const previousBodyBackground = document.body.style.background;
-    const previousBodyColor = document.body.style.color;
-    const previousHtmlBackground = document.documentElement.style.background;
-
-    document.body.style.background = "#050505";
-    document.body.style.color = "#f4f4f5";
-    document.documentElement.style.background = "#050505";
-
-    return () => {
-      document.body.style.background = previousBodyBackground;
-      document.body.style.color = previousBodyColor;
-      document.documentElement.style.background = previousHtmlBackground;
-    };
-  }, []);
 
   const routePostAuth = () => {
     if (initialPlan) {
@@ -343,7 +327,7 @@ export default function WorkspaceOnboarding({
             Create an account with email and password.
           </p>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="onboarding-owner-grid">
             <div className="auth-field">
               <label className={labelClassName} htmlFor="onboarding-first-name">
                 First Name
@@ -370,7 +354,7 @@ export default function WorkspaceOnboarding({
               />
             </div>
 
-            <div className="auth-field md:col-span-2">
+            <div className="auth-field onboarding-grid-full">
               <label className={labelClassName} htmlFor="onboarding-email">
                 Work Email
               </label>
@@ -384,7 +368,7 @@ export default function WorkspaceOnboarding({
               />
             </div>
 
-            <div className="auth-field md:col-span-2">
+            <div className="auth-field onboarding-grid-full">
               <label className={labelClassName} htmlFor="onboarding-password">
                 Password
               </label>
@@ -407,8 +391,8 @@ export default function WorkspaceOnboarding({
 
     if (step === 1) {
       return (
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="auth-field md:col-span-2">
+        <div className="onboarding-context-grid">
+          <div className="auth-field onboarding-grid-full">
             <label className={labelClassName} htmlFor="workspace-name">
               Workspace Name
             </label>
@@ -457,7 +441,7 @@ export default function WorkspaceOnboarding({
             </select>
           </div>
 
-          <div className="auth-field md:col-span-2">
+          <div className="auth-field onboarding-grid-full">
             <label className={labelClassName} htmlFor="workspace-industry">
               Industry
             </label>
@@ -493,7 +477,7 @@ export default function WorkspaceOnboarding({
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+        <div className="onboarding-invite-grid">
           <div className="auth-field">
             <label className={labelClassName} htmlFor="invite-role">
               Role
@@ -524,112 +508,107 @@ export default function WorkspaceOnboarding({
   };
 
   return (
-    <section className="auth-page">
-      <div className="auth-page-glow auth-page-glow-left" aria-hidden="true" />
-      <div className="auth-page-glow auth-page-glow-right" aria-hidden="true" />
+    <div className="grid w-full gap-4">
+      <div className="flex items-center justify-start">
+        <Link
+          className="auth-inline-link inline-flex items-center gap-2"
+          href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Login
+        </Link>
+      </div>
 
-      <div className="auth-page-center">
-        <div className="grid w-full max-w-[34rem] gap-4">
-          <div className="flex items-center justify-start">
-            <Link
-              className="auth-inline-link inline-flex items-center gap-2"
-              href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Login
-            </Link>
-          </div>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 15 }}
+        transition={{ duration: 0.28 }}
+        className="w-full"
+      >
+        <div className="auth-card gap-6">
+          <div className="onboarding-card-inner grid gap-6">
+            <div className="auth-header !gap-3">
+              <p className="auth-plan-pill">{currentStep.eyebrow}</p>
+              <h1 className="auth-title normal-case not-italic">{currentStep.title}</h1>
+              <p className="auth-copy !max-w-[24rem]">{currentStep.supporting}</p>
+              <p className="auth-copy !max-w-[24rem]">{currentStep.instruction}</p>
+            </div>
 
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 15 }}
-            transition={{ duration: 0.4 }}
-            className="w-full"
-          >
-            <div className="auth-card gap-6">
-              <div className="auth-header !gap-3">
-                <p className="auth-plan-pill">{currentStep.eyebrow}</p>
-                <h1 className="auth-title normal-case not-italic">{currentStep.title}</h1>
-                <p className="auth-copy !max-w-[26rem]">{currentStep.supporting}</p>
-                <p className="auth-copy !max-w-[27rem]">{currentStep.instruction}</p>
+            <div className="grid gap-3">
+              <div className="flex gap-2">
+                {steps.map((_, index) => (
+                  <span
+                    key={index}
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${
+                      index <= step ? "bg-zinc-100" : "bg-white/10"
+                    }`}
+                  />
+                ))}
               </div>
 
-              <div className="grid gap-3">
-                <div className="flex gap-2">
-                  {steps.map((_, index) => (
-                    <span
-                      key={index}
-                      className={`h-1.5 flex-1 rounded-full transition-colors ${
-                        index <= step ? "bg-zinc-100" : "bg-white/10"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <div className="auth-divider">
-                  <div className="auth-divider-line" />
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                <div className="grid gap-1 text-left">
-                  <p className={labelClassName}>{currentStep.sectionLabel}</p>
-                  <p className="auth-copy !max-w-none !text-left">{currentStep.sectionHelper}</p>
-                </div>
-
-                {renderStepFields()}
-              </div>
-
-              {error ? <p className="auth-message auth-message-error">{error}</p> : null}
-              {success ? <p className="auth-message auth-message-success">{success}</p> : null}
-
-              <div className="flex items-center justify-between gap-4 pt-1">
-                {step === 0 ? (
-                  <Link
-                    className="auth-inline-link inline-flex items-center gap-2"
-                    href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
-                  >
-                    Cancel
-                  </Link>
-                ) : (
-                  <button
-                    className="auth-inline-link inline-flex items-center gap-2"
-                    onClick={() => setStep((current) => Math.max(0, current - 1))}
-                    type="button"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back
-                  </button>
-                )}
-
-                {step < steps.length - 1 ? (
-                  <Button
-                    className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
-                    disabled={loading}
-                    onClick={continueToNextStep}
-                  >
-                    Continue
-                    <ArrowRight className="auth-button-arrow" />
-                  </Button>
-                ) : (
-                  <Button
-                    className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
-                    disabled={loading}
-                    onClick={() => void handleCreateWorkspace(false)}
-                  >
-                    {loading
-                      ? accountMethod === "magic"
-                        ? "Sending..."
-                        : "Creating..."
-                      : "Create Workspace"}
-                    <ArrowRight className="auth-button-arrow" />
-                  </Button>
-                )}
+              <div className="auth-divider">
+                <div className="auth-divider-line" />
               </div>
             </div>
-          </motion.div>
+
+            <div className="grid gap-4">
+              <div className="grid gap-1 text-left">
+                <p className={labelClassName}>{currentStep.sectionLabel}</p>
+                <p className="auth-copy !max-w-none !text-left">{currentStep.sectionHelper}</p>
+              </div>
+
+              {renderStepFields()}
+            </div>
+
+            {error ? <p className="auth-message auth-message-error">{error}</p> : null}
+            {success ? <p className="auth-message auth-message-success">{success}</p> : null}
+
+            <div className="flex items-center justify-between gap-4 pt-1">
+              {step === 0 ? (
+                <Link
+                  className="auth-inline-link inline-flex items-center gap-2"
+                  href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
+                >
+                  Cancel
+                </Link>
+              ) : (
+                <button
+                  className="auth-inline-link inline-flex items-center gap-2"
+                  onClick={() => setStep((current) => Math.max(0, current - 1))}
+                  type="button"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+              )}
+
+              {step < steps.length - 1 ? (
+                <Button
+                  className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
+                  disabled={loading}
+                  onClick={continueToNextStep}
+                >
+                  Continue
+                  <ArrowRight className="auth-button-arrow" />
+                </Button>
+              ) : (
+                <Button
+                  className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
+                  disabled={loading}
+                  onClick={() => void handleCreateWorkspace(false)}
+                >
+                  {loading
+                    ? accountMethod === "magic"
+                      ? "Sending..."
+                      : "Creating..."
+                    : "Create Workspace"}
+                  <ArrowRight className="auth-button-arrow" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
+      </motion.div>
+    </div>
   );
 }

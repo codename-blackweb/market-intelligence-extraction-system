@@ -16,5 +16,15 @@ export default async function OnboardingPage({
   const initialPlan =
     initialPlanRaw === "pro" || initialPlanRaw === "agency" ? initialPlanRaw : null;
 
-  return <WorkspaceOnboarding initialEmail={initialEmail} initialPlan={initialPlan} />;
+  return (
+    <section className="auth-page">
+      <div className="auth-page-glow auth-page-glow-left" aria-hidden="true" />
+      <div className="auth-page-glow auth-page-glow-right" aria-hidden="true" />
+      <div className="auth-page-center">
+        <div className="onboarding-shell">
+          <WorkspaceOnboarding initialEmail={initialEmail} initialPlan={initialPlan} />
+        </div>
+      </div>
+    </section>
+  );
 }
