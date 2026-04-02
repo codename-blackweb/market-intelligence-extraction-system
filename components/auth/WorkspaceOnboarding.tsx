@@ -392,7 +392,7 @@ export default function WorkspaceOnboarding({
     if (step === 1) {
       return (
         <div className="onboarding-context-grid">
-          <div className="auth-field onboarding-grid-full">
+          <div className="auth-field onboarding-field-unit onboarding-grid-full">
             <label className={labelClassName} htmlFor="workspace-name">
               Workspace Name
             </label>
@@ -405,7 +405,7 @@ export default function WorkspaceOnboarding({
             />
           </div>
 
-          <div className="auth-field">
+          <div className="auth-field onboarding-field-unit">
             <label className={labelClassName} htmlFor="workspace-use-case">
               Primary Use Case
             </label>
@@ -423,7 +423,7 @@ export default function WorkspaceOnboarding({
             </select>
           </div>
 
-          <div className="auth-field">
+          <div className="auth-field onboarding-field-unit">
             <label className={labelClassName} htmlFor="workspace-team-size">
               Team Size
             </label>
@@ -441,7 +441,7 @@ export default function WorkspaceOnboarding({
             </select>
           </div>
 
-          <div className="auth-field onboarding-grid-full">
+          <div className="auth-field onboarding-field-unit onboarding-grid-full">
             <label className={labelClassName} htmlFor="workspace-industry">
               Industry
             </label>
@@ -551,8 +551,8 @@ export default function WorkspaceOnboarding({
               </div>
             </div>
 
-            <div className={step === 0 ? "onboarding-owner-section" : "grid gap-4"}>
-              <div className={step === 0 ? "onboarding-owner-section-head text-left" : "grid gap-1 text-left"}>
+            <div className={step === 0 || step === 1 ? "onboarding-owner-section" : "grid gap-4"}>
+              <div className={step === 0 || step === 1 ? "onboarding-owner-section-head text-left" : "grid gap-1 text-left"}>
                 <p className={labelClassName}>{currentStep.sectionLabel}</p>
                 <p className="auth-copy !max-w-none !text-left">{currentStep.sectionHelper}</p>
               </div>
@@ -573,12 +573,12 @@ export default function WorkspaceOnboarding({
                 </Link>
               ) : (
                 <button
-                  className="auth-inline-link inline-flex items-center gap-2"
+                  className="auth-inline-link onboarding-back-link"
                   onClick={() => setStep((current) => Math.max(0, current - 1))}
                   type="button"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back
+                  <span>Back</span>
                 </button>
               )}
 
