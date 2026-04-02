@@ -8,9 +8,11 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import OrbitsBackground from "@/components/background/OrbitsBackground";
 import { useAuth } from "@/components/providers/AuthProvider";
 import {
+  getAuthCapabilities,
   isMagicAccessEnabled,
   MAGIC_ACCESS_UNAVAILABLE_MESSAGE
 } from "@/lib/auth-capabilities";
+import { persistPendingPlan } from "@/lib/client-identity";
 import { persistPendingOnboarding } from "@/lib/pending-onboarding";
 import type { AuthSession, UserPlan } from "@/types/market-analysis";
 
@@ -69,9 +71,14 @@ export default function WorkspaceOnboarding({
 }) {
   const router = useRouter();
   const { setSession } = useAuth();
+  const authCapabilities = getAuthCapabilities();
   const magicAccessEnabled = isMagicAccessEnabled();
+  const passwordAuthEnabled = authCapabilities.password;
+  const checkoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
   const [step, setStep] = useState(0);
-  const [accountMethod, setAccountMethod] = useState<AccountMethod>("password");
+  const [accountMethod, setAccountMethod] = useState<AccountMethod>(
+    passwordAuthEnabled ? "password" : "magic"
+  );
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState(initialEmail);
@@ -97,7 +104,13 @@ export default function WorkspaceOnboarding({
 
   const routePostAuth = () => {
     if (initialPlan) {
-      router.push("/upgrade/success");
+      if (checkoutUrl) {
+        persistPendingPlan(initialPlan);
+        window.location.href = checkoutUrl;
+        return;
+      }
+
+      router.push("/billing");
       return;
     }
 
@@ -361,7 +374,10 @@ export default function WorkspaceOnboarding({
                 {step === 0 ? (
                   <>
                     <div className="grid gap-2 md:grid-cols-2">
-                      {(["password"] as const).map((method) => (
+                      {([
+                        ...(passwordAuthEnabled ? (["password"] as const) : []),
+                        ...(magicAccessEnabled ? (["magic"] as const) : [])
+                      ] as const).map((method) => (
                         <button
                           key={method}
                           type="button"
@@ -383,6 +399,11 @@ export default function WorkspaceOnboarding({
                         </button>
                       ))}
                     </div>
+                    {!passwordAuthEnabled ? (
+                      <p className="text-sm font-semibold leading-6 text-amber-300/90">
+                        Password sign-up is currently unavailable.
+                      </p>
+                    ) : null}
                     {!magicAccessEnabled ? (
                       <p className="text-sm font-semibold leading-6 text-amber-300/90">
                         {MAGIC_ACCESS_UNAVAILABLE_MESSAGE}

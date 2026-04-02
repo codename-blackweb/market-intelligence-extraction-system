@@ -1,4 +1,5 @@
 import { createClient, type Session, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { getOAuthProviderAvailability as getAuthOAuthProviderAvailability } from "@/lib/auth-capabilities";
 import type { AuthSession, AuthSessionUser } from "@/types/market-analysis";
 
 type PublicSupabaseConfig = {
@@ -50,10 +51,7 @@ export function isSupabaseServiceConfigured() {
 }
 
 export function getOAuthProviderAvailability() {
-  return {
-    google: process.env.NEXT_PUBLIC_SUPABASE_GOOGLE_AUTH_ENABLED === "true",
-    github: process.env.NEXT_PUBLIC_SUPABASE_GITHUB_AUTH_ENABLED === "true"
-  };
+  return getAuthOAuthProviderAvailability();
 }
 
 export function createSupabaseServerAuthClient(): SupabaseClient | null {

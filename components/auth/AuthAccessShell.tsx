@@ -10,25 +10,33 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
+  getAuthCapabilities,
   isMagicAccessEnabled,
   MAGIC_ACCESS_UNAVAILABLE_MESSAGE
 } from "@/lib/auth-capabilities";
-import { getOAuthProviderAvailability } from "@/lib/supabase-core";
+import { persistPendingPlan } from "@/lib/client-identity";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { AuthSession } from "@/types/market-analysis";
 
 type AuthView = "signin" | "magic" | "recovery" | "verify";
 
-function getInitialView(viewParam: string | null, magicAccessEnabled: boolean): AuthView {
-  if (viewParam === "signin" || viewParam === "recovery") {
+function getInitialView(
+  viewParam: string | null,
+  input: { magicAccessEnabled: boolean; passwordAuthEnabled: boolean }
+): AuthView {
+  if (input.passwordAuthEnabled && (viewParam === "signin" || viewParam === "recovery")) {
     return viewParam;
   }
 
-  if (magicAccessEnabled && (viewParam === "magic" || viewParam === "verify")) {
+  if (input.magicAccessEnabled && (viewParam === "magic" || viewParam === "verify")) {
     return viewParam;
   }
 
-  return "signin";
+  if (input.passwordAuthEnabled) {
+    return "signin";
+  }
+
+  return input.magicAccessEnabled ? "magic" : "signin";
 }
 
 export default function AuthAccessShell() {
@@ -38,15 +46,20 @@ export default function AuthAccessShell() {
   const requestedPlan = searchParams.get("plan");
   const upgradePlan =
     requestedPlan === "pro" || requestedPlan === "agency" ? requestedPlan : null;
+  const authCapabilities = getAuthCapabilities();
   const magicAccessEnabled = isMagicAccessEnabled();
-  const providerAvailability = getOAuthProviderAvailability();
+  const passwordAuthEnabled = authCapabilities.password;
+  const providerAvailability = {
+    google: authCapabilities.google,
+    github: authCapabilities.github
+  };
   const enabledProviders = [
     providerAvailability.github ? "github" : null,
     providerAvailability.google ? "google" : null
   ].filter(Boolean) as Array<"github" | "google">;
   const checkoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
   const [view, setView] = useState<AuthView>(
-    getInitialView(searchParams.get("view"), magicAccessEnabled)
+    getInitialView(searchParams.get("view"), { magicAccessEnabled, passwordAuthEnabled })
   );
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
@@ -63,14 +76,16 @@ export default function AuthAccessShell() {
     upgradePlan === "pro" ? "Unlocking Pro" : upgradePlan === "agency" ? "Unlocking Agency" : null;
   const segmentedViews: Array<{ id: AuthView; label: string }> = magicAccessEnabled
     ? [
+        ...(passwordAuthEnabled ? [{ id: "signin" as const, label: "Password" }] : []),
+        { id: "magic" as const, label: "Magic Access" },
+        ...(passwordAuthEnabled ? [{ id: "recovery" as const, label: "Recover" }] : [])
+      ]
+    : passwordAuthEnabled
+      ? [
         { id: "signin", label: "Password" },
-        { id: "magic", label: "Magic Access" },
         { id: "recovery", label: "Recover" }
       ]
-    : [
-        { id: "signin", label: "Password" },
-        { id: "recovery", label: "Recover" }
-      ];
+      : [];
 
   const hint = useMemo(() => {
     switch (view) {
@@ -106,8 +121,11 @@ export default function AuthAccessShell() {
       : hint.copy;
 
   useEffect(() => {
-    const nextView = getInitialView(searchParams.get("view"), magicAccessEnabled);
-    setView(nextView);
+    const nextCapabilityView = getInitialView(searchParams.get("view"), {
+      magicAccessEnabled,
+      passwordAuthEnabled
+    });
+    setView(nextCapabilityView);
     setEmail(searchParams.get("email") ?? "");
     if (!magicAccessEnabled) {
       const requestedView = searchParams.get("view");
@@ -116,7 +134,7 @@ export default function AuthAccessShell() {
         setError(MAGIC_ACCESS_UNAVAILABLE_MESSAGE);
       }
     }
-  }, [magicAccessEnabled, searchParams]);
+  }, [magicAccessEnabled, passwordAuthEnabled, searchParams]);
 
   useEffect(() => {
     const previousBodyBackground = document.body.style.background;
@@ -157,7 +175,7 @@ export default function AuthAccessShell() {
         return;
       }
 
-      router.push("/upgrade/success");
+      router.push("/billing");
       return;
     }
 
@@ -186,6 +204,10 @@ export default function AuthAccessShell() {
         throw new Error("Supabase auth is not configured.");
       }
 
+      if (upgradePlan && checkoutUrl) {
+        persistPendingPlan(upgradePlan);
+      }
+
       const { error: oauthError } = await client.auth.signInWithOAuth({
         provider,
         options: {
@@ -204,6 +226,11 @@ export default function AuthAccessShell() {
   };
 
   const handlePasswordSignIn = async () => {
+    if (!passwordAuthEnabled) {
+      setError("Password sign-in is currently unavailable.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -283,6 +310,11 @@ export default function AuthAccessShell() {
   };
 
   const handleRecovery = async () => {
+    if (!passwordAuthEnabled) {
+      setError("Password recovery is currently unavailable.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");

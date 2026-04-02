@@ -8,6 +8,9 @@ import {
   collectNewsSignals,
   collectYouTubeSignals
 } from "@/lib/source-expansion";
+import { createPersistedAnalysis } from "@/lib/persistence";
+import { buildGateResponse, getUserPlanUsage } from "@/lib/plan-capabilities";
+import { getAuthenticatedRequestUser } from "@/lib/request-auth";
 import { compactUnique, normalizeUrl, splitListInput } from "@/lib/utils";
 import type {
   CompetitorContext,
@@ -37,6 +40,7 @@ type AnalyzeBody = {
   seedQuery?: string;
   marketType?: string;
   depth?: string;
+  workspaceId?: string | null;
   serpData?: unknown;
   competitorNames?: unknown;
   competitorUrls?: unknown;
@@ -1237,6 +1241,7 @@ export async function POST(request: NextRequest) {
   try {
     const MODE = (process.env.MODE || "DEV").toUpperCase();
     const body = (await request.json()) as AnalyzeBody;
+    const auth = await getAuthenticatedRequestUser(request);
     const { query, seedQuery, marketType, depth } = body;
     const effectiveMode =
       typeof body.modeOverride === "string" && body.modeOverride.toUpperCase() === "HYBRID"
@@ -1266,6 +1271,92 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const attachPersistence = async (
+      result: MarketAnalysisSuccessResponse
+    ): Promise<MarketAnalysisSuccessResponse> => {
+      if (!auth) {
+        return result;
+      }
+
+      try {
+        const persistedAnalysis = await createPersistedAnalysis({
+          user_id: auth.user.id,
+          workspace_id: typeof body.workspaceId === "string" ? body.workspaceId : null,
+          query: result.query,
+          market_type: finalMarketType,
+          depth: finalDepth,
+          result_json: result,
+          accessToken: auth.accessToken
+        });
+        const nextPlanUsage = await getUserPlanUsage(auth.user.id, auth.accessToken);
+
+        return {
+          ...result,
+          analysis_id: persistedAnalysis?.id ?? null,
+          analysis_is_public: Boolean(persistedAnalysis?.is_public),
+          usage: nextPlanUsage.usage
+        };
+      } catch (persistError) {
+        console.warn(
+          "analysis persistence attach failed",
+          persistError instanceof Error ? persistError.message : persistError
+        );
+        return result;
+      }
+    };
+
+    const hasCompetitorInputs =
+      competitorContext.competitor_names.length > 0 || competitorContext.competitor_urls.length > 0;
+
+    if (auth) {
+      const { usage } = await getUserPlanUsage(auth.user.id, auth.accessToken);
+
+      if (!usage.deep_synthesis_enabled && finalDepth !== "standard") {
+        return NextResponse.json(
+          buildGateResponse("deep_synthesis", "Deep synthesis is available on Pro."),
+          { status: 403 }
+        );
+      }
+
+      if (!usage.competitor_inputs_enabled && hasCompetitorInputs) {
+        return NextResponse.json(
+          buildGateResponse(
+            "competitor_enrichment",
+            "Competitor enrichment is available on Pro."
+          ),
+          { status: 403 }
+        );
+      }
+
+      if (
+        effectiveMode === "LIVE" &&
+        typeof usage.live_runs_remaining === "number" &&
+        usage.live_runs_remaining <= 0
+      ) {
+        return NextResponse.json(
+          buildGateResponse("live_limit", "You have reached the free LIVE analysis limit for today."),
+          { status: 403 }
+        );
+      }
+    } else {
+      if (finalDepth !== "standard") {
+        return NextResponse.json(
+          buildGateResponse("deep_synthesis", "Deep synthesis is available on Pro."),
+          { status: 403 }
+        );
+      }
+
+      if (hasCompetitorInputs) {
+        return NextResponse.json(
+          buildGateResponse(
+            "competitor_enrichment",
+            "Competitor enrichment is available on Pro."
+          ),
+          { status: 403 }
+        );
+      }
+    }
+
     if (effectiveMode === "DEV") {
       await new Promise((resolve) => setTimeout(resolve, DEV_MODE_DELAY_MS));
       return NextResponse.json(
@@ -1282,19 +1373,19 @@ export async function POST(request: NextRequest) {
         throw new Error("serpData is required.");
       }
 
-      return NextResponse.json(
-        createDeterministicAnalysisResponse({
-          mode: "HYBRID",
-          query: finalQuery,
-          marketType: finalMarketType,
-          googleSignals: sourceBundle.googleSignals,
-          normalizedSignals: sourceBundle.normalizedSignals,
-          signalOrigins: sourceBundle.signalOrigins,
-          sourceMeta: sourceBundle.sourceMeta,
-          competitorContext,
-          synthesisDepth: finalDepth === "deep" || finalDepth === "aggressive" ? "deep" : "standard"
-        })
-      );
+      const result = createDeterministicAnalysisResponse({
+        mode: "HYBRID",
+        query: finalQuery,
+        marketType: finalMarketType,
+        googleSignals: sourceBundle.googleSignals,
+        normalizedSignals: sourceBundle.normalizedSignals,
+        signalOrigins: sourceBundle.signalOrigins,
+        sourceMeta: sourceBundle.sourceMeta,
+        competitorContext,
+        synthesisDepth: finalDepth === "deep" || finalDepth === "aggressive" ? "deep" : "standard"
+      });
+
+      return NextResponse.json(await attachPersistence(result));
     }
 
     console.log("ENTERING LIVE OPENAI BRANCH");
@@ -1309,18 +1400,18 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        return NextResponse.json(
-          await runLiveOpenAiAnalysis({
-            query: finalQuery,
-            marketType: finalMarketType,
-            depth: finalDepth,
-            googleSignals: sourceBundle.googleSignals,
-            normalizedSignals: sourceBundle.normalizedSignals,
-            signalOrigins: sourceBundle.signalOrigins,
-            sourceMeta: sourceBundle.sourceMeta,
-            competitorContext
-          })
-        );
+        const result = await runLiveOpenAiAnalysis({
+          query: finalQuery,
+          marketType: finalMarketType,
+          depth: finalDepth,
+          googleSignals: sourceBundle.googleSignals,
+          normalizedSignals: sourceBundle.normalizedSignals,
+          signalOrigins: sourceBundle.signalOrigins,
+          sourceMeta: sourceBundle.sourceMeta,
+          competitorContext
+        });
+
+        return NextResponse.json(await attachPersistence(result));
       } catch (error) {
         liveError = error instanceof Error ? error : new Error("Unknown LIVE error");
         console.warn(`live analysis attempt ${attempt + 1} failed`, liveError.message);
@@ -1329,23 +1420,23 @@ export async function POST(request: NextRequest) {
 
     console.warn("live analysis failed, falling back to deterministic synthesis");
 
-    return NextResponse.json(
-      createDeterministicAnalysisResponse({
-        mode: "LIVE",
-        query: finalQuery,
-        marketType: finalMarketType,
-        googleSignals: sourceBundle.googleSignals,
-        normalizedSignals: sourceBundle.normalizedSignals,
-        signalOrigins: sourceBundle.signalOrigins,
-        sourceMeta: {
-          ...sourceBundle.sourceMeta,
-          used_openai: false
-        },
-        competitorContext,
-        synthesisDepth: finalDepth === "deep" || finalDepth === "aggressive" ? "deep" : "standard",
-        fallbackUsed: true
-      })
-    );
+    const fallbackResult = createDeterministicAnalysisResponse({
+      mode: "LIVE",
+      query: finalQuery,
+      marketType: finalMarketType,
+      googleSignals: sourceBundle.googleSignals,
+      normalizedSignals: sourceBundle.normalizedSignals,
+      signalOrigins: sourceBundle.signalOrigins,
+      sourceMeta: {
+        ...sourceBundle.sourceMeta,
+        used_openai: false
+      },
+      competitorContext,
+      synthesisDepth: finalDepth === "deep" || finalDepth === "aggressive" ? "deep" : "standard",
+      fallbackUsed: true
+    });
+
+    return NextResponse.json(await attachPersistence(fallbackResult));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = message === "Missing query" || message === "serpData is required." ? 400 : 500;

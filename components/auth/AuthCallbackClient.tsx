@@ -18,6 +18,7 @@ export default function AuthCallbackClient() {
   const router = useRouter();
   const { setSession } = useAuth();
   const [message, setMessage] = useState("Finalizing secure access...");
+  const checkoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
 
   useEffect(() => {
     let isMounted = true;
@@ -143,9 +144,12 @@ export default function AuthCallbackClient() {
             ? window.localStorage.getItem(PENDING_PLAN_STORAGE_KEY)
             : null;
 
-        router.replace(
-          pendingPlan === "pro" || pendingPlan === "agency" ? "/upgrade/success" : "/account"
-        );
+        if ((pendingPlan === "pro" || pendingPlan === "agency") && checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
+        }
+
+        router.replace(pendingPlan === "pro" || pendingPlan === "agency" ? "/upgrade/success" : "/account");
       } catch (callbackError) {
         if (isMounted) {
           const nextMessage =
@@ -160,7 +164,7 @@ export default function AuthCallbackClient() {
     return () => {
       isMounted = false;
     };
-  }, [router, setSession]);
+  }, [checkoutUrl, router, setSession]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-16 text-zinc-100">

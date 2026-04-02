@@ -486,6 +486,75 @@ export async function listPersistedAnalyses(userId: string, accessToken?: string
   return Array.isArray(data) ? data.map((row) => mapAnalysis(row as Record<string, unknown>)) : [];
 }
 
+export async function countPersistedAnalyses(userId: string, accessToken?: string) {
+  const client = getPersistenceClient(accessToken);
+
+  if (!client) {
+    return 0;
+  }
+
+  const { count, error } = await client
+    .from("analyses")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function countSharedReports(userId: string, accessToken?: string) {
+  const client = getPersistenceClient(accessToken);
+
+  if (!client) {
+    return 0;
+  }
+
+  const { count, error } = await client
+    .from("shared_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function countLiveAnalysesToday(userId: string, accessToken?: string) {
+  const client = getPersistenceClient(accessToken);
+
+  if (!client) {
+    return 0;
+  }
+
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  const { data, error } = await client
+    .from("analyses")
+    .select("result_json")
+    .eq("user_id", userId)
+    .gte("created_at", start.toISOString())
+    .lt("created_at", end.toISOString());
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data)
+    ? data.filter((row) => {
+        const result = row.result_json as { source_meta?: { mode?: string } } | null;
+        return result?.source_meta?.mode === "LIVE";
+      }).length
+    : 0;
+}
+
 export async function createPersistedAnalysis(input: {
   user_id: string;
   workspace_id?: string | null;
@@ -578,7 +647,6 @@ export async function listSharedReportsByUser(userId: string, accessToken?: stri
     .from("shared_reports")
     .select("id,analysis_id,user_id,public_token,is_public,created_at")
     .eq("user_id", userId)
-    .eq("is_public", true)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -715,14 +783,17 @@ export async function bootstrapAccountForUser(input: {
     }
   }
 
-  const [workspaces, members, analyses, sharedReports] = await Promise.all([
-    listWorkspacesByOwner(input.userId, input.accessToken),
-    workspace
-      ? listWorkspaceMembers(workspace.id, input.accessToken)
-      : Promise.resolve([] as WorkspaceMemberRecord[]),
-    listPersistedAnalyses(input.userId, input.accessToken),
-    listSharedReportsByUser(input.userId, input.accessToken)
-  ]);
+  const [workspaces, members, analyses, sharedReports, savedAnalysesCount, sharedReportsCount] =
+    await Promise.all([
+      listWorkspacesByOwner(input.userId, input.accessToken),
+      workspace
+        ? listWorkspaceMembers(workspace.id, input.accessToken)
+        : Promise.resolve([] as WorkspaceMemberRecord[]),
+      listPersistedAnalyses(input.userId, input.accessToken),
+      listSharedReportsByUser(input.userId, input.accessToken),
+      countPersistedAnalyses(input.userId, input.accessToken),
+      countSharedReports(input.userId, input.accessToken)
+    ]);
 
   return {
     profile,
@@ -733,18 +804,28 @@ export async function bootstrapAccountForUser(input: {
     invites: members.filter((member) => member.invited_email) as WorkspaceInviteRecord[],
     analyses,
     sharedReports,
-    sharedReportsCount: sharedReports.length,
-    savedAnalysesCount: analyses.length
+    sharedReportsCount,
+    savedAnalysesCount
   } satisfies Omit<AccountSummaryResponse, "success" | "persistenceConfigured" | "error">;
 }
 
 export async function getAccountSummary(userId: string, accessToken?: string) {
-  const [profile, subscription, workspaces, analyses, sharedReports] = await Promise.all([
+  const [
+    profile,
+    subscription,
+    workspaces,
+    analyses,
+    sharedReports,
+    savedAnalysesCount,
+    sharedReportsCount
+  ] = await Promise.all([
     getPersistedProfile(userId, accessToken),
     getPersistedSubscription(userId, accessToken),
     listWorkspacesByOwner(userId, accessToken),
     listPersistedAnalyses(userId, accessToken),
-    listSharedReportsByUser(userId, accessToken)
+    listSharedReportsByUser(userId, accessToken),
+    countPersistedAnalyses(userId, accessToken),
+    countSharedReports(userId, accessToken)
   ]);
 
   const workspace = workspaces[0] ?? null;
@@ -759,7 +840,7 @@ export async function getAccountSummary(userId: string, accessToken?: string) {
     invites: members.filter((member) => member.invited_email) as WorkspaceInviteRecord[],
     analyses,
     sharedReports,
-    sharedReportsCount: sharedReports.length,
-    savedAnalysesCount: analyses.length
+    sharedReportsCount,
+    savedAnalysesCount
   } satisfies Omit<AccountSummaryResponse, "success" | "persistenceConfigured" | "error">;
 }

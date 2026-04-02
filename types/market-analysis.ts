@@ -89,6 +89,15 @@ export type CompetitorContext = {
 
 export type UserPlan = "free" | "pro" | "agency";
 
+export type GateType =
+  | "analysis_limit"
+  | "live_limit"
+  | "export"
+  | "deep_synthesis"
+  | "generator"
+  | "agency_only"
+  | "competitor_enrichment";
+
 export type MarketPositioningStrategy = {
   emphasize: string[];
   avoid: string[];
@@ -223,6 +232,7 @@ export type AccountSummaryResponse = {
   persistenceConfigured?: boolean;
   profile?: UserProfileRecord | null;
   subscription?: SubscriptionRecord | null;
+  usage?: PlanUsageSummary;
   workspace?: WorkspaceRecord | null;
   workspaces?: WorkspaceRecord[];
   members?: WorkspaceMemberRecord[];
@@ -232,6 +242,23 @@ export type AccountSummaryResponse = {
   sharedReportsCount?: number;
   savedAnalysesCount?: number;
   error?: string;
+};
+
+export type PlanUsageSummary = {
+  plan: UserPlan;
+  subscription_status: string;
+  live_runs_today: number;
+  live_runs_limit: number | null;
+  live_runs_remaining: number | null;
+  deep_synthesis_enabled: boolean;
+  generators_enabled: boolean;
+  export_enabled: boolean;
+  compare_enabled: boolean;
+  competitor_inputs_enabled: boolean;
+  source_evidence_enabled: boolean;
+  multi_workspace_enabled: boolean;
+  team_features_enabled: boolean;
+  white_label_enabled: boolean;
 };
 
 export type MarketAnalysisSuccessResponse = {
@@ -257,6 +284,9 @@ export type MarketAnalysisSuccessResponse = {
   synthesis_depth: "standard" | "deep";
   reasoning_quality: "high" | "medium" | "low";
   fallback_used: boolean;
+  analysis_id?: string | null;
+  analysis_is_public?: boolean;
+  usage?: PlanUsageSummary;
   generatedAt: string;
 };
 
@@ -276,11 +306,17 @@ export type GeneratedActionsSuccessResponse = {
 export type GeneratedActionsErrorResponse = {
   success: false;
   error: string;
+  gated?: boolean;
+  gate_type?: GateType;
+  message?: string;
 };
 
 export type MarketAnalysisErrorResponse = {
   success: false;
   error: string;
+  gated?: boolean;
+  gate_type?: GateType;
+  message?: string;
 };
 
 export type MarketAnalysisResponse =

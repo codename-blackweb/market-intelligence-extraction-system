@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { bootstrapAccountForUser, getAccountSummary, isPersistenceConfigured } from "@/lib/persistence";
+import { getUserPlanUsage } from "@/lib/plan-capabilities";
 import { getAuthenticatedRequestUser } from "@/lib/request-auth";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -11,12 +12,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const summary = await getAccountSummary(auth.user.id, auth.accessToken);
+    const [summary, planUsage] = await Promise.all([
+      getAccountSummary(auth.user.id, auth.accessToken),
+      getUserPlanUsage(auth.user.id, auth.accessToken)
+    ]);
 
     return NextResponse.json({
       success: true,
       persistenceConfigured: isPersistenceConfigured(),
-      ...summary
+      ...summary,
+      subscription: planUsage.subscription ?? summary.subscription ?? null,
+      usage: planUsage.usage
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });
@@ -60,11 +66,14 @@ export async function POST(request: NextRequest) {
       inviteRole: body.inviteRole?.trim() || "member",
       accessToken: auth.accessToken
     });
+    const planUsage = await getUserPlanUsage(auth.user.id, auth.accessToken);
 
     return NextResponse.json({
       success: true,
       persistenceConfigured: isPersistenceConfigured(),
-      ...summary
+      ...summary,
+      subscription: planUsage.subscription ?? summary.subscription ?? null,
+      usage: planUsage.usage
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: getErrorMessage(error) }, { status: 500 });

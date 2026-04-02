@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { buildGateResponse, getUserPlanUsage } from "@/lib/plan-capabilities";
+import { getAuthenticatedRequestUser } from "@/lib/request-auth";
 import type {
   GeneratedActionsResponse,
   GeneratedActionKind,
@@ -143,12 +145,29 @@ Rules:
 export async function POST(request: NextRequest) {
   try {
     const MODE = (process.env.MODE || "DEV").toUpperCase();
+    const auth = await getAuthenticatedRequestUser(request);
     const { kind, analysis } = (await request.json()) as ActionRequestBody;
 
     if (!kind || !analysis?.success) {
       return NextResponse.json(
         { success: false, error: "Missing action generation payload." },
         { status: 400 }
+      );
+    }
+
+    if (!auth) {
+      return NextResponse.json(
+        buildGateResponse("generator", "Advanced generators are available on Pro."),
+        { status: 403 }
+      );
+    }
+
+    const { usage } = await getUserPlanUsage(auth.user.id, auth.accessToken);
+
+    if (!usage.generators_enabled) {
+      return NextResponse.json(
+        buildGateResponse("generator", "Advanced generators are available on Pro."),
+        { status: 403 }
       );
     }
 

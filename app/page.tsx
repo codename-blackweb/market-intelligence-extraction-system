@@ -33,20 +33,24 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
 import { VideoText } from "@/components/ui/VideoText";
 import {
-  clearPendingPlan,
+  clearPendingAnalysisRestore,
   getOrCreateUserId,
+  loadPendingAnalysisRestore,
   persistPendingPlan,
   persistStoredPlan
 } from "@/lib/client-identity";
 import { useMotionPolicy } from "@/lib/motion-policy";
+import { FREE_LIVE_DAILY_LIMIT } from "@/lib/plan-config";
 import type {
   CompetitorContext,
+  GateType,
   GeneratedActionsResponse,
   GeneratedActionKind,
   MarketAnalysisResponse,
   MarketAnalysisSuccessResponse,
   MarketSourceMeta,
   NormalizedSignal,
+  PlanUsageSummary,
   PersistedAnalysisRecord,
   SignalOriginEntry,
   UserPlan
@@ -170,7 +174,6 @@ const intelligenceOutputTimelineSteps: IntelligenceTimelineStep[] = [
 const RECENT_ANALYSES_STORAGE_KEY = "market-intelligence:recent-analyses:v1";
 const USAGE_STATE_STORAGE_KEY = "market-intelligence:usage:v1";
 const MAX_SAVED_RUNS = 10;
-const FREE_ANALYSIS_RUN_LIMIT = 1;
 const CLIENT_MODE = ((process.env.NEXT_PUBLIC_MODE || "DEV").toUpperCase() as
   | "DEV"
   | "HYBRID"
@@ -255,14 +258,14 @@ type SavedAnalysisRun = {
 type UsageState = {
   userId: string | null;
   totalRuns: number;
-  runsToday: number;
+  liveRunsToday: number;
   lastRunTimestamp: number | null;
   lastRunDay: string;
   plan: UserPlan;
   freeRunsRemaining: number;
 };
 
-type GatedAction = "analysis_limit" | "export" | "live_limit" | "deep" | "generator" | null;
+type GatedAction = GateType | null;
 
 type ActionOutputState = Partial<
   Record<
@@ -368,7 +371,10 @@ function normalizeSuccessfulAnalysis(
       result.reasoning_quality === "high" || result.reasoning_quality === "low"
         ? result.reasoning_quality
         : "medium",
-    fallback_used: result.fallback_used ?? false
+    fallback_used: result.fallback_used ?? false,
+    analysis_id: typeof result.analysis_id === "string" ? result.analysis_id : null,
+    analysis_is_public: Boolean(result.analysis_is_public),
+    usage: result.usage
   };
 }
 
@@ -405,7 +411,8 @@ function resolveUsagePlan(state?: Partial<UsageState>, planOverride?: UserPlan):
 function normalizeUsageState(
   state?: Partial<UsageState>,
   currentUserId?: string,
-  planOverride?: UserPlan
+  planOverride?: UserPlan,
+  usageOverride?: Partial<PlanUsageSummary>
 ): UsageState {
   const today = getTodayKey();
   const lastRunDay = typeof state?.lastRunDay === "string" ? state.lastRunDay : today;
@@ -413,18 +420,21 @@ function normalizeUsageState(
   const resolvedUserId = currentUserId || storedUserId;
   const hasUserMismatch = Boolean(currentUserId && storedUserId !== currentUserId);
   const plan = resolveUsagePlan(state, planOverride);
-  const defaultFreeRunsRemaining = plan === "free" ? FREE_ANALYSIS_RUN_LIMIT : 0;
+  const defaultFreeRunsRemaining = plan === "free" ? FREE_LIVE_DAILY_LIMIT : 0;
+  const normalizedLiveRunsToday =
+    typeof usageOverride?.live_runs_today === "number"
+      ? usageOverride.live_runs_today
+      : !hasUserMismatch &&
+          typeof state?.liveRunsToday === "number" &&
+          lastRunDay === today
+        ? state.liveRunsToday
+        : 0;
 
   return {
     userId: resolvedUserId,
     totalRuns:
       !hasUserMismatch && typeof state?.totalRuns === "number" ? state.totalRuns : 0,
-    runsToday:
-      !hasUserMismatch &&
-      typeof state?.runsToday === "number" &&
-      lastRunDay === today
-        ? state.runsToday
-        : 0,
+    liveRunsToday: normalizedLiveRunsToday,
     lastRunTimestamp:
       !hasUserMismatch && typeof state?.lastRunTimestamp === "number"
         ? state.lastRunTimestamp
@@ -433,28 +443,39 @@ function normalizeUsageState(
     plan,
     freeRunsRemaining:
       plan === "free"
-        ? !hasUserMismatch && typeof state?.freeRunsRemaining === "number"
-          ? Math.max(0, Math.min(FREE_ANALYSIS_RUN_LIMIT, state.freeRunsRemaining))
-          : defaultFreeRunsRemaining
+        ? typeof usageOverride?.live_runs_remaining === "number"
+          ? Math.max(0, Math.min(FREE_LIVE_DAILY_LIMIT, usageOverride.live_runs_remaining))
+          : !hasUserMismatch && typeof state?.freeRunsRemaining === "number"
+            ? Math.max(0, Math.min(FREE_LIVE_DAILY_LIMIT, state.freeRunsRemaining))
+            : defaultFreeRunsRemaining
         : 0
   };
 }
 
-function loadUsageState(currentUserId?: string, planOverride?: UserPlan) {
+function loadUsageState(
+  currentUserId?: string,
+  planOverride?: UserPlan,
+  usageOverride?: Partial<PlanUsageSummary>
+) {
   if (typeof window === "undefined") {
-    return normalizeUsageState(undefined, currentUserId, planOverride);
+    return normalizeUsageState(undefined, currentUserId, planOverride, usageOverride);
   }
 
   const raw = window.localStorage.getItem(USAGE_STATE_STORAGE_KEY);
 
   if (!raw) {
-    return normalizeUsageState(undefined, currentUserId, planOverride);
+    return normalizeUsageState(undefined, currentUserId, planOverride, usageOverride);
   }
 
   try {
-    return normalizeUsageState(JSON.parse(raw) as Partial<UsageState>, currentUserId, planOverride);
+    return normalizeUsageState(
+      JSON.parse(raw) as Partial<UsageState>,
+      currentUserId,
+      planOverride,
+      usageOverride
+    );
   } catch {
-    return normalizeUsageState(undefined, currentUserId, planOverride);
+    return normalizeUsageState(undefined, currentUserId, planOverride, usageOverride);
   }
 }
 
@@ -472,16 +493,18 @@ function formatGeneratedTimestamp(timestamp: number) {
 
 function getPricingMessage(gatedAction: GatedAction) {
   switch (gatedAction) {
-    case "analysis_limit":
-      return "Unlock full intelligence";
     case "export":
       return "Full report export is a Pro feature";
     case "live_limit":
       return "Daily AI analysis limit reached";
-    case "deep":
+    case "deep_synthesis":
       return "Deep synthesis is available on Pro";
     case "generator":
       return "Advanced generators are available on Pro";
+    case "competitor_enrichment":
+      return "Competitor enrichment is available on Pro";
+    case "agency_only":
+      return "This workflow is available on Agency";
     default:
       return "Unlock full intelligence";
   }
@@ -652,6 +675,7 @@ export default function Home() {
           success: boolean;
           persistenceConfigured?: boolean;
           subscription?: { plan?: UserPlan } | null;
+          usage?: PlanUsageSummary | null;
           workspace?: { id?: string | null } | null;
           analyses?: PersistedAnalysisRecord[];
           error?: string;
@@ -665,10 +689,10 @@ export default function Home() {
         setWorkspaceId(accountJson.workspace?.id ?? null);
 
         const nextPlan =
-          accountJson.subscription?.plan === "pro" || accountJson.subscription?.plan === "agency"
-            ? accountJson.subscription.plan
+          accountJson.usage?.plan === "pro" || accountJson.usage?.plan === "agency"
+            ? accountJson.usage.plan
             : "free";
-        const nextUsage = normalizeUsageState(localUsage, nextUserId, nextPlan);
+        const nextUsage = normalizeUsageState(localUsage, nextUserId, nextPlan, accountJson.usage ?? undefined);
         persistStoredPlan(nextPlan);
         persistUsageState(nextUsage);
         setUsageState(nextUsage);
@@ -690,62 +714,21 @@ export default function Home() {
     })();
   }, [session?.access_token, session?.user.id, setAuthPlan]);
 
-  const syncPlan = async (plan: UserPlan) => {
-    const nextState = normalizeUsageState(
-      {
-        ...usageState,
-        plan
-      },
-      userId,
-      plan
-    );
-
-    clearPendingPlan();
-    persistStoredPlan(plan);
-    persistUsageState(nextState);
-    setUsageState(nextState);
-    setGatedAction(null);
-    setAuthPlan(plan);
-
-    if (!session?.access_token) {
+  const startUpgradeFlow = async (plan: Exclude<UserPlan, "free">) => {
+    if (!STRIPE_CHECKOUT_URL) {
+      setError("Billing checkout is not configured right now.");
+      setGatedAction(plan === "agency" ? "agency_only" : null);
       return;
     }
 
-    try {
-      const response = await fetch("/api/profile", {
-        method: "POST",
-        headers: buildAuthHeaders(session.access_token, true),
-        body: JSON.stringify({
-          plan
-        })
-      });
-      const json = (await response.json()) as {
-        success: boolean;
-        persistenceConfigured?: boolean;
-      };
-
-      if (json.success) {
-        setPersistenceConfigured(Boolean(json.persistenceConfigured));
-      }
-    } catch {
-      // Keep the local plan even if profile sync fails.
-    }
-  };
-
-  const startUpgradeFlow = async (plan: Exclude<UserPlan, "free">) => {
     if (!isAuthenticated) {
       persistPendingPlan(plan);
       window.location.href = `/auth?plan=${encodeURIComponent(plan)}`;
       return;
     }
 
-    if (STRIPE_CHECKOUT_URL) {
-      persistPendingPlan(plan);
-      window.location.href = STRIPE_CHECKOUT_URL;
-      return;
-    }
-
-    await syncPlan(plan);
+    persistPendingPlan(plan);
+    window.location.href = STRIPE_CHECKOUT_URL;
   };
 
   const updateSavedRun = (databaseId: string, updater: (run: SavedAnalysisRun) => SavedAnalysisRun) => {
@@ -811,6 +794,25 @@ export default function Home() {
     setData(savedRun.result);
   };
 
+  useEffect(() => {
+    const pendingAnalysisId = loadPendingAnalysisRestore();
+
+    if (!pendingAnalysisId) {
+      return;
+    }
+
+    const pendingRun = savedRuns.find(
+      (savedRun) => savedRun.databaseId === pendingAnalysisId || savedRun.id === pendingAnalysisId
+    );
+
+    if (!pendingRun) {
+      return;
+    }
+
+    clearPendingAnalysisRestore();
+    void restoreSavedRun(pendingRun);
+  }, [savedRuns, session?.access_token]);
+
   const toggleCompareRun = (runId: string) => {
     setSelectedComparisonIds((currentIds) => {
       if (currentIds.includes(runId)) {
@@ -824,10 +826,27 @@ export default function Home() {
 
   const runAnalysis = async (modeOverride?: "HYBRID") => {
     const requestMode = modeOverride ?? CLIENT_MODE;
-    const freeRunConsumed = usageState.plan === "free" && usageState.freeRunsRemaining <= 0;
+    const hasCompetitorInputs =
+      Boolean(competitorNames.trim().length) || Boolean(competitorUrls.trim().length);
+    const liveLimitReached =
+      usageState.plan === "free" &&
+      requestMode === "LIVE" &&
+      usageState.freeRunsRemaining <= 0;
 
-    if (freeRunConsumed) {
-      setGatedAction("analysis_limit");
+    if (usageState.plan === "free" && depth !== "standard") {
+      setGatedAction("deep_synthesis");
+      setError("");
+      return;
+    }
+
+    if (usageState.plan === "free" && hasCompetitorInputs) {
+      setGatedAction("competitor_enrichment");
+      setError("");
+      return;
+    }
+
+    if (liveLimitReached) {
+      setGatedAction("live_limit");
       setError("");
       return;
     }
@@ -841,9 +860,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: buildAuthHeaders(session?.access_token, true),
         body: JSON.stringify({
           query,
           marketType,
@@ -859,6 +876,12 @@ export default function Home() {
       console.log("analyze response", json);
 
       if (!json.success) {
+        if ("gated" in json && json.gated && json.gate_type) {
+          setGatedAction(json.gate_type);
+          setError(json.message || json.error || "This action is gated on your current plan.");
+          return;
+        }
+
         console.error("analyze error", json.error);
         setError(json.error || "Something went wrong.");
         setData(null);
@@ -872,8 +895,8 @@ export default function Home() {
 
       let savedRun: SavedAnalysisRun = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        databaseId: null,
-        isPublic: false,
+        databaseId: normalized.analysis_id ?? null,
+        isPublic: Boolean(normalized.analysis_is_public),
         query: normalized.query,
         marketType,
         depth,
@@ -881,7 +904,7 @@ export default function Home() {
         result: normalized
       };
 
-      if (session?.access_token) {
+      if (session?.access_token && !normalized.analysis_id) {
         try {
           const persistenceResponse = await fetch("/api/analyses", {
             method: "POST",
@@ -920,19 +943,29 @@ export default function Home() {
       });
 
       setUsageState((currentState) => {
+        if (normalized.usage) {
+          const nextState = normalizeUsageState(currentState, userId, normalized.usage.plan, normalized.usage);
+          persistUsageState(nextState);
+          return nextState;
+        }
+
         const normalizedState = normalizeUsageState(currentState, userId);
         const nextState = normalizeUsageState(
           {
             ...normalizedState,
             totalRuns: normalizedState.totalRuns + 1,
-            runsToday:
-              requestMode === "LIVE" ? normalizedState.runsToday + 1 : normalizedState.runsToday,
+            liveRunsToday:
+              requestMode === "LIVE"
+                ? normalizedState.liveRunsToday + 1
+                : normalizedState.liveRunsToday,
             lastRunTimestamp: Date.now(),
             lastRunDay: getTodayKey(),
             freeRunsRemaining:
-              normalizedState.plan === "free"
+              normalizedState.plan === "free" && requestMode === "LIVE"
                 ? Math.max(0, normalizedState.freeRunsRemaining - 1)
-                : 0
+                : normalizedState.plan === "free"
+                  ? normalizedState.freeRunsRemaining
+                  : 0
           },
           userId,
           normalizedState.plan
@@ -967,9 +1000,7 @@ export default function Home() {
     try {
       const response = await fetch("/api/actions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: buildAuthHeaders(session?.access_token, true),
         body: JSON.stringify({
           kind,
           analysis: data
@@ -979,6 +1010,12 @@ export default function Home() {
       const json = (await response.json()) as GeneratedActionsResponse;
 
       if (!response.ok || !json.success) {
+        if ("gated" in json && json.gated && json.gate_type) {
+          setGatedAction(json.gate_type);
+          setActionError(json.message || json.error || "This action is gated on your current plan.");
+          return;
+        }
+
         throw new Error("error" in json ? json.error : "Action generation failed.");
       }
 
@@ -1009,6 +1046,7 @@ export default function Home() {
 
     if (usageState.plan === "free") {
       setGatedAction("export");
+      setShareMessage("");
       return;
     }
 
@@ -1309,12 +1347,12 @@ export default function Home() {
                     : "Free"}{" "}
                 •{" "}
                 {usageState.plan === "free"
-                  ? `${usageState.freeRunsRemaining}/${FREE_ANALYSIS_RUN_LIMIT} free analysis run remaining`
-                  : "Unlimited analysis runs"}
+                  ? `${usageState.freeRunsRemaining}/${FREE_LIVE_DAILY_LIMIT} LIVE runs left today`
+                  : "Unlimited LIVE analyses"}
               </p>
               {freeAnalysisLimitReached ? (
                 <p className="field-copy result-copy" role="status">
-                  Unlock full intelligence to run another analysis
+                  Unlock full intelligence to keep running LIVE analyses today
                 </p>
               ) : null}
             </div>
