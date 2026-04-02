@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import OrbitsBackground from "@/components/background/OrbitsBackground";
+import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   getAuthCapabilities,
   isMagicAccessEnabled,
@@ -16,12 +17,35 @@ import { persistPendingPlan } from "@/lib/client-identity";
 import { persistPendingOnboarding } from "@/lib/pending-onboarding";
 import type { AuthSession, UserPlan } from "@/types/market-analysis";
 
-const steps = ["Your Profile", "Workspace", "Invite Team"] as const;
-
-const stepDescriptions = [
-  "Set the owner identity for this workspace.",
-  "Define the context so the output is tailored from the start.",
-  "Add collaborators now or keep it personal for the first run."
+const steps = [
+  {
+    eyebrow: "Step 1 of 3",
+    title: "Workspace Setup",
+    supporting:
+      "Create your account to start turning live demand signals into usable strategic direction.",
+    instruction:
+      "Set up your profile, define the workspace context, and invite collaborators only if you need them.",
+    sectionLabel: "Owner Identity",
+    sectionHelper: "Set the owner identity for this workspace."
+  },
+  {
+    eyebrow: "Step 2 of 3",
+    title: "Workspace Context",
+    supporting: "Define the context that will shape this workspace from the first analysis.",
+    instruction:
+      "Use this information to tailor the workspace defaults and keep the output aligned to the right operating context.",
+    sectionLabel: "Workspace Details",
+    sectionHelper: "Set the core context for this workspace."
+  },
+  {
+    eyebrow: "Step 3 of 3",
+    title: "Invite Collaborators",
+    supporting: "Add teammates now or keep this workspace personal for the first run.",
+    instruction:
+      "You can skip this and invite collaborators later if you want to keep the setup lean for now.",
+    sectionLabel: "Team Access",
+    sectionHelper: "Invite collaborators only if you need them."
+  }
 ] as const;
 
 const useCaseOptions = [
@@ -46,19 +70,12 @@ const industryOptions = [
   "Other"
 ];
 
-const fieldLabelClass = "text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500";
-
-const fieldInputClass =
-  "h-12 w-full rounded-2xl border border-white/10 bg-zinc-900/90 px-4 font-semibold text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors focus:border-white/30 focus:ring-0 [color-scheme:dark]";
-
-const fieldTextareaClass =
-  "min-h-[160px] w-full rounded-2xl border border-white/10 bg-zinc-900/90 px-4 py-3 font-semibold text-zinc-100 placeholder:text-zinc-500 outline-none transition-colors focus:border-white/30 focus:ring-0";
-
-const secondaryActionClass =
-  "inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-300 transition-colors hover:border-white/20 hover:text-zinc-100";
-
-const primaryActionClass =
-  "inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-950 shadow-[0_18px_42px_rgba(255,255,255,0.12)] transition-transform hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60";
+const labelClassName = "auth-label !ml-0";
+const inputClassName = "auth-input !pl-4";
+const selectClassName =
+  "ui-input min-h-[2.75rem] px-4 text-[0.78rem] font-extrabold text-zinc-100";
+const textareaClassName =
+  "ui-input min-h-[8.5rem] resize-none px-4 py-3 text-[0.78rem] font-extrabold text-zinc-100";
 
 type AccountMethod = "password" | "magic";
 
@@ -93,6 +110,8 @@ export default function WorkspaceOnboarding({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const currentStep = steps[step];
+
   const parsedInviteEmails = useMemo(
     () =>
       inviteEmails
@@ -101,6 +120,22 @@ export default function WorkspaceOnboarding({
         .filter(Boolean),
     [inviteEmails]
   );
+
+  useEffect(() => {
+    const previousBodyBackground = document.body.style.background;
+    const previousBodyColor = document.body.style.color;
+    const previousHtmlBackground = document.documentElement.style.background;
+
+    document.body.style.background = "#050505";
+    document.body.style.color = "#f4f4f5";
+    document.documentElement.style.background = "#050505";
+
+    return () => {
+      document.body.style.background = previousBodyBackground;
+      document.body.style.color = previousBodyColor;
+      document.documentElement.style.background = previousHtmlBackground;
+    };
+  }, []);
 
   const routePostAuth = () => {
     if (initialPlan) {
@@ -119,6 +154,7 @@ export default function WorkspaceOnboarding({
 
   const continueToNextStep = () => {
     setError("");
+    setSuccess("");
 
     if (
       step === 0 &&
@@ -273,342 +309,326 @@ export default function WorkspaceOnboarding({
     }
   };
 
+  const renderStepFields = () => {
+    if (step === 0) {
+      return (
+        <div className="grid gap-4">
+          <Button
+            className="auth-provider-button !min-h-[2.8rem]"
+            disabled={!magicAccessEnabled || loading}
+            onClick={() => setAccountMethod("magic")}
+            type="button"
+            variant={accountMethod === "magic" ? "default" : "outline"}
+          >
+            <span className="auth-provider-inner">
+              <Mail className="auth-provider-svg h-4 w-4" />
+              Magic Access
+            </span>
+          </Button>
+
+          {!magicAccessEnabled ? (
+            <p className="auth-message auth-message-warning">
+              {MAGIC_ACCESS_UNAVAILABLE_MESSAGE}
+            </p>
+          ) : null}
+
+          <div className="auth-divider">
+            <div className="auth-divider-line" />
+            <div className="auth-divider-label">
+              <span>or</span>
+            </div>
+          </div>
+
+          <p className="auth-copy !max-w-none !text-left">
+            Create an account with email and password.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="auth-field">
+              <label className={labelClassName} htmlFor="onboarding-first-name">
+                First Name
+              </label>
+              <Input
+                id="onboarding-first-name"
+                className={inputClassName}
+                onChange={(event) => setFirstName(event.target.value)}
+                placeholder="Jane"
+                value={firstName}
+              />
+            </div>
+
+            <div className="auth-field">
+              <label className={labelClassName} htmlFor="onboarding-last-name">
+                Last Name
+              </label>
+              <Input
+                id="onboarding-last-name"
+                className={inputClassName}
+                onChange={(event) => setLastName(event.target.value)}
+                placeholder="Doe"
+                value={lastName}
+              />
+            </div>
+
+            <div className="auth-field md:col-span-2">
+              <label className={labelClassName} htmlFor="onboarding-email">
+                Work Email
+              </label>
+              <Input
+                id="onboarding-email"
+                className={inputClassName}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="user@workspace.com"
+                type="email"
+                value={email}
+              />
+            </div>
+
+            <div className="auth-field md:col-span-2">
+              <label className={labelClassName} htmlFor="onboarding-password">
+                Password
+              </label>
+              <Input
+                id="onboarding-password"
+                className={inputClassName}
+                disabled={accountMethod === "magic"}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={
+                  accountMethod === "magic" ? "Not required for magic access" : "••••••••"
+                }
+                type="password"
+                value={password}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 1) {
+      return (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="auth-field md:col-span-2">
+            <label className={labelClassName} htmlFor="workspace-name">
+              Workspace Name
+            </label>
+            <Input
+              id="workspace-name"
+              className={inputClassName}
+              onChange={(event) => setWorkspaceName(event.target.value)}
+              placeholder="Intent workspace"
+              value={workspaceName}
+            />
+          </div>
+
+          <div className="auth-field">
+            <label className={labelClassName} htmlFor="workspace-use-case">
+              Primary Use Case
+            </label>
+            <select
+              id="workspace-use-case"
+              className={selectClassName}
+              onChange={(event) => setUseCase(event.target.value)}
+              value={useCase}
+            >
+              {useCaseOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="auth-field">
+            <label className={labelClassName} htmlFor="workspace-team-size">
+              Team Size
+            </label>
+            <select
+              id="workspace-team-size"
+              className={selectClassName}
+              onChange={(event) => setTeamSize(event.target.value)}
+              value={teamSize}
+            >
+              {teamSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="auth-field md:col-span-2">
+            <label className={labelClassName} htmlFor="workspace-industry">
+              Industry
+            </label>
+            <select
+              id="workspace-industry"
+              className={selectClassName}
+              onChange={(event) => setIndustry(event.target.value)}
+              value={industry}
+            >
+              {industryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-4">
+        <div className="auth-field">
+          <label className={labelClassName} htmlFor="invite-emails">
+            Invite Emails
+          </label>
+          <textarea
+            id="invite-emails"
+            className={textareaClassName}
+            onChange={(event) => setInviteEmails(event.target.value)}
+            placeholder="name@company.com, strategist@company.com"
+            value={inviteEmails}
+          />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div className="auth-field">
+            <label className={labelClassName} htmlFor="invite-role">
+              Role
+            </label>
+            <select
+              id="invite-role"
+              className={selectClassName}
+              onChange={(event) => setInviteRole(event.target.value)}
+              value={inviteRole}
+            >
+              <option value="member">Member</option>
+              <option value="strategist">Strategist</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <Button
+            className="auth-provider-button !min-h-[2.8rem] !px-5"
+            onClick={() => void handleCreateWorkspace(true)}
+            type="button"
+            variant="outline"
+          >
+            Skip for Now
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section className="auth-page">
-      <OrbitsBackground
-        accentColors={["#ffffff", "#67e8f9", "#facc15", "#f87171", "#a3e635"]}
-        className="opacity-58"
-        count={6}
-        speed={1.08}
-      />
       <div className="auth-page-glow auth-page-glow-left" aria-hidden="true" />
       <div className="auth-page-glow auth-page-glow-right" aria-hidden="true" />
 
-      <div className="auth-page-center px-4">
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 15 }}
-          transition={{ duration: 0.4 }}
-          className="relative mx-auto min-w-0 w-full max-w-[52rem]"
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-[-3.5rem] rounded-[3rem] blur-3xl"
-            style={{ background: "rgba(3, 7, 18, 0.72)" }}
-          />
-          <div
-            className="relative grid min-w-0 gap-7 overflow-hidden rounded-[2rem] border border-white/12 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.52)] backdrop-blur-[20px] md:p-8"
-            style={{ background: "rgba(6, 8, 12, 0.985)" }}
-          >
-            <div className="grid justify-items-center gap-3 text-center">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
-                Workspace Setup
-              </p>
-              <h1 className="max-w-[14rem] px-2 text-[clamp(1.12rem,4.1vw,1.45rem)] font-black leading-[1.1] tracking-tight text-zinc-100 md:max-w-[34rem] md:px-0 md:text-[clamp(2.25rem,4vw,3.35rem)]">
-                Create your account to start turning live demand signals into usable strategic
-                direction.
-              </h1>
-              <p className="max-w-xl text-sm leading-7 text-zinc-400">
-                Set up your profile, define the workspace context, and invite collaborators only if
-                you need them.
-              </p>
-              <Link className={secondaryActionClass} href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}>
-                <ArrowLeft className="h-4 w-4" />
-                Back to Login
-              </Link>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              {steps.map((stepLabel, index) => {
-                const isActive = index === step;
-                const isComplete = index < step;
-
-                return (
-                  <div
-                    key={stepLabel}
-                    className={`rounded-[1.4rem] border px-4 py-4 transition-colors ${
-                      isActive
-                        ? "border-white/75 bg-white text-zinc-950 shadow-[0_14px_34px_rgba(255,255,255,0.12)]"
-                        : isComplete
-                          ? "border-emerald-400/35 bg-emerald-400/10 text-zinc-100"
-                          : "border-white/10 text-zinc-400"
-                    }`}
-                    style={
-                      !isActive && !isComplete ? { background: "rgba(255,255,255,0.03)" } : undefined
-                    }
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-current/20 text-sm font-black">
-                        {isComplete ? <Check className="h-4 w-4" /> : index + 1}
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
-                          Step {index + 1}
-                        </p>
-                        <p className="mt-1 text-sm font-black">{stepLabel}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div
-              className="mx-auto min-w-0 w-full max-w-[39rem] rounded-[1.6rem] border border-white/10 p-5 md:p-6"
-              style={{ background: "rgba(255,255,255,0.05)" }}
+      <div className="auth-page-center">
+        <div className="grid w-full max-w-[34rem] gap-4">
+          <div className="flex items-center justify-start">
+            <Link
+              className="auth-inline-link inline-flex items-center gap-2"
+              href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
             >
-              <motion.div
-                key={step}
-                animate={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 14 }}
-                transition={{ duration: 0.3 }}
-                className="grid gap-5"
-              >
-                <div className="grid gap-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Step {step + 1} of {steps.length}
-                  </p>
-                  <p className="max-w-lg text-sm leading-6 text-zinc-400">{stepDescriptions[step]}</p>
+              <ArrowLeft className="h-4 w-4" />
+              Back to Login
+            </Link>
+          </div>
+
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 15 }}
+            transition={{ duration: 0.4 }}
+            className="w-full"
+          >
+            <div className="auth-card gap-6">
+              <div className="auth-header !gap-3">
+                <p className="auth-plan-pill">{currentStep.eyebrow}</p>
+                <h1 className="auth-title normal-case not-italic">{currentStep.title}</h1>
+                <p className="auth-copy !max-w-[26rem]">{currentStep.supporting}</p>
+                <p className="auth-copy !max-w-[27rem]">{currentStep.instruction}</p>
+              </div>
+
+              <div className="grid gap-3">
+                <div className="flex gap-2">
+                  {steps.map((_, index) => (
+                    <span
+                      key={index}
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        index <= step ? "bg-zinc-100" : "bg-white/10"
+                      }`}
+                    />
+                  ))}
                 </div>
 
+                <div className="auth-divider">
+                  <div className="auth-divider-line" />
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="grid gap-1 text-left">
+                  <p className={labelClassName}>{currentStep.sectionLabel}</p>
+                  <p className="auth-copy !max-w-none !text-left">{currentStep.sectionHelper}</p>
+                </div>
+
+                {renderStepFields()}
+              </div>
+
+              {error ? <p className="auth-message auth-message-error">{error}</p> : null}
+              {success ? <p className="auth-message auth-message-success">{success}</p> : null}
+
+              <div className="flex items-center justify-between gap-4 pt-1">
                 {step === 0 ? (
-                  <>
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {([
-                        ...(passwordAuthEnabled ? (["password"] as const) : []),
-                        ...(magicAccessEnabled ? (["magic"] as const) : [])
-                      ] as const).map((method) => (
-                        <button
-                          key={method}
-                          type="button"
-                          className={`rounded-[1.2rem] border px-4 py-4 text-left transition-colors ${
-                            accountMethod === method
-                              ? "border-white bg-white text-zinc-950"
-                              : "border-white/10 bg-white/[0.03] text-zinc-300"
-                          }`}
-                          onClick={() => setAccountMethod(method)}
-                        >
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
-                            {method === "password" ? "Password Login" : "Magic Access"}
-                          </p>
-                          <p className="mt-2 text-sm font-black">
-                            {method === "password"
-                              ? "Create an account with email and password."
-                              : "Start with a secure magic link instead."}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                    {!passwordAuthEnabled ? (
-                      <p className="text-sm font-semibold leading-6 text-amber-300/90">
-                        Password sign-up is currently unavailable.
-                      </p>
-                    ) : null}
-                    {!magicAccessEnabled ? (
-                      <p className="text-sm font-semibold leading-6 text-amber-300/90">
-                        {MAGIC_ACCESS_UNAVAILABLE_MESSAGE}
-                      </p>
-                    ) : null}
-
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <label className="space-y-2">
-                        <span className={fieldLabelClass}>First Name</span>
-                        <input
-                          className={fieldInputClass}
-                          onChange={(event) => setFirstName(event.target.value)}
-                          placeholder="Jane"
-                          value={firstName}
-                        />
-                      </label>
-                      <label className="space-y-2">
-                        <span className={fieldLabelClass}>Last Name</span>
-                        <input
-                          className={fieldInputClass}
-                          onChange={(event) => setLastName(event.target.value)}
-                          placeholder="Doe"
-                          value={lastName}
-                        />
-                      </label>
-                      <label className="space-y-2 md:col-span-2">
-                        <span className={fieldLabelClass}>Work Email</span>
-                        <input
-                          className={fieldInputClass}
-                          onChange={(event) => setEmail(event.target.value)}
-                          placeholder="team@workspace.com"
-                          type="email"
-                          value={email}
-                        />
-                      </label>
-                      {accountMethod === "password" ? (
-                        <label className="space-y-2 md:col-span-2">
-                          <span className={fieldLabelClass}>Password</span>
-                          <input
-                            className={fieldInputClass}
-                            onChange={(event) => setPassword(event.target.value)}
-                            placeholder="Create a secure password"
-                            type="password"
-                            value={password}
-                          />
-                        </label>
-                      ) : (
-                        <div
-                          className="rounded-2xl border border-white/10 p-4 text-sm leading-6 text-zinc-400 md:col-span-2"
-                          style={{ background: "rgba(255,255,255,0.03)" }}
-                        >
-                          We’ll send a secure magic link when you finish setup, then complete the
-                          account and workspace creation after verification.
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : null}
-
-                {step === 1 ? (
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <label className="space-y-2 md:col-span-2">
-                      <span className={fieldLabelClass}>Workspace Name</span>
-                      <input
-                        className={fieldInputClass}
-                        onChange={(event) => setWorkspaceName(event.target.value)}
-                        placeholder="Intent workspace"
-                        value={workspaceName}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className={fieldLabelClass}>Primary Use Case</span>
-                      <select
-                        className={fieldInputClass}
-                        onChange={(event) => setUseCase(event.target.value)}
-                        value={useCase}
-                      >
-                        {useCaseOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="space-y-2">
-                      <span className={fieldLabelClass}>Team Size</span>
-                      <select
-                        className={fieldInputClass}
-                        onChange={(event) => setTeamSize(event.target.value)}
-                        value={teamSize}
-                      >
-                        {teamSizeOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <span className={fieldLabelClass}>Industry / Market</span>
-                      <select
-                        className={fieldInputClass}
-                        onChange={(event) => setIndustry(event.target.value)}
-                        value={industry}
-                      >
-                        {industryOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                ) : null}
-
-                {step === 2 ? (
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <label className="space-y-2 md:col-span-2">
-                      <span className={fieldLabelClass}>Invite Emails</span>
-                      <textarea
-                        className={fieldTextareaClass}
-                        onChange={(event) => setInviteEmails(event.target.value)}
-                        placeholder="name@company.com, strategist@company.com"
-                        value={inviteEmails}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className={fieldLabelClass}>Role</span>
-                      <select
-                        className={fieldInputClass}
-                        onChange={(event) => setInviteRole(event.target.value)}
-                        value={inviteRole}
-                      >
-                        <option value="member">Member</option>
-                        <option value="strategist">Strategist</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </label>
-                    <div
-                      className="rounded-2xl border border-white/10 p-4 text-sm leading-6 text-zinc-400"
-                      style={{ background: "rgba(255,255,255,0.03)" }}
-                    >
-                      Step 3 is optional. If you skip it, we’ll create a personal workspace and
-                      you can invite teammates later.
-                    </div>
-                  </div>
-                ) : null}
-              </motion.div>
-
-              {error ? <p className="mt-6 text-sm text-red-400">{error}</p> : null}
-              {success ? <p className="mt-6 text-sm text-emerald-300">{success}</p> : null}
-
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-                {step > 0 ? (
+                  <Link
+                    className="auth-inline-link inline-flex items-center gap-2"
+                    href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
+                  >
+                    Cancel
+                  </Link>
+                ) : (
                   <button
-                    className={secondaryActionClass}
+                    className="auth-inline-link inline-flex items-center gap-2"
                     onClick={() => setStep((current) => Math.max(0, current - 1))}
                     type="button"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Back
                   </button>
-                ) : (
-                  <Link
-                    className={secondaryActionClass}
-                    href={initialPlan ? `/auth?plan=${initialPlan}` : "/auth"}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Cancel
-                  </Link>
                 )}
 
                 {step < steps.length - 1 ? (
-                  <button className={primaryActionClass} onClick={continueToNextStep} type="button">
+                  <Button
+                    className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
+                    disabled={loading}
+                    onClick={continueToNextStep}
+                  >
                     Continue
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+                    <ArrowRight className="auth-button-arrow" />
+                  </Button>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      className={secondaryActionClass}
-                      onClick={() => void handleCreateWorkspace(true)}
-                      type="button"
-                    >
-                      Skip for Now
-                    </button>
-                    <button
-                      className={primaryActionClass}
-                      disabled={loading}
-                      onClick={() => void handleCreateWorkspace(false)}
-                      type="button"
-                    >
-                      {loading
-                        ? accountMethod === "magic"
-                          ? "Sending..."
-                          : "Creating..."
-                        : "Create Workspace"}
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <Button
+                    className="auth-primary-button !min-h-[2.8rem] !w-auto !px-6"
+                    disabled={loading}
+                    onClick={() => void handleCreateWorkspace(false)}
+                  >
+                    {loading
+                      ? accountMethod === "magic"
+                        ? "Sending..."
+                        : "Creating..."
+                      : "Create Workspace"}
+                    <ArrowRight className="auth-button-arrow" />
+                  </Button>
                 )}
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

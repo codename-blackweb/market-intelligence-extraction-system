@@ -11,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   getAuthCapabilities,
+  isGitHubOAuthEnabled,
+  isGoogleOAuthEnabled,
   isMagicAccessEnabled,
   MAGIC_ACCESS_UNAVAILABLE_MESSAGE
 } from "@/lib/auth-capabilities";
@@ -49,14 +51,14 @@ export default function AuthAccessShell() {
   const authCapabilities = getAuthCapabilities();
   const magicAccessEnabled = isMagicAccessEnabled();
   const passwordAuthEnabled = authCapabilities.password;
+  const googleOAuthEnv = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH;
+  const githubOAuthEnv = process.env.NEXT_PUBLIC_ENABLE_GITHUB_OAUTH;
   const providerAvailability = {
-    google: authCapabilities.google,
-    github: authCapabilities.github
+    google: isGoogleOAuthEnabled(),
+    github: isGitHubOAuthEnabled()
   };
-  const enabledProviders = [
-    providerAvailability.github ? "github" : null,
-    providerAvailability.google ? "google" : null
-  ].filter(Boolean) as Array<"github" | "google">;
+  const hasVisibleOAuthProvider =
+    providerAvailability.github || providerAvailability.google;
   const checkoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || "";
   const [view, setView] = useState<AuthView>(
     getInitialView(searchParams.get("view"), { magicAccessEnabled, passwordAuthEnabled })
@@ -151,6 +153,14 @@ export default function AuthAccessShell() {
       document.documentElement.style.background = previousHtmlBackground;
     };
   }, []);
+
+  useEffect(() => {
+    console.info("[AuthAccessShell] OAuth env flags", {
+      NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH: googleOAuthEnv,
+      NEXT_PUBLIC_ENABLE_GITHUB_OAUTH: githubOAuthEnv
+    });
+    console.info("[AuthAccessShell] OAuth provider visibility", providerAvailability);
+  }, [githubOAuthEnv, googleOAuthEnv, providerAvailability.github, providerAvailability.google]);
 
   const bootstrapAuthenticatedAccount = async (accessToken: string) => {
     const response = await fetch("/api/account", {
@@ -608,7 +618,7 @@ export default function AuthAccessShell() {
               <p className="auth-message auth-message-success">{success}</p>
             ) : null}
 
-            {enabledProviders.length ? (
+            {hasVisibleOAuthProvider ? (
               <>
                 <div className="auth-divider">
                   <div className="auth-divider-line" />

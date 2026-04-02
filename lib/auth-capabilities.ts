@@ -8,30 +8,57 @@ export type AuthCapabilities = {
   github: boolean;
 };
 
-function isEnabled(...keys: string[]) {
-  return keys.some((key) => process.env[key] === "true");
+const passwordEnv = process.env.NEXT_PUBLIC_ENABLE_PASSWORD_AUTH;
+const magicEnv = process.env.NEXT_PUBLIC_ENABLE_MAGIC_AUTH;
+const magicVerifiedEnv = process.env.NEXT_PUBLIC_MAGIC_AUTH_VERIFIED;
+const legacyMagicEnv = process.env.NEXT_PUBLIC_SUPABASE_MAGIC_ACCESS_ENABLED;
+const googleEnv = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH;
+const githubEnv = process.env.NEXT_PUBLIC_ENABLE_GITHUB_OAUTH;
+const legacyGoogleEnv = process.env.NEXT_PUBLIC_SUPABASE_GOOGLE_AUTH_ENABLED;
+const legacyGithubEnv = process.env.NEXT_PUBLIC_SUPABASE_GITHUB_AUTH_ENABLED;
+
+export function isPasswordAuthEnabled() {
+  return passwordEnv === "false" ? false : true;
+}
+
+export function isMagicAuthRequested() {
+  return magicEnv === "true" || legacyMagicEnv === "true";
+}
+
+export function isMagicAuthVerified() {
+  return magicVerifiedEnv === "true";
+}
+
+export function isGoogleOAuthEnabled() {
+  if (googleEnv === "true") {
+    return true;
+  }
+
+  if (googleEnv === "false") {
+    return false;
+  }
+
+  return legacyGoogleEnv === "true";
+}
+
+export function isGitHubOAuthEnabled() {
+  if (githubEnv === "true") {
+    return true;
+  }
+
+  if (githubEnv === "false") {
+    return false;
+  }
+
+  return legacyGithubEnv === "true";
 }
 
 export function getAuthCapabilities(): AuthCapabilities {
-  const passwordEnabled =
-    process.env.NEXT_PUBLIC_ENABLE_PASSWORD_AUTH === "false" ? false : true;
-  const magicRequested = isEnabled(
-    "NEXT_PUBLIC_ENABLE_MAGIC_AUTH",
-    "NEXT_PUBLIC_SUPABASE_MAGIC_ACCESS_ENABLED"
-  );
-  const magicVerified = isEnabled("NEXT_PUBLIC_MAGIC_AUTH_VERIFIED");
-
   return {
-    password: passwordEnabled,
-    magic: magicRequested && magicVerified,
-    google: isEnabled(
-      "NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH",
-      "NEXT_PUBLIC_SUPABASE_GOOGLE_AUTH_ENABLED"
-    ),
-    github: isEnabled(
-      "NEXT_PUBLIC_ENABLE_GITHUB_OAUTH",
-      "NEXT_PUBLIC_SUPABASE_GITHUB_AUTH_ENABLED"
-    )
+    password: isPasswordAuthEnabled(),
+    magic: isMagicAuthRequested() && isMagicAuthVerified(),
+    google: isGoogleOAuthEnabled(),
+    github: isGitHubOAuthEnabled()
   };
 }
 
