@@ -1,0 +1,363 @@
+.page {
+  --account-aqua: #8efdf2;
+  --account-aqua-strong: #43e7d5;
+  --account-ink: #f4fffd;
+  --account-muted: rgba(219, 236, 232, 0.7);
+  --account-muted-strong: rgba(236, 247, 244, 0.84);
+  --account-line: rgba(255, 255, 255, 0.08);
+  --account-line-strong: rgba(255, 255, 255, 0.14);
+  --account-surface: linear-gradient(180deg, rgba(7, 14, 18, 0.95), rgba(5, 10, 13, 0.98));
+  --account-surface-soft: rgba(255, 255, 255, 0.03);
+  --account-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(42, 255, 231, 0.09), transparent 28rem),
+    radial-gradient(circle at 82% 10%, rgba(42, 255, 231, 0.05), transparent 20rem),
+    linear-gradient(180deg, #020608 0%, #04090d 46%, #020508 100%);
+  color: var(--account-ink);
+}
+
+.shell {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  display: grid;
+  gap: 2rem;
+}
+
+.signinShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.signinCard,
+.headerCard,
+.sectionCard,
+.stateCard,
+.messageCard {
+  border: 1px solid var(--account-line);
+  border-radius: 1rem;
+  background: var(--account-surface);
+  box-shadow: var(--account-shadow);
+  backdrop-filter: blur(24px);
+}
+
+.signinCard,
+.stateCard {
+  padding: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(142, 253, 242, 0.76);
+}
+
+.signinTitle {
+  margin: 0.7rem 0 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}
+
+.signinCopy,
+.stateCopy,
+.fieldHint,
+.sectionDescription,
+.fieldLabel,
+.fieldReadonly {
+  color: var(--account-muted);
+}
+
+.signinCopy,
+.stateCopy {
+  margin: 0.9rem 0 0;
+  line-height: 1.7;
+}
+
+.signinLink,
+.workspaceLink,
+.saveButton {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.signinLink,
+.saveButton {
+  padding: 0.78rem 1.15rem;
+  background: linear-gradient(135deg, var(--account-aqua) 0%, var(--account-aqua-strong) 100%);
+  color: #021012;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 10px 28px rgba(67, 231, 213, 0.18);
+}
+
+.signinLink {
+  margin-top: 1.4rem;
+}
+
+.workspaceLink {
+  padding: 0.78rem 1rem;
+  border: 1px solid var(--account-line-strong);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--account-muted-strong);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.signinLink:hover,
+.workspaceLink:hover,
+.saveButton:hover {
+  transform: translateY(-1px);
+}
+
+.signinLink:focus-visible,
+.workspaceLink:focus-visible,
+.saveButton:focus-visible,
+.input:focus-visible,
+.textarea:focus-visible {
+  outline: none;
+  border-color: rgba(142, 253, 242, 0.42);
+  box-shadow: 0 0 0 3px rgba(142, 253, 242, 0.12);
+}
+
+.headerCard {
+  padding: 1.5rem;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.identityGroup {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(142, 253, 242, 0.12);
+  background: linear-gradient(135deg, rgba(142, 253, 242, 0.18), rgba(43, 91, 96, 0.24));
+  color: var(--account-aqua);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.headerMeta {
+  min-width: 0;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: clamp(1.85rem, 3vw, 2.5rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+  color: var(--account-muted-strong);
+}
+
+.roleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.65rem;
+}
+
+.rolePill,
+.planPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 1.85rem;
+  border-radius: 999px;
+  padding: 0 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rolePill {
+  border: 1px solid var(--account-line);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 255, 253, 0.76);
+}
+
+.planPill {
+  border: 1px solid rgba(142, 253, 242, 0.18);
+  background: rgba(142, 253, 242, 0.08);
+  color: var(--account-aqua);
+}
+
+.headerSubcopy {
+  margin: 0.7rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--account-muted);
+}
+
+.messageCard {
+  padding: 1rem 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.messageError {
+  border-color: rgba(255, 106, 106, 0.2);
+  color: #ffb1b1;
+}
+
+.sectionCard {
+  padding: 1.5rem;
+}
+
+.sectionHeader {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  color: var(--account-muted-strong);
+}
+
+.sectionDescription {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.field {
+  min-width: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid var(--account-line);
+  background: var(--account-surface-soft);
+  color: var(--account-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  font: inherit;
+}
+
+.input {
+  min-height: 2.75rem;
+  padding: 0.8rem 0.92rem;
+}
+
+.textarea {
+  min-height: 7rem;
+  padding: 0.9rem 0.92rem;
+  resize: vertical;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: rgba(219, 236, 232, 0.38);
+}
+
+.fieldReadonly {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  border-radius: 0.9rem;
+  border: 1px solid var(--account-line);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.8rem 0.92rem;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.saveRow {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
+.saveButton:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+@media (min-width: 768px) {
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .shell {
+    padding-top: 4.75rem;
+  }
+
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .workspaceLink {
+    width: 100%;
+  }
+}
