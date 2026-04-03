@@ -31,7 +31,7 @@ import {
 import RippleLoader from "@/components/ui/RippleLoader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
-import { VideoText } from "@/components/ui/VideoText";
+import { VideoSurface, VideoText } from "@/components/ui/VideoText";
 import {
   clearPendingAnalysisDraft,
   clearPendingAnalysisRestore,
@@ -57,6 +57,7 @@ import type {
   SignalOriginEntry,
   UserPlan
 } from "@/types/market-analysis";
+import styles from "@/components/home/main-page-refinements.module.css";
 
 const classificationRows = [
   ["Type", "core_type"],
@@ -1208,7 +1209,7 @@ export default function Home() {
   };
 
   return (
-    <main className="page-shell" id="home">
+    <main className={`page-shell ${styles.pageShell}`} id="home">
       {loading && (
         <div className="fixed inset-0 z-50 bg-white flex items-center justify-center loader-overlay">
           <RippleLoader
@@ -1229,8 +1230,8 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-12 lg:space-y-16 hero-stack">
+      <section className={`min-h-screen flex items-center justify-center ${styles.heroSection}`}>
+        <div className={`text-center space-y-12 lg:space-y-16 hero-stack ${styles.heroStack}`}>
           <AuroraTextEffect
             className="hero-aurora-shell bg-transparent dark:bg-transparent"
             textClassName="hero-aurora-headline"
@@ -1270,7 +1271,7 @@ export default function Home() {
             </div>
 
             <div className="card p-6">
-              <p className="card-label mb-3">Market Context (Optional)</p>
+              <p className={`card-label mb-3 ${styles.sectionPill}`}>Market Context (Optional)</p>
               <select
                 className="surface-input"
                 value={marketType}
@@ -1341,27 +1342,21 @@ export default function Home() {
           </div>
 
           <button
-            className="btn-primary mt-10"
+            className={`btn-primary mt-10 ${styles.mainVideoFillButton}`}
             disabled={loading}
             onClick={() => runAnalysis()}
             type="button"
           >
-            <VideoText
-              as="span"
+            <VideoSurface
               src="/assets/gradient-video.mp4"
-              className="button-video-text button-video-text-run"
-              fontSize="1rem"
-              fontWeight={700}
-              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-              textAnchor="middle"
-              dominantBaseline="middle"
+              className={styles.buttonSurface}
+              overlayClassName={styles.buttonOverlay}
               autoPlay
               muted
               loop
               preload="auto"
-            >
-              Run Intelligence
-            </VideoText>
+            />
+            <span className={styles.buttonLabel}>Run Intelligence</span>
           </button>
 
           {CLIENT_MODE === "LIVE" ? (
@@ -1400,7 +1395,7 @@ export default function Home() {
             <section className="max-w-7xl mx-auto px-6 pb-8 recent-analyses-shell">
               <div className="card p-6">
                 <div className="recent-analyses-header">
-                  <p className="card-label">Recent Analyses</p>
+                  <p className={`card-label ${styles.sectionPill}`}>Recent Analyses</p>
                   <p className="field-copy result-copy">
                     Select up to two saved runs to compare without rerunning the API.
                   </p>
@@ -1444,7 +1439,7 @@ export default function Home() {
         <ScrollReveal eager>
           <section className="max-w-7xl mx-auto px-6 pb-8">
             <div className="card p-6 comparison-shell">
-              <p className="card-label">Compare Runs</p>
+              <p className={`card-label ${styles.sectionPill}`}>Compare Runs</p>
               <div className="comparison-header">
                 <div className="subcard">
                   <h3>{comparisonRuns[0].query}</h3>
@@ -1591,7 +1586,7 @@ export default function Home() {
               <div className="space-y-12" id="report">
                 <ScrollReveal eager>
                   <section className="card p-6">
-                    <p className="card-label">Source Activity</p>
+                    <p className={`card-label ${styles.sectionPill}`}>Source Activity</p>
                     <div className="source-activity-strip" aria-label="Source activity">
                       <span
                         className={`source-activity-item ${
@@ -1660,7 +1655,7 @@ export default function Home() {
 
                 <ScrollReveal eager>
                   <section className="card p-6">
-                    <p className="card-label">Dominant Narrative</p>
+                    <p className={`card-label ${styles.sectionPill}`}>Dominant Narrative</p>
                     <p className="dominant-narrative-copy">{activeResult.dominant_narrative}</p>
                     <p className="evidence-note">{formatEvidence(activeResult.source_meta)}</p>
                   </section>
@@ -1926,7 +1921,7 @@ export default function Home() {
 
                 <ScrollReveal eager>
                   <section className="card p-6">
-                    <p className="card-label">Action Outputs</p>
+                    <p className={`card-label ${styles.sectionPill}`}>Action Outputs</p>
                     <div className="action-output-buttons">
                       {ACTION_BUTTONS.map((button) => (
                         <button
@@ -2029,7 +2024,7 @@ export default function Home() {
         <div aria-hidden="true" className="pdf-export-shell">
           <div className="pdf-export-document card" id="report-export">
             <section className="pdf-export-cover">
-              <p className="card-label">Market Intelligence Report</p>
+              <p className={`card-label ${styles.sectionPill}`}>Market Intelligence Report</p>
               <h1>{activeResult.query}</h1>
               <div className="pdf-export-meta">
                 <span>Market Context: {marketType || activeResult.classification.core_type}</span>
@@ -2137,44 +2132,40 @@ export default function Home() {
       <ScrollReveal eager>
         <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
           <Drawer>
-            <DrawerTrigger className="btn-primary" type="button">
-              <VideoText
-                as="span"
+            <DrawerTrigger className={`btn-primary ${styles.mainVideoFillButton}`} type="button">
+              <VideoSurface
                 src="/assets/gradient-video.mp4"
-                className="button-video-text button-video-text-pipeline"
-                fontSize="1rem"
-                fontWeight={700}
-                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                textAnchor="middle"
-                dominantBaseline="middle"
+                className={styles.buttonSurface}
+                overlayClassName={styles.buttonOverlay}
                 autoPlay
                 muted
                 loop
                 preload="auto"
-              >
-                How It Works
-              </VideoText>
+              />
+              <span className={styles.buttonLabel}>How It Works</span>
             </DrawerTrigger>
 
             <DrawerContent>
               <div className="drawer-grid-shell p-4">
                 <div className="card p-6">
-                  <VideoText
-                    as="h2"
-                    src="/assets/gradient-video.mp4"
-                    className="drawer-video-heading drawer-video-heading-pipeline"
-                    fontSize="clamp(1.2rem, 1.8vw, 1.45rem)"
-                    fontWeight={700}
-                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    autoPlay
-                    muted
-                    loop
-                    preload="auto"
-                  >
-                    Pipeline
-                  </VideoText>
+                  <div className={styles.drawerHeadingPill}>
+                    <VideoText
+                      as="h2"
+                      src="/assets/gradient-video.mp4"
+                      className={`drawer-video-heading drawer-video-heading-pipeline ${styles.drawerVideoHeading} ${styles.drawerVideoHeadingPipeline}`}
+                      fontSize="clamp(1.28rem, 1.95vw, 1.58rem)"
+                      fontWeight={700}
+                      fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      autoPlay
+                      muted
+                      loop
+                      preload="auto"
+                    >
+                      Pipeline
+                    </VideoText>
+                  </div>
                   <div className="drawer-timeline-intro">
                     {pipelineIntroLines.map((line) => (
                       <p key={line}>{line}</p>
@@ -2184,22 +2175,24 @@ export default function Home() {
                 </div>
 
                 <div className="card p-6">
-                  <VideoText
-                    as="h2"
-                    src="/assets/gradient-video.mp4"
-                    className="drawer-video-heading drawer-video-heading-output"
-                    fontSize="clamp(1.2rem, 1.8vw, 1.45rem)"
-                    fontWeight={700}
-                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    autoPlay
-                    muted
-                    loop
-                    preload="auto"
-                  >
-                    Intelligence Output
-                  </VideoText>
+                  <div className={styles.drawerHeadingPill}>
+                    <VideoText
+                      as="h2"
+                      src="/assets/gradient-video.mp4"
+                      className={`drawer-video-heading drawer-video-heading-output ${styles.drawerVideoHeading} ${styles.drawerVideoHeadingOutput}`}
+                      fontSize="clamp(1.28rem, 1.95vw, 1.58rem)"
+                      fontWeight={700}
+                      fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      autoPlay
+                      muted
+                      loop
+                      preload="auto"
+                    >
+                      Intelligence Output
+                    </VideoText>
+                  </div>
                   <IntelligenceTimeline steps={intelligenceOutputTimelineSteps} />
                 </div>
               </div>

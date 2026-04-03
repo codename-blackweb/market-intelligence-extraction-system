@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2, Zap } from "lucide-react";
-import { VideoText } from "@/components/ui/VideoText";
+import { VideoSurface, VideoText } from "@/components/ui/VideoText";
 import type { UserPlan } from "@/types/market-analysis";
+import styles from "@/components/home/main-page-refinements.module.css";
 
 type Props = {
   plan: UserPlan;
@@ -33,9 +34,9 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
             viewport={{ once: true }}
             whileInView={{ opacity: 1, scale: 1 }}
           >
-            <div className="results-cta-badge">
-              <Zap className="results-cta-badge-icon" />
-              <span>Real demand. Clear direction.</span>
+            <div className={`results-cta-badge ${styles.resultsCtaBadge}`}>
+              <Zap className={`results-cta-badge-icon ${styles.resultsCtaBadgeIcon}`} />
+              <span>Real Demand. Clear Direction.</span>
             </div>
 
             <div aria-level={2} className="results-cta-title-video-wrap" role="heading">
@@ -81,50 +82,55 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
               </VideoText>
             </div>
 
-            <p className="results-cta-copy">
+            <p className={`results-cta-copy ${styles.resultsCtaCopy}`}>
               Run live demand analysis, surface what people actually want, and turn messy
               search behavior into usable positioning, messaging, and strategic direction.
             </p>
 
             <div className="results-cta-actions">
               <button
-                className="results-cta-primary"
+                className={`results-cta-primary ${styles.mainVideoFillButton}`}
                 onClick={isFreePlan ? onUpgrade : onRunAnother}
                 type="button"
               >
-                {isFreePlan ? (
-                  <VideoText
-                    as="div"
+                <VideoSurface
+                  src="/assets/gradient-video.mp4"
+                  className={styles.buttonSurface}
+                  overlayClassName={styles.buttonOverlay}
+                  autoPlay
+                  muted
+                  loop
+                  preload="auto"
+                />
+                <span className={styles.buttonLabel}>
+                  {isFreePlan ? "Unlock Pro" : "Run Another Analysis"}
+                </span>
+              </button>
+
+              {isFreePlan ? (
+                <button
+                  className={`results-cta-secondary ${styles.mainVideoFillButton} ${styles.mainVideoFillButtonSubtle}`}
+                  onClick={onRunAnother}
+                  type="button"
+                >
+                  <VideoSurface
                     src="/assets/gradient-video.mp4"
-                    className="button-video-text button-video-text-cta"
-                    fontSize="1rem"
-                    fontWeight={700}
-                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
-                    textAnchor="middle"
-                    dominantBaseline="middle"
+                    className={styles.buttonSurface}
+                    overlayClassName={styles.buttonOverlay}
                     autoPlay
                     muted
                     loop
                     preload="auto"
-                  >
-                    Unlock Pro
-                  </VideoText>
-                ) : (
-                  "Run Another Analysis"
-                )}
-              </button>
-
-              {isFreePlan ? (
-                <button className="results-cta-secondary" onClick={onRunAnother} type="button">
-                  Run Another Analysis
+                  />
+                  <span className={styles.buttonLabel}>Run Another Analysis</span>
                 </button>
               ) : null}
             </div>
 
-            <div className="results-cta-benefits">
+            <div className={`results-cta-benefits ${styles.resultsCtaBenefits}`}>
               {benefits.map((benefit) => (
-                <div className="results-cta-benefit" key={benefit}>
-                  <CheckCircle2 className="results-cta-benefit-icon" />
+                <div className={`results-cta-benefit ${styles.resultsCtaBenefit}`} key={benefit}>
+                  <CheckCircle2 className={`results-cta-benefit-icon ${styles.resultsCtaBenefitIcon}`} />
                   <span>{benefit}</span>
                 </div>
               ))}
