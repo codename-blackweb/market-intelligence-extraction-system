@@ -31,7 +31,7 @@ import {
 import RippleLoader from "@/components/ui/RippleLoader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
-import { VideoSurface, VideoText } from "@/components/ui/VideoText";
+import { VideoText } from "@/components/ui/VideoText";
 import {
   clearPendingAnalysisDraft,
   clearPendingAnalysisRestore,
@@ -1342,20 +1342,11 @@ export default function Home() {
           </div>
 
           <button
-            className={`btn-primary mt-10 ${styles.mainVideoFillButton}`}
+            className={`mt-10 ${styles.mainButton} ${styles.mainButtonPrimary}`}
             disabled={loading}
             onClick={() => runAnalysis()}
             type="button"
           >
-            <VideoSurface
-              src="/assets/gradient-video.mp4"
-              className={styles.buttonSurface}
-              overlayClassName={styles.buttonOverlay}
-              autoPlay
-              muted
-              loop
-              preload="auto"
-            />
             <span className={styles.buttonLabel}>Run Intelligence</span>
           </button>
 
@@ -2132,16 +2123,7 @@ export default function Home() {
       <ScrollReveal eager>
         <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
           <Drawer>
-            <DrawerTrigger className={`btn-primary ${styles.mainVideoFillButton}`} type="button">
-              <VideoSurface
-                src="/assets/gradient-video.mp4"
-                className={styles.buttonSurface}
-                overlayClassName={styles.buttonOverlay}
-                autoPlay
-                muted
-                loop
-                preload="auto"
-              />
+            <DrawerTrigger className={`${styles.mainButton} ${styles.mainButtonSecondary}`} type="button">
               <span className={styles.buttonLabel}>How It Works</span>
             </DrawerTrigger>
 

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2, Zap } from "lucide-react";
-import { VideoSurface, VideoText } from "@/components/ui/VideoText";
+import { VideoText } from "@/components/ui/VideoText";
 import type { UserPlan } from "@/types/market-analysis";
 import styles from "@/components/home/main-page-refinements.module.css";
 
@@ -89,19 +89,10 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
 
             <div className="results-cta-actions">
               <button
-                className={`results-cta-primary ${styles.mainVideoFillButton}`}
+                className={`results-cta-primary ${styles.mainButton} ${styles.mainButtonPrimary}`}
                 onClick={isFreePlan ? onUpgrade : onRunAnother}
                 type="button"
               >
-                <VideoSurface
-                  src="/assets/gradient-video.mp4"
-                  className={styles.buttonSurface}
-                  overlayClassName={styles.buttonOverlay}
-                  autoPlay
-                  muted
-                  loop
-                  preload="auto"
-                />
                 <span className={styles.buttonLabel}>
                   {isFreePlan ? "Unlock Pro" : "Run Another Analysis"}
                 </span>
@@ -109,19 +100,10 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
 
               {isFreePlan ? (
                 <button
-                  className={`results-cta-secondary ${styles.mainVideoFillButton} ${styles.mainVideoFillButtonSubtle}`}
+                  className={`results-cta-secondary ${styles.mainButton} ${styles.mainButtonSecondary}`}
                   onClick={onRunAnother}
                   type="button"
                 >
-                  <VideoSurface
-                    src="/assets/gradient-video.mp4"
-                    className={styles.buttonSurface}
-                    overlayClassName={styles.buttonOverlay}
-                    autoPlay
-                    muted
-                    loop
-                    preload="auto"
-                  />
                   <span className={styles.buttonLabel}>Run Another Analysis</span>
                 </button>
               ) : null}
