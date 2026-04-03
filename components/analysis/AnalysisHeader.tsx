@@ -39,13 +39,15 @@ export default function AnalysisHeader({
               {formatRelativeTime(createdAt)}
             </span>
           </div>
-          <div className={styles.tagRow}>
-            {tags.map((tag) => (
-              <span className={styles.tag} key={tag}>
-                {tag}
-              </span>
-            ))}
-          </div>
+          {tags.length ? (
+            <div className={styles.tagRow}>
+              {tags.map((tag) => (
+                <span className={styles.tag} key={tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <p className={styles.metaCopy}>
             Generated {formatAnalysisTime(createdAt)}. The sections below preserve the current
             report data model while rebuilding the surface into a tighter workspace-grade UI.

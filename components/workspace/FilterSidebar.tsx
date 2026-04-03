@@ -35,10 +35,6 @@ export default function FilterSidebar({
           <h2 className={styles.filterTitle}>Filters</h2>
           <p className={styles.filterCount}>{resultCount} analyses visible</p>
         </div>
-        <span className={styles.planBadge}>
-          <ListFilter size={14} />
-          Desktop
-        </span>
       </div>
 
       <input

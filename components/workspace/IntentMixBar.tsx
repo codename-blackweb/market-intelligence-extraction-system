@@ -30,7 +30,7 @@ export default function IntentMixBar({
             aria-hidden="true"
             className={cn(styles.intentSegment, toneClassNames[segment.tone])}
             key={segment.label}
-            style={{ width: `${segment.percentage}%` }}
+            style={{ flexBasis: `${segment.percentage}%` }}
             title={`${segment.label}: ${segment.percentage}%`}
           />
         ))}

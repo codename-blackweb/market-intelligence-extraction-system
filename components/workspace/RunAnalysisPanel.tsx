@@ -42,7 +42,7 @@ export default function RunAnalysisPanel({
       </div>
 
       <div className={styles.runGrid}>
-        <div className={styles.fieldWide}>
+        <div className={`${styles.field} ${styles.fieldWide}`}>
           <label className={styles.fieldLabel} htmlFor="workspace-query">
             Seed query
           </label>
@@ -55,7 +55,7 @@ export default function RunAnalysisPanel({
           />
         </div>
 
-        <div className={styles.fieldMedium}>
+        <div className={`${styles.field} ${styles.fieldMedium}`}>
           <label className={styles.fieldLabel} htmlFor="workspace-market-type">
             Market context
           </label>
@@ -68,7 +68,7 @@ export default function RunAnalysisPanel({
           />
         </div>
 
-        <div className={styles.fieldSmall}>
+        <div className={`${styles.field} ${styles.fieldSmall}`}>
           <label className={styles.fieldLabel} htmlFor="workspace-depth">
             Depth
           </label>
@@ -84,7 +84,7 @@ export default function RunAnalysisPanel({
           </select>
         </div>
 
-        <div className={styles.fieldMedium}>
+        <div className={`${styles.field} ${styles.fieldMedium}`}>
           <label className={styles.fieldLabel} htmlFor="workspace-competitors">
             Competitor names
           </label>
@@ -98,7 +98,7 @@ export default function RunAnalysisPanel({
           />
         </div>
 
-        <div className={styles.fieldMedium}>
+        <div className={`${styles.field} ${styles.fieldMedium}`}>
           <label className={styles.fieldLabel} htmlFor="workspace-urls">
             Competitor URLs
           </label>
@@ -112,7 +112,7 @@ export default function RunAnalysisPanel({
           />
         </div>
 
-        <div className={styles.fieldSmall}>
+        <div className={`${styles.field} ${styles.fieldSmall}`}>
           <label className={styles.fieldLabel} htmlFor="workspace-niche">
             Niche
           </label>

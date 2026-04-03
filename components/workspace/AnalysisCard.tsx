@@ -42,13 +42,15 @@ export default function AnalysisCard({
 
       <IntentMixBar compact mix={record.intentMix} />
 
-      <div className={styles.chipRow}>
-        {record.tags.map((tag) => (
-          <span className={styles.chip} key={tag}>
-            {tag}
-          </span>
-        ))}
-      </div>
+      {record.tags.length ? (
+        <div className={styles.chipRow}>
+          {record.tags.map((tag) => (
+            <span className={styles.chip} key={tag}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className={styles.analysisMetrics}>
         <div className={styles.metricCard}>

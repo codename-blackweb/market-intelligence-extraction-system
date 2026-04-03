@@ -292,7 +292,7 @@ export default function AnalysisDetailPageClient({ analysisId }: { analysisId: s
             </InsightSection>
           </div>
 
-          <aside className={styles.stack}>
+          <aside className={`${styles.stack} ${styles.sidebar}`}>
             <section className={styles.snapshotCard}>
               <p className={styles.eyebrow}>Signal Snapshot</p>
               <h2 className={styles.snapshotTitle}>Confidence, strength, and intent concentration.</h2>

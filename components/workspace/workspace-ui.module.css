@@ -1,16 +1,30 @@
 .page {
+  --ws-aqua: #8efdf2;
+  --ws-aqua-strong: #43e7d5;
+  --ws-cyan: #59cfff;
+  --ws-ink: #f4fffd;
+  --ws-muted: rgba(219, 236, 232, 0.72);
+  --ws-muted-strong: rgba(236, 247, 244, 0.82);
+  --ws-line: rgba(255, 255, 255, 0.08);
+  --ws-line-strong: rgba(255, 255, 255, 0.14);
+  --ws-surface: linear-gradient(180deg, rgba(7, 14, 18, 0.95), rgba(5, 10, 13, 0.98));
+  --ws-surface-soft: linear-gradient(180deg, rgba(8, 15, 18, 0.84), rgba(4, 8, 11, 0.9));
+  --ws-surface-inset: rgba(255, 255, 255, 0.03);
+  --ws-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(42, 255, 231, 0.12), transparent 28rem),
-    radial-gradient(circle at 84% 8%, rgba(42, 255, 231, 0.08), transparent 22rem),
-    linear-gradient(180deg, #020608 0%, #04090d 48%, #020508 100%);
-  color: #f4fffd;
+    radial-gradient(circle at top left, rgba(42, 255, 231, 0.1), transparent 30rem),
+    radial-gradient(circle at 82% 10%, rgba(42, 255, 231, 0.07), transparent 24rem),
+    linear-gradient(180deg, #020608 0%, #04090d 46%, #020508 100%);
+  color: var(--ws-ink);
 }
 
 .shell {
-  width: min(1440px, calc(100vw - 2rem));
+  width: min(1360px, calc(100vw - 2rem));
   margin: 0 auto;
-  padding: 2rem 0 3rem;
+  padding: 1.5rem 0 2.75rem;
 }
 
 .signinCard,
@@ -22,11 +36,9 @@
 .emptyState,
 .statusBanner,
 .loadingState {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: linear-gradient(180deg, rgba(8, 15, 18, 0.94), rgba(5, 10, 13, 0.96));
-  box-shadow:
-    0 22px 60px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface);
+  box-shadow: var(--ws-shadow);
   backdrop-filter: blur(24px);
 }
 
@@ -39,16 +51,17 @@
 
 .signinCard {
   width: min(560px, 100%);
-  border-radius: 1.75rem;
-  padding: 2rem;
+  border-radius: 1.5rem;
+  padding: 1.9rem;
 }
 
 .eyebrow {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(142, 253, 242, 0.72);
+  color: rgba(142, 253, 242, 0.76);
 }
 
 .signinTitle,
@@ -61,7 +74,7 @@
 }
 
 .signinTitle {
-  margin-top: 0.8rem;
+  margin-top: 0.7rem;
   font-size: clamp(2rem, 4vw, 2.8rem);
   line-height: 0.94;
 }
@@ -72,15 +85,14 @@
 .subtleCopy,
 .panelHint,
 .metricLabel,
-.metaText,
 .usageDetail,
 .emptyStateText {
-  color: rgba(219, 236, 232, 0.72);
+  color: var(--ws-muted);
 }
 
 .signinCopy {
-  margin: 1rem 0 0;
-  line-height: 1.7;
+  margin: 0.95rem 0 0;
+  line-height: 1.68;
 }
 
 .signinAction,
@@ -88,8 +100,7 @@
 .secondaryAction,
 .toolbarLink,
 .toolbarButton,
-.analysisLink,
-.ghostAction {
+.analysisLink {
   appearance: none;
   border: 0;
   cursor: pointer;
@@ -100,6 +111,7 @@
     border-color 160ms ease,
     background 160ms ease,
     color 160ms ease,
+    box-shadow 160ms ease,
     opacity 160ms ease;
 }
 
@@ -110,35 +122,41 @@
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
+  min-height: 2.75rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #8efdf2 0%, #41e6d4 100%);
+  padding: 0.78rem 1.1rem;
+  background: linear-gradient(135deg, var(--ws-aqua) 0%, var(--ws-aqua-strong) 100%);
   color: #021012;
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 0.88rem 1.15rem;
+  letter-spacing: 0.04em;
+  box-shadow: 0 10px 28px rgba(67, 231, 213, 0.18);
 }
 
 .signinAction {
-  margin-top: 1.5rem;
+  margin-top: 1.4rem;
 }
 
 .toolbarLink,
 .toolbarButton,
-.secondaryAction,
-.ghostAction {
+.secondaryAction {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 2.75rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.78rem 1rem;
+  border: 1px solid var(--ws-line-strong);
   background: rgba(255, 255, 255, 0.02);
   color: rgba(244, 255, 253, 0.86);
-  padding: 0.78rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .toolbarButton {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .toolbarLink:hover,
@@ -146,111 +164,132 @@
 .primaryAction:hover,
 .secondaryAction:hover,
 .analysisLink:hover,
-.ghostAction:hover,
-.signinAction:hover {
+.signinAction:hover,
+.analysisCard:hover,
+.pinnedCard:hover {
   transform: translateY(-1px);
+}
+
+.toolbarLink:focus-visible,
+.toolbarButton:focus-visible,
+.primaryAction:focus-visible,
+.secondaryAction:focus-visible,
+.analysisLink:focus-visible,
+.signinAction:focus-visible,
+.filterSearch:focus-visible,
+.surfaceInput:focus-visible,
+.surfaceSelect:focus-visible,
+.surfaceTextarea:focus-visible,
+.filterCheckbox:focus-visible {
+  outline: none;
+  border-color: rgba(142, 253, 242, 0.42);
+  box-shadow: 0 0 0 3px rgba(142, 253, 242, 0.12);
 }
 
 .toolbarLink:disabled,
 .toolbarButton:disabled,
 .primaryAction:disabled,
-.secondaryAction:disabled,
-.ghostAction:disabled {
+.secondaryAction:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
 .topBar {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 1.25rem;
-  padding: 1.5rem;
-  border-radius: 1.75rem;
+  gap: 1.35rem;
+  padding: 1.35rem;
+  border-radius: 1.55rem;
 }
 
 .workspaceHeader {
   min-width: 0;
   flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
 }
 
 .workspaceName {
-  margin-top: 0.55rem;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 0.92;
+  font-size: clamp(2rem, 3.6vw, 2.85rem);
+  line-height: 0.94;
 }
 
 .workspaceRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.7rem;
 }
 
 .subtleCopy {
-  margin: 0.75rem 0 0;
-  font-size: 0.95rem;
+  margin: 0;
+  max-width: 48rem;
+  font-size: 0.92rem;
+  line-height: 1.68;
 }
 
 .planBadge,
 .statusPill,
-.tag,
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  min-height: 1.9rem;
+  gap: 0.42rem;
+  min-height: 1.85rem;
   border-radius: 999px;
-  padding: 0 0.8rem;
-  font-size: 0.72rem;
+  padding: 0 0.76rem;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .planBadge {
-  background: rgba(142, 253, 242, 0.09);
-  border: 1px solid rgba(142, 253, 242, 0.18);
-  color: #8efdf2;
+  border: 1px solid rgba(142, 253, 242, 0.2);
+  background: rgba(142, 253, 242, 0.08);
+  color: var(--ws-aqua);
 }
 
 .statusPill {
+  border: 1px solid var(--ws-line);
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(244, 255, 253, 0.72);
+  color: rgba(244, 255, 253, 0.74);
 }
 
 .statusPublic {
   border-color: rgba(142, 253, 242, 0.18);
   background: rgba(142, 253, 242, 0.08);
-  color: #8efdf2;
+  color: var(--ws-aqua);
 }
 
 .statusPrivate {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--ws-line);
 }
 
 .toolbarRight {
   width: min(520px, 100%);
   display: grid;
-  gap: 0.9rem;
+  gap: 0.8rem;
 }
 
 .toolbarMeta {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0.8rem;
   align-items: stretch;
-  gap: 0.9rem;
 }
 
 .accountCard {
   min-width: 0;
-  flex: 1;
+  min-height: 100%;
   display: flex;
   align-items: center;
   gap: 0.8rem;
   padding: 0.95rem 1rem;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 1.2rem;
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface-inset);
 }
 
 .avatar {
@@ -258,45 +297,51 @@
   place-items: center;
   width: 2.85rem;
   height: 2.85rem;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, rgba(142, 253, 242, 0.22), rgba(41, 92, 96, 0.26));
-  color: #8efdf2;
-  font-size: 0.92rem;
+  border-radius: 0.95rem;
+  background: linear-gradient(135deg, rgba(142, 253, 242, 0.2), rgba(41, 92, 96, 0.24));
+  color: var(--ws-aqua);
+  font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
 
 .accountName {
   margin: 0;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
 .accountMeta {
   margin: 0.16rem 0 0;
   color: rgba(219, 236, 232, 0.62);
-  font-size: 0.86rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .toolbarActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  gap: 0.65rem;
 }
 
 .statusBanner,
 .loadingState,
 .emptyState {
-  border-radius: 1.45rem;
-  padding: 1.1rem 1.15rem;
+  border-radius: 1.3rem;
+  padding: 1rem 1.05rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
 }
 
 .statusBanner {
-  margin-top: 1rem;
+  border-color: rgba(142, 253, 242, 0.16);
+  background: linear-gradient(180deg, rgba(8, 18, 21, 0.94), rgba(5, 10, 13, 0.98));
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 1.25rem;
   margin-top: 1.25rem;
 }
@@ -308,8 +353,8 @@
 }
 
 .filterPanel {
-  border-radius: 1.6rem;
-  padding: 1.25rem;
+  border-radius: 1.45rem;
+  padding: 1.2rem;
 }
 
 .filterHeader,
@@ -322,24 +367,28 @@
 
 .filterTitle,
 .sectionTitle {
-  font-size: 1.15rem;
+  font-size: 1.08rem;
   font-weight: 700;
+  line-height: 1.2;
+  color: var(--ws-muted-strong);
 }
 
 .filterCount,
 .sectionCopy {
   margin: 0.2rem 0 0;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
 }
 
 .filterSearch {
   width: 100%;
-  margin-top: 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: #f4fffd;
-  padding: 0.85rem 0.95rem;
+  min-height: 2.75rem;
+  margin-top: 0.95rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface-inset);
+  color: var(--ws-ink);
+  padding: 0.8rem 0.9rem;
 }
 
 .filterSearch::placeholder,
@@ -349,49 +398,53 @@
 }
 
 .filterGroup {
-  margin-top: 1.15rem;
+  margin-top: 1rem;
+}
+
+.filterGroup + .filterGroup {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 1rem;
 }
 
 .filterGroupLabel {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  margin-bottom: 0.7rem;
-  font-size: 0.76rem;
+  gap: 0.52rem;
+  margin-bottom: 0.68rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(142, 253, 242, 0.66);
+  color: rgba(142, 253, 242, 0.68);
 }
 
 .filterOption {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.55rem 0;
-  color: rgba(244, 255, 253, 0.8);
+  padding: 0.35rem 0;
+  color: rgba(244, 255, 253, 0.82);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .filterControl {
   display: inline-flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.68rem;
+  width: 100%;
 }
 
 .filterCheckbox {
   width: 1rem;
   height: 1rem;
-  accent-color: #8efdf2;
-}
-
-.filterHint {
-  font-size: 0.8rem;
-  color: rgba(219, 236, 232, 0.52);
+  margin: 0;
+  accent-color: var(--ws-aqua);
 }
 
 .clearFilters {
-  margin-top: 1rem;
   width: 100%;
+  margin-top: 1.1rem;
 }
 
 .content {
@@ -399,8 +452,8 @@
 }
 
 .runPanel {
-  border-radius: 1.75rem;
-  padding: 1.35rem;
+  border-radius: 1.55rem;
+  padding: 1.3rem;
 }
 
 .runHero {
@@ -411,17 +464,23 @@
 }
 
 .runTitle {
-  margin: 0.3rem 0 0;
-  font-size: clamp(1.5rem, 2.2vw, 2rem);
-  line-height: 0.96;
+  margin: 0.32rem 0 0;
+  font-size: clamp(1.45rem, 2vw, 1.92rem);
+  line-height: 1;
   letter-spacing: -0.04em;
 }
 
 .runGrid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.2rem;
+  gap: 0.8rem;
+  margin-top: 1.1rem;
+}
+
+.fieldWide,
+.fieldMedium,
+.fieldSmall {
+  min-width: 0;
 }
 
 .fieldWide {
@@ -438,11 +497,12 @@
 
 .field {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.42rem;
 }
 
 .fieldLabel {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(142, 253, 242, 0.66);
@@ -452,11 +512,17 @@
 .surfaceSelect,
 .surfaceTextarea {
   width: 100%;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: #f4fffd;
-  padding: 0.9rem 0.95rem;
+  border-radius: 0.98rem;
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface-inset);
+  color: var(--ws-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  padding: 0.82rem 0.92rem;
+}
+
+.surfaceInput,
+.surfaceSelect {
+  min-height: 2.75rem;
 }
 
 .surfaceSelect {
@@ -464,7 +530,7 @@
 }
 
 .surfaceTextarea {
-  min-height: 6rem;
+  min-height: 5.6rem;
   resize: vertical;
 }
 
@@ -474,31 +540,32 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem;
-  margin-top: 1.15rem;
+  margin-top: 1.05rem;
 }
 
 .launchActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .panelHint {
   margin: 0;
   max-width: 44rem;
-  font-size: 0.92rem;
-  line-height: 1.7;
+  font-size: 0.9rem;
+  line-height: 1.68;
 }
 
 .section {
-  margin-top: 1.25rem;
+  margin-top: 1.2rem;
 }
 
 .sectionSurface {
-  border-radius: 1.75rem;
-  padding: 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: linear-gradient(180deg, rgba(8, 15, 18, 0.84), rgba(4, 8, 11, 0.9));
+  border-radius: 1.55rem;
+  padding: 1.25rem;
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface-soft);
+  box-shadow: var(--ws-shadow);
 }
 
 .pinnedGrid {
@@ -508,10 +575,27 @@
   margin-top: 1rem;
 }
 
+.pinnedCard,
+.analysisCard {
+  border-radius: 1.35rem;
+  padding: 1.08rem;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.analysisCard:hover,
+.pinnedCard:hover {
+  border-color: rgba(142, 253, 242, 0.18);
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 .pinnedCard {
   position: relative;
-  border-radius: 1.55rem;
-  padding: 1.2rem;
   overflow: hidden;
 }
 
@@ -520,53 +604,62 @@
   inset: auto -20% -35% auto;
   width: 14rem;
   height: 14rem;
-  background: radial-gradient(circle, rgba(142, 253, 242, 0.18), transparent 72%);
+  background: radial-gradient(circle, rgba(142, 253, 242, 0.16), transparent 72%);
   pointer-events: none;
 }
 
 .pinnedMeta {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.8rem;
 }
 
 .pinnedTitle {
-  margin-top: 0.85rem;
-  font-size: 1.38rem;
-  line-height: 1.02;
+  margin-top: 0.8rem;
+  font-size: 1.34rem;
+  line-height: 1.03;
 }
 
 .pinnedNarrative {
-  margin: 0.9rem 0 0;
-  line-height: 1.7;
-  color: rgba(236, 247, 244, 0.78);
+  margin: 0.85rem 0 0;
+  line-height: 1.68;
+  color: rgba(236, 247, 244, 0.8);
+  font-size: 0.95rem;
 }
 
 .pinnedStats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 0.8rem;
+  margin-top: 0.95rem;
 }
 
 .metricCard {
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%;
+  gap: 0.2rem;
+  border-radius: 0.98rem;
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface-inset);
   padding: 0.85rem 0.9rem;
 }
 
 .metricValue {
-  margin: 0.18rem 0 0;
-  font-size: 1.18rem;
+  margin: 0.15rem 0 0;
+  font-size: 1.12rem;
   font-weight: 700;
   letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ws-muted-strong);
 }
 
 .metricLabel {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -578,11 +671,6 @@
   margin-top: 1rem;
 }
 
-.analysisCard {
-  border-radius: 1.55rem;
-  padding: 1.1rem;
-}
-
 .analysisMetaRow {
   display: flex;
   align-items: flex-start;
@@ -591,75 +679,81 @@
 }
 
 .analysisTitle {
-  margin-top: 0.7rem;
-  font-size: 1.16rem;
-  line-height: 1.06;
+  margin-top: 0.68rem;
+  font-size: 1.12rem;
+  line-height: 1.08;
 }
 
 .analysisTitleLink {
   color: inherit;
   text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.analysisTitleLink:hover {
+  color: var(--ws-aqua);
 }
 
 .analysisTime {
   white-space: nowrap;
   color: rgba(219, 236, 232, 0.58);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .analysisCopy {
-  margin: 0.8rem 0 0;
-  line-height: 1.65;
-  font-size: 0.95rem;
+  margin: 0.78rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.66;
 }
 
 .chipRow,
 .analysisActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.55rem;
 }
 
 .chipRow {
-  margin-top: 0.95rem;
+  margin-top: 0.92rem;
 }
 
 .chip {
+  border: 1px solid var(--ws-line);
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(244, 255, 253, 0.72);
 }
 
 .analysisMetrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.95rem;
+  gap: 0.8rem;
+  margin-top: 0.92rem;
 }
 
 .analysisActions {
-  margin-top: 1rem;
-}
-
-.ghostAction {
-  color: rgba(244, 255, 253, 0.82);
+  margin-top: 0.95rem;
 }
 
 .intentBarShell {
-  margin-top: 0.95rem;
+  margin-top: 0.92rem;
 }
 
 .intentTrack {
   display: flex;
-  gap: 0.18rem;
+  gap: 0.12rem;
   width: 100%;
-  height: 0.62rem;
-  padding: 0.15rem;
+  height: 0.72rem;
+  overflow: hidden;
+  padding: 0.12rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ws-line);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .intentSegment {
+  flex-shrink: 0;
+  min-width: 0.38rem;
   height: 100%;
   border-radius: 999px;
 }
@@ -683,34 +777,36 @@
 .intentLegend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem 1rem;
-  margin-top: 0.55rem;
+  gap: 0.52rem 0.85rem;
+  margin-top: 0.52rem;
 }
 
 .intentLegendCompact {
-  gap: 0.45rem 0.8rem;
+  gap: 0.42rem 0.72rem;
 }
 
 .intentLegendItem {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  color: rgba(219, 236, 232, 0.68);
-  font-size: 0.8rem;
+  gap: 0.42rem;
+  color: rgba(219, 236, 232, 0.7);
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 
 .intentDot {
-  width: 0.52rem;
-  height: 0.52rem;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 999px;
 }
 
 .usageMeter {
   min-width: 0;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 0.95rem 1rem;
+  min-height: 100%;
+  border-radius: 1.18rem;
+  border: 1px solid var(--ws-line);
+  background: var(--ws-surface-inset);
+  padding: 0.92rem 0.98rem;
 }
 
 .usageCompact {
@@ -719,20 +815,23 @@
 
 .usageHeading {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 700;
+  line-height: 1.3;
+  color: var(--ws-muted-strong);
 }
 
 .usageDetail {
-  margin: 0.25rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.22rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .usageTrack {
   position: relative;
   overflow: hidden;
-  margin-top: 0.75rem;
-  height: 0.58rem;
+  margin-top: 0.72rem;
+  height: 0.52rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.05);
 }
@@ -740,21 +839,24 @@
 .usageFill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #8efdf2, #3cd6c7);
-  box-shadow: 0 0 20px rgba(142, 253, 242, 0.28);
+  background: linear-gradient(90deg, var(--ws-aqua), var(--ws-aqua-strong));
+  box-shadow: 0 0 20px rgba(142, 253, 242, 0.24);
 }
 
 .emptyStateTitle {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--ws-muted-strong);
 }
 
 .emptyStateText {
-  margin: 0.45rem 0 0;
-  line-height: 1.6;
+  margin: 0.42rem 0 0;
+  line-height: 1.58;
+  font-size: 0.9rem;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1080px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -766,11 +868,18 @@
 
 @media (max-width: 980px) {
   .topBar,
-  .toolbarMeta,
   .runHero,
   .launchRow {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .toolbarMeta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .toolbarActions {
+    justify-content: flex-start;
   }
 
   .pinnedGrid,
@@ -789,9 +898,9 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .shell {
-    width: min(100vw - 1rem, 1440px);
+    width: min(100vw - 1rem, 1360px);
     padding-top: 4.75rem;
   }
 
@@ -804,7 +913,7 @@
   .statusBanner,
   .loadingState,
   .emptyState {
-    border-radius: 1.3rem;
+    border-radius: 1.25rem;
   }
 
   .runGrid,
