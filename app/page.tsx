@@ -33,8 +33,10 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
 import { VideoText } from "@/components/ui/VideoText";
 import {
+  clearPendingAnalysisDraft,
   clearPendingAnalysisRestore,
   getOrCreateUserId,
+  loadPendingAnalysisDraft,
   loadPendingAnalysisRestore,
   persistPendingPlan,
   persistStoredPlan
@@ -713,6 +715,32 @@ export default function Home() {
       }
     })();
   }, [session?.access_token, session?.user.id, setAuthPlan]);
+
+  useEffect(() => {
+    const pendingDraft = loadPendingAnalysisDraft();
+
+    if (!pendingDraft) {
+      return;
+    }
+
+    setQuery(pendingDraft.query);
+    setMarketType(pendingDraft.marketType);
+    setDepth(pendingDraft.depth);
+    setCompetitorNames(pendingDraft.competitorNames);
+    setCompetitorUrls(pendingDraft.competitorUrls);
+    setNiche(pendingDraft.niche);
+    clearPendingAnalysisDraft();
+
+    window.requestAnimationFrame(() => {
+      analysisInputsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+      window.setTimeout(() => {
+        queryInputRef.current?.focus();
+      }, 140);
+    });
+  }, []);
 
   const startUpgradeFlow = async (plan: Exclude<UserPlan, "free">) => {
     if (!STRIPE_CHECKOUT_URL) {

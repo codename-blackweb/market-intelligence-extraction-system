@@ -1,5 +1,6 @@
 "use client";
 
+import type { PendingAnalysisDraft } from "@/lib/types";
 import type { UserPlan } from "@/types/market-analysis";
 
 export const USER_ID_STORAGE_KEY = "market-intelligence:user-id:v1";
@@ -7,6 +8,8 @@ export const USER_PLAN_STORAGE_KEY = "market-intelligence:user-plan:v1";
 export const PENDING_PLAN_STORAGE_KEY = "market-intelligence:pending-plan:v1";
 export const PENDING_ANALYSIS_RESTORE_STORAGE_KEY =
   "market-intelligence:pending-analysis-restore:v1";
+export const PENDING_ANALYSIS_DRAFT_STORAGE_KEY =
+  "market-intelligence:pending-analysis-draft:v1";
 
 export function getOrCreateUserId() {
   if (typeof window === "undefined") {
@@ -102,4 +105,56 @@ export function clearPendingAnalysisRestore() {
   }
 
   window.sessionStorage.removeItem(PENDING_ANALYSIS_RESTORE_STORAGE_KEY);
+}
+
+function isPendingAnalysisDraft(value: unknown): value is PendingAnalysisDraft {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.query === "string" &&
+    typeof candidate.marketType === "string" &&
+    typeof candidate.depth === "string" &&
+    typeof candidate.competitorNames === "string" &&
+    typeof candidate.competitorUrls === "string" &&
+    typeof candidate.niche === "string"
+  );
+}
+
+export function persistPendingAnalysisDraft(draft: PendingAnalysisDraft) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(PENDING_ANALYSIS_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+}
+
+export function loadPendingAnalysisDraft() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(PENDING_ANALYSIS_DRAFT_STORAGE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return isPendingAnalysisDraft(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingAnalysisDraft() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(PENDING_ANALYSIS_DRAFT_STORAGE_KEY);
 }

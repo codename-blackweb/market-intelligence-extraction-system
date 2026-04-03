@@ -1,5 +1,5 @@
-import WorkspaceProfile from "@/components/account/WorkspaceProfile";
+import WorkspaceDashboard from "@/components/workspace/WorkspaceDashboard";
 
 export default function WorkspacePage() {
-  return <WorkspaceProfile initialTab="Workspace" />;
+  return <WorkspaceDashboard />;
 }

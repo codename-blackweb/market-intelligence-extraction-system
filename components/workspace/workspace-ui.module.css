@@ -1,0 +1,815 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(42, 255, 231, 0.12), transparent 28rem),
+    radial-gradient(circle at 84% 8%, rgba(42, 255, 231, 0.08), transparent 22rem),
+    linear-gradient(180deg, #020608 0%, #04090d 48%, #020508 100%);
+  color: #f4fffd;
+}
+
+.shell {
+  width: min(1440px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.signinCard,
+.topBar,
+.filterPanel,
+.runPanel,
+.analysisCard,
+.pinnedCard,
+.emptyState,
+.statusBanner,
+.loadingState {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(8, 15, 18, 0.94), rgba(5, 10, 13, 0.96));
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+}
+
+.signinShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.signinCard {
+  width: min(560px, 100%);
+  border-radius: 1.75rem;
+  padding: 2rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(142, 253, 242, 0.72);
+}
+
+.signinTitle,
+.sectionTitle,
+.workspaceName,
+.pinnedTitle,
+.analysisTitle {
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+.signinTitle {
+  margin-top: 0.8rem;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 0.94;
+}
+
+.signinCopy,
+.sectionCopy,
+.analysisCopy,
+.subtleCopy,
+.panelHint,
+.metricLabel,
+.metaText,
+.usageDetail,
+.emptyStateText {
+  color: rgba(219, 236, 232, 0.72);
+}
+
+.signinCopy {
+  margin: 1rem 0 0;
+  line-height: 1.7;
+}
+
+.signinAction,
+.primaryAction,
+.secondaryAction,
+.toolbarLink,
+.toolbarButton,
+.analysisLink,
+.ghostAction {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.signinAction,
+.primaryAction,
+.analysisLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8efdf2 0%, #41e6d4 100%);
+  color: #021012;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.88rem 1.15rem;
+}
+
+.signinAction {
+  margin-top: 1.5rem;
+}
+
+.toolbarLink,
+.toolbarButton,
+.secondaryAction,
+.ghostAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(244, 255, 253, 0.86);
+  padding: 0.78rem 1rem;
+}
+
+.toolbarButton {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.toolbarLink:hover,
+.toolbarButton:hover,
+.primaryAction:hover,
+.secondaryAction:hover,
+.analysisLink:hover,
+.ghostAction:hover,
+.signinAction:hover {
+  transform: translateY(-1px);
+}
+
+.toolbarLink:disabled,
+.toolbarButton:disabled,
+.primaryAction:disabled,
+.secondaryAction:disabled,
+.ghostAction:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.topBar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 1.75rem;
+}
+
+.workspaceHeader {
+  min-width: 0;
+  flex: 1;
+}
+
+.workspaceName {
+  margin-top: 0.55rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.92;
+}
+
+.workspaceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.subtleCopy {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+}
+
+.planBadge,
+.statusPill,
+.tag,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  border-radius: 999px;
+  padding: 0 0.8rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.planBadge {
+  background: rgba(142, 253, 242, 0.09);
+  border: 1px solid rgba(142, 253, 242, 0.18);
+  color: #8efdf2;
+}
+
+.statusPill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(244, 255, 253, 0.72);
+}
+
+.statusPublic {
+  border-color: rgba(142, 253, 242, 0.18);
+  background: rgba(142, 253, 242, 0.08);
+  color: #8efdf2;
+}
+
+.statusPrivate {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.toolbarRight {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.toolbarMeta {
+  display: flex;
+  align-items: stretch;
+  gap: 0.9rem;
+}
+
+.accountCard {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(142, 253, 242, 0.22), rgba(41, 92, 96, 0.26));
+  color: #8efdf2;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.accountName {
+  margin: 0;
+  font-weight: 700;
+}
+
+.accountMeta {
+  margin: 0.16rem 0 0;
+  color: rgba(219, 236, 232, 0.62);
+  font-size: 0.86rem;
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.statusBanner,
+.loadingState,
+.emptyState {
+  border-radius: 1.45rem;
+  padding: 1.1rem 1.15rem;
+}
+
+.statusBanner {
+  margin-top: 1rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.sidebar {
+  align-self: start;
+  position: sticky;
+  top: 1rem;
+}
+
+.filterPanel {
+  border-radius: 1.6rem;
+  padding: 1.25rem;
+}
+
+.filterHeader,
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.filterTitle,
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.filterCount,
+.sectionCopy {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+}
+
+.filterSearch {
+  width: 100%;
+  margin-top: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f4fffd;
+  padding: 0.85rem 0.95rem;
+}
+
+.filterSearch::placeholder,
+.surfaceInput::placeholder,
+.surfaceTextarea::placeholder {
+  color: rgba(219, 236, 232, 0.4);
+}
+
+.filterGroup {
+  margin-top: 1.15rem;
+}
+
+.filterGroupLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(142, 253, 242, 0.66);
+}
+
+.filterOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  color: rgba(244, 255, 253, 0.8);
+}
+
+.filterControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.filterCheckbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #8efdf2;
+}
+
+.filterHint {
+  font-size: 0.8rem;
+  color: rgba(219, 236, 232, 0.52);
+}
+
+.clearFilters {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.content {
+  min-width: 0;
+}
+
+.runPanel {
+  border-radius: 1.75rem;
+  padding: 1.35rem;
+}
+
+.runHero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.runTitle {
+  margin: 0.3rem 0 0;
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+.runGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.2rem;
+}
+
+.fieldWide {
+  grid-column: span 3;
+}
+
+.fieldMedium {
+  grid-column: span 2;
+}
+
+.fieldSmall {
+  grid-column: span 1;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(142, 253, 242, 0.66);
+}
+
+.surfaceInput,
+.surfaceSelect,
+.surfaceTextarea {
+  width: 100%;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f4fffd;
+  padding: 0.9rem 0.95rem;
+}
+
+.surfaceSelect {
+  appearance: none;
+}
+
+.surfaceTextarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.launchRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-top: 1.15rem;
+}
+
+.launchActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.panelHint {
+  margin: 0;
+  max-width: 44rem;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.section {
+  margin-top: 1.25rem;
+}
+
+.sectionSurface {
+  border-radius: 1.75rem;
+  padding: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(8, 15, 18, 0.84), rgba(4, 8, 11, 0.9));
+}
+
+.pinnedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.pinnedCard {
+  position: relative;
+  border-radius: 1.55rem;
+  padding: 1.2rem;
+  overflow: hidden;
+}
+
+.pinnedGlow {
+  position: absolute;
+  inset: auto -20% -35% auto;
+  width: 14rem;
+  height: 14rem;
+  background: radial-gradient(circle, rgba(142, 253, 242, 0.18), transparent 72%);
+  pointer-events: none;
+}
+
+.pinnedMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.pinnedTitle {
+  margin-top: 0.85rem;
+  font-size: 1.38rem;
+  line-height: 1.02;
+}
+
+.pinnedNarrative {
+  margin: 0.9rem 0 0;
+  line-height: 1.7;
+  color: rgba(236, 247, 244, 0.78);
+}
+
+.pinnedStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.metricCard {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.85rem 0.9rem;
+}
+
+.metricValue {
+  margin: 0.18rem 0 0;
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.metricLabel {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analysisGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.analysisCard {
+  border-radius: 1.55rem;
+  padding: 1.1rem;
+}
+
+.analysisMetaRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.analysisTitle {
+  margin-top: 0.7rem;
+  font-size: 1.16rem;
+  line-height: 1.06;
+}
+
+.analysisTitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.analysisTime {
+  white-space: nowrap;
+  color: rgba(219, 236, 232, 0.58);
+  font-size: 0.82rem;
+}
+
+.analysisCopy {
+  margin: 0.8rem 0 0;
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.chipRow,
+.analysisActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.chipRow {
+  margin-top: 0.95rem;
+}
+
+.chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(244, 255, 253, 0.72);
+}
+
+.analysisMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.95rem;
+}
+
+.analysisActions {
+  margin-top: 1rem;
+}
+
+.ghostAction {
+  color: rgba(244, 255, 253, 0.82);
+}
+
+.intentBarShell {
+  margin-top: 0.95rem;
+}
+
+.intentTrack {
+  display: flex;
+  gap: 0.18rem;
+  width: 100%;
+  height: 0.62rem;
+  padding: 0.15rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.intentSegment {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.toneAqua {
+  background: linear-gradient(90deg, #8efdf2, #4decdc);
+}
+
+.toneCyan {
+  background: linear-gradient(90deg, #4ac9ff, #208dff);
+}
+
+.toneAmber {
+  background: linear-gradient(90deg, #ffc457, #ff9b3f);
+}
+
+.toneEmerald {
+  background: linear-gradient(90deg, #6effb2, #1fdd8e);
+}
+
+.intentLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 0.55rem;
+}
+
+.intentLegendCompact {
+  gap: 0.45rem 0.8rem;
+}
+
+.intentLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: rgba(219, 236, 232, 0.68);
+  font-size: 0.8rem;
+}
+
+.intentDot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+}
+
+.usageMeter {
+  min-width: 0;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.95rem 1rem;
+}
+
+.usageCompact {
+  padding: 0.88rem 0.95rem;
+}
+
+.usageHeading {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.usageDetail {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+}
+
+.usageTrack {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.75rem;
+  height: 0.58rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.usageFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8efdf2, #3cd6c7);
+  box-shadow: 0 0 20px rgba(142, 253, 242, 0.28);
+}
+
+.emptyStateTitle {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.emptyStateText {
+  margin: 0.45rem 0 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 980px) {
+  .topBar,
+  .toolbarMeta,
+  .runHero,
+  .launchRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pinnedGrid,
+  .analysisGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .runGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fieldWide,
+  .fieldMedium,
+  .fieldSmall {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    width: min(100vw - 1rem, 1440px);
+    padding-top: 4.75rem;
+  }
+
+  .topBar,
+  .filterPanel,
+  .runPanel,
+  .analysisCard,
+  .pinnedCard,
+  .sectionSurface,
+  .statusBanner,
+  .loadingState,
+  .emptyState {
+    border-radius: 1.3rem;
+  }
+
+  .runGrid,
+  .analysisMetrics,
+  .pinnedStats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

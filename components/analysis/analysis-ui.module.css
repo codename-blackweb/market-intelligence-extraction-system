@@ -1,0 +1,373 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(42, 255, 231, 0.12), transparent 28rem),
+    radial-gradient(circle at 84% 6%, rgba(42, 255, 231, 0.08), transparent 22rem),
+    linear-gradient(180deg, #020608 0%, #04090d 48%, #020508 100%);
+  color: #f4fffd;
+}
+
+.shell {
+  width: min(1320px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.stateCard,
+.headerCard,
+.snapshotCard,
+.section,
+.premiumCard {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(8, 15, 18, 0.94), rgba(5, 10, 13, 0.96));
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+}
+
+.stateCard {
+  margin-top: 3rem;
+  border-radius: 1.75rem;
+  padding: 1.4rem;
+}
+
+.headerCard {
+  border-radius: 1.8rem;
+  padding: 1.45rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(142, 253, 242, 0.72);
+}
+
+.headerTitle {
+  margin: 0.65rem 0 0;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+}
+
+.headerTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.headerMeta {
+  min-width: 0;
+  flex: 1;
+}
+
+.metaCopy,
+.description,
+.note,
+.stateCopy {
+  color: rgba(219, 236, 232, 0.72);
+}
+
+.metaCopy {
+  margin: 0.75rem 0 0;
+  line-height: 1.7;
+}
+
+.statusRow,
+.tagRow,
+.actionRow,
+.metricGrid,
+.clusterGrid,
+.pillGrid,
+.classificationGrid,
+.sourceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.statusPill,
+.tag,
+.sourceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  border-radius: 999px;
+  padding: 0 0.8rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.statusPill,
+.tag,
+.sourceChip,
+.actionButton,
+.actionLink,
+.ghostButton {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(244, 255, 253, 0.84);
+}
+
+.statusPublic {
+  border-color: rgba(142, 253, 242, 0.18);
+  background: rgba(142, 253, 242, 0.08);
+  color: #8efdf2;
+}
+
+.tagRow {
+  margin-top: 1rem;
+}
+
+.actionRow {
+  margin-top: 1.15rem;
+}
+
+.actionButton,
+.actionLink,
+.ghostButton {
+  appearance: none;
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.82rem 1rem;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.actionLink {
+  background: linear-gradient(135deg, #8efdf2 0%, #41e6d4 100%);
+  color: #021012;
+  border-color: transparent;
+  font-weight: 700;
+}
+
+.actionButton:hover,
+.actionLink:hover,
+.ghostButton:hover {
+  transform: translateY(-1px);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) 360px;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.section,
+.snapshotCard,
+.premiumCard {
+  border-radius: 1.55rem;
+  padding: 1.2rem;
+}
+
+.sectionTitle {
+  margin: 0.25rem 0 0;
+  font-size: 1.18rem;
+  letter-spacing: -0.03em;
+}
+
+.description {
+  margin: 0.55rem 0 0;
+  line-height: 1.65;
+}
+
+.bulletList,
+.previewList {
+  margin: 0.95rem 0 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.6rem;
+  color: rgba(236, 247, 244, 0.84);
+}
+
+.clusterGrid,
+.pillGrid,
+.classificationGrid,
+.metricGrid,
+.sourceRow {
+  margin-top: 0.95rem;
+}
+
+.clusterCard,
+.metricCard,
+.classificationCard {
+  min-width: 0;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.9rem;
+}
+
+.clusterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.clusterTitle,
+.metricValue,
+.classificationValue {
+  margin: 0.18rem 0 0;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.clusterCopy {
+  margin: 0.55rem 0 0;
+  color: rgba(219, 236, 232, 0.72);
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metricLabel,
+.classificationLabel {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(219, 236, 232, 0.62);
+}
+
+.metricValue {
+  font-size: 1.28rem;
+}
+
+.classificationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pillGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pillCard {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.95rem;
+}
+
+.pillCardTitle {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(142, 253, 242, 0.66);
+}
+
+.pillCardList {
+  margin: 0.7rem 0 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.45rem;
+  color: rgba(236, 247, 244, 0.84);
+}
+
+.snapshotTitle {
+  margin: 0.4rem 0 0;
+  font-size: 1.3rem;
+  letter-spacing: -0.03em;
+}
+
+.sourceRow {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.sourceChip {
+  color: rgba(244, 255, 253, 0.74);
+}
+
+.premiumCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.premiumPreview {
+  filter: blur(7px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.premiumOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1.2rem;
+  background: linear-gradient(180deg, rgba(2, 6, 8, 0.06), rgba(2, 6, 8, 0.72));
+}
+
+.premiumOverlayInner {
+  max-width: 16rem;
+}
+
+.premiumTitle {
+  margin: 0.45rem 0 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.premiumCopy {
+  margin: 0.45rem 0 0;
+  color: rgba(219, 236, 232, 0.74);
+  line-height: 1.6;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(100vw - 1rem, 1320px);
+    padding-top: 4.75rem;
+  }
+
+  .headerTop {
+    flex-direction: column;
+  }
+
+  .clusterGrid,
+  .metricGrid,
+  .classificationGrid,
+  .pillGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .headerCard,
+  .section,
+  .snapshotCard,
+  .premiumCard,
+  .stateCard {
+    border-radius: 1.3rem;
+  }
+}

@@ -1,4 +1,4 @@
-import SharedAnalysisPageClient from "@/components/report/SharedAnalysisPageClient";
+import AnalysisDetailPageClient from "@/components/analysis/AnalysisDetailPageClient";
 
 type PageProps = {
   params: Promise<{
@@ -8,5 +8,5 @@ type PageProps = {
 
 export default async function SharedAnalysisPage({ params }: PageProps) {
   const { id } = await params;
-  return <SharedAnalysisPageClient analysisId={id} />;
+  return <AnalysisDetailPageClient analysisId={id} />;
 }
