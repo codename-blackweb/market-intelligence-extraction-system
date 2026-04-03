@@ -4985,6 +4985,514 @@ select {
   }
 }
 
+.account-reference-page {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  padding: 0.75rem 0 2rem;
+  background: #050505;
+  color: #f4f4f5;
+}
+
+.account-reference-frame {
+  width: min(100%, 97rem);
+  margin: 0 auto;
+  padding: 0.75rem;
+}
+
+.account-reference-shell {
+  overflow: hidden;
+  border: 1px solid rgba(228, 228, 231, 0.88);
+  border-radius: 2rem;
+  background: #ffffff;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.1);
+}
+
+.dark .account-reference-shell {
+  border-color: rgba(39, 39, 42, 0.96);
+  background: #09090b;
+  box-shadow: 0 22px 72px rgba(0, 0, 0, 0.38);
+}
+
+.account-reference-cover {
+  position: relative;
+  height: 11.2rem;
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 52%, #ec4899 100%);
+}
+
+.account-reference-cover-action {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  transition: background 160ms ease;
+}
+
+.account-reference-cover-action:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.account-reference-body {
+  padding: 0 2.5rem 2.4rem;
+}
+
+.account-reference-identity {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.7rem;
+  margin-top: -3.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.account-reference-avatar-shell {
+  flex: 0 0 auto;
+}
+
+.account-reference-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 7.25rem;
+  height: 7.25rem;
+  padding: 0;
+  overflow: hidden;
+  border: 4px solid #ffffff;
+  border-radius: 2rem;
+  background: #f4f4f5;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+}
+
+.dark .account-reference-avatar {
+  border-color: #09090b;
+  background: #18181b;
+  box-shadow: 0 20px 34px rgba(0, 0, 0, 0.38);
+}
+
+.account-reference-avatar-initials {
+  font-size: 2.9rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #d4d4d8;
+}
+
+.dark .account-reference-avatar-initials {
+  color: #3f3f46;
+}
+
+.account-reference-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.account-reference-avatar:hover .account-reference-avatar-overlay {
+  opacity: 1;
+}
+
+.account-reference-identity-copy {
+  flex: 1 1 auto;
+  padding-bottom: 0.2rem;
+}
+
+.account-reference-name {
+  margin: 0;
+  font-size: 2.15rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #09090b;
+}
+
+.dark .account-reference-name {
+  color: #f4f4f5;
+}
+
+.account-reference-subtitle {
+  margin: 0.45rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #71717a;
+}
+
+.account-reference-public-button {
+  flex: 0 0 auto;
+  min-height: 3rem;
+  padding: 0 2rem;
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  border-radius: 0.95rem;
+  background: #f8f8f8;
+  color: #09090b;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.dark .account-reference-public-button {
+  border-color: rgba(244, 244, 245, 0.12);
+  background: #f4f4f5;
+  color: #09090b;
+  box-shadow: none;
+}
+
+.account-reference-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(19rem, 0.92fr);
+  gap: 3.25rem;
+}
+
+.account-reference-main {
+  min-width: 0;
+}
+
+.account-reference-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 0.35rem;
+}
+
+.account-reference-section-title {
+  margin: 0 0 1.25rem;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #09090b;
+}
+
+.dark .account-reference-section-title {
+  color: #f4f4f5;
+}
+
+.account-reference-fields {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.account-reference-fields--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-reference-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.account-reference-field-group--full {
+  grid-column: 1 / -1;
+}
+
+.account-reference-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.account-reference-control-shell {
+  position: relative;
+}
+
+.account-reference-control-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  transform: translateY(-50%);
+  color: #71717a;
+}
+
+.account-reference-input,
+.account-reference-textarea {
+  width: 100%;
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  border-radius: 0.95rem;
+  background: #f8f8f8;
+  color: #18181b;
+  font-size: 0.95rem;
+  font-weight: 500;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.dark .account-reference-input,
+.dark .account-reference-textarea {
+  border-color: rgba(39, 39, 42, 1);
+  background: rgba(17, 17, 20, 0.92);
+  color: #f4f4f5;
+}
+
+.account-reference-input::placeholder,
+.account-reference-textarea::placeholder {
+  color: #a1a1aa;
+}
+
+.dark .account-reference-input::placeholder,
+.dark .account-reference-textarea::placeholder {
+  color: #71717a;
+}
+
+.account-reference-input:focus,
+.account-reference-textarea:focus {
+  border-color: rgba(99, 102, 241, 0.8);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+.account-reference-input {
+  min-height: 2.75rem;
+  padding: 0.75rem 1rem 0.75rem 2.6rem;
+}
+
+.account-reference-input--mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+}
+
+.account-reference-textarea {
+  min-height: 6rem;
+  padding: 0.85rem 1rem;
+  resize: none;
+  line-height: 1.5;
+}
+
+.account-reference-divider {
+  margin: 2.25rem 0;
+  border: 0;
+  border-top: 1px solid rgba(228, 228, 231, 0.75);
+}
+
+.dark .account-reference-divider {
+  border-top-color: rgba(39, 39, 42, 0.96);
+}
+
+.account-reference-save-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+}
+
+.account-reference-save-button {
+  min-height: 3rem;
+  padding: 0 2rem;
+  border: 0;
+  border-radius: 0.95rem;
+  background: #6366f1;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.28);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.account-reference-save-button:hover:not(:disabled) {
+  background: #5855eb;
+}
+
+.account-reference-save-button:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.account-reference-save-button:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.account-reference-card {
+  padding: 1.75rem;
+  border: 1px solid rgba(228, 228, 231, 0.86);
+  border-radius: 1.5rem;
+  background: #fafafa;
+}
+
+.dark .account-reference-card {
+  border-color: rgba(39, 39, 42, 0.96);
+  background: rgba(17, 17, 20, 0.78);
+}
+
+.account-reference-card--indigo {
+  border-color: rgba(199, 210, 254, 0.9);
+  background: #eef2ff;
+}
+
+.dark .account-reference-card--indigo {
+  border-color: rgba(99, 102, 241, 0.18);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.account-reference-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.account-reference-card-header--tight {
+  margin-bottom: 0.7rem;
+}
+
+.account-reference-card-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+}
+
+.account-reference-card-icon--success {
+  color: #22c55e;
+}
+
+.account-reference-card-icon--indigo {
+  color: #6366f1;
+}
+
+.account-reference-card-title {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.25;
+  font-weight: 900;
+  color: #18181b;
+}
+
+.dark .account-reference-card-title {
+  color: #f4f4f5;
+}
+
+.account-reference-card-title--indigo {
+  color: #312e81;
+}
+
+.dark .account-reference-card-title--indigo {
+  color: #e0e7ff;
+}
+
+.account-reference-progress-track {
+  width: 100%;
+  height: 0.52rem;
+  margin-bottom: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4e4e7;
+}
+
+.dark .account-reference-progress-track {
+  background: #27272a;
+}
+
+.account-reference-progress-bar {
+  width: 85%;
+  height: 100%;
+  border-radius: 999px;
+  background: #4ade80;
+}
+
+.account-reference-card-copy {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #71717a;
+}
+
+.account-reference-card-copy--indigo {
+  margin-bottom: 1rem;
+  color: rgba(67, 56, 202, 0.78);
+}
+
+.dark .account-reference-card-copy--indigo {
+  color: #c7d2fe;
+}
+
+.account-reference-secondary-button {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid rgba(199, 210, 254, 0.95);
+  border-radius: 0.8rem;
+  background: transparent;
+  color: #4338ca;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.dark .account-reference-secondary-button {
+  border-color: rgba(99, 102, 241, 0.24);
+  color: #c7d2fe;
+}
+
+.account-reference-secondary-button:hover {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+@media (max-width: 980px) {
+  .account-reference-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-reference-sidebar {
+    max-width: 26rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .account-reference-page {
+    padding-top: 1rem;
+  }
+
+  .account-reference-body {
+    padding: 0 1.25rem 1.5rem;
+  }
+
+  .account-reference-identity {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .account-reference-public-button {
+    width: 100%;
+  }
+
+  .account-reference-fields--two {
+    grid-template-columns: 1fr;
+  }
+
+  .account-reference-avatar {
+    width: 6.5rem;
+    height: 6.5rem;
+  }
+
+  .account-reference-name {
+    font-size: 1.8rem;
+  }
+}
+
 @media (max-width: 768px) {
   .drawer-close-button {
     top: 0.15rem;

@@ -158,7 +158,7 @@ export default function SideNav() {
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const hiddenOnRoute = pathname.startsWith("/onboarding");
+  const hiddenOnRoute = pathname.startsWith("/onboarding") || pathname === "/account";
   const expanded = hovered || pinned;
 
   const secondaryItems = useMemo<NavItem[]>(
