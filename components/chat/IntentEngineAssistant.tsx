@@ -20,6 +20,7 @@ import {
   getInitialAssistantMessage
 } from "@/components/chat/responseEngine";
 import { Button } from "@/components/ui/button";
+import { VideoText } from "@/components/ui/VideoText";
 
 type AssistantMessage = {
   id: string;
@@ -178,14 +179,36 @@ export default function IntentEngineAssistant({
 
                 <div className="intent-assistant-title-block">
                   <div className="intent-assistant-title-row">
-                    <h3 className="intent-assistant-title" id={titleId}>
+                    <VideoText
+                      as="h3"
+                      id={titleId}
+                      src="/assets/gradient-video.mp4"
+                      className="intent-assistant-title"
+                      fontSize="clamp(2.4rem, 4.6vw, 3.35rem)"
+                      fontWeight={800}
+                      fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                      textAnchor="start"
+                      textX="0%"
+                      dominantBaseline="middle"
+                      maskPosition="left center"
+                      maskSize="100% 100%"
+                      autoPlay
+                      muted
+                      loop
+                      preload="auto"
+                      style={{
+                        width: "min(100%, 14rem)",
+                        height: "3.35rem",
+                        margin: 0,
+                        flex: "0 0 auto",
+                        overflow: "hidden"
+                      }}
+                    >
                       {assistantProfile.name}
-                    </h3>
+                    </VideoText>
                     <span className="intent-assistant-badge">{assistantProfile.badge}</span>
                   </div>
-                  <p className="intent-assistant-subtitle">
-                    {assistantProfile.subtitle}
-                  </p>
+                  <p className="intent-assistant-subtitle">{assistantProfile.subtitle}</p>
                 </div>
               </div>
 
