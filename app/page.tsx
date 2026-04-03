@@ -1342,7 +1342,7 @@ export default function Home() {
           </div>
 
           <button
-            className={`mt-10 ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.mainButtonNoHoverBorder}`}
+            className={`mt-10 results-cta-primary ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.videoTextButton} ${styles.videoTextButtonPrimary}`}
             disabled={loading}
             onClick={() => runAnalysis()}
             type="button"
@@ -2139,7 +2139,7 @@ export default function Home() {
         <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
           <Drawer>
             <DrawerTrigger
-              className={`${styles.mainButton} ${styles.mainButtonSecondary} ${styles.mainButtonNoHoverBorder}`}
+              className={`results-cta-secondary ${styles.mainButton} ${styles.mainButtonSecondary} ${styles.videoTextButton} ${styles.videoTextButtonSecondary}`}
               type="button"
             >
               <VideoText

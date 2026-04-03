@@ -52,13 +52,9 @@
   transform: translateY(-1px);
 }
 
-.mainButtonNoHoverBorder.mainButtonPrimary,
-.mainButtonNoHoverBorder.mainButtonPrimary:hover,
-.mainButtonNoHoverBorder.mainButtonPrimary:focus-visible,
-.mainButtonNoHoverBorder.mainButtonSecondary,
-.mainButtonNoHoverBorder.mainButtonSecondary:hover,
-.mainButtonNoHoverBorder.mainButtonSecondary:focus-visible {
-  border-color: rgba(255, 255, 255, 0.82) !important;
+.videoTextButton:has(.button-video-text):hover,
+.videoTextButton:has(.button-video-text):focus-visible {
+  transform: none !important;
 }
 
 .mainButton:disabled {
@@ -101,21 +97,17 @@
   background: linear-gradient(180deg, rgba(19, 24, 29, 1), rgba(10, 13, 18, 1));
 }
 
-.mainButtonNoHoverBorder.mainButtonPrimary {
-  box-shadow: 0 18px 38px color-mix(in srgb, var(--accent) 18%, transparent) !important;
-}
-
-.mainButtonNoHoverBorder.mainButtonPrimary:hover,
-.mainButtonNoHoverBorder.mainButtonPrimary:focus-visible {
+.videoTextButtonPrimary,
+.videoTextButtonPrimary:hover,
+.videoTextButtonPrimary:focus-visible {
+  border-color: rgba(255, 255, 255, 0.82) !important;
   box-shadow: 0 20px 42px color-mix(in srgb, var(--accent) 24%, transparent) !important;
 }
 
-.mainButtonNoHoverBorder.mainButtonSecondary {
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24) !important;
-}
-
-.mainButtonNoHoverBorder.mainButtonSecondary:hover,
-.mainButtonNoHoverBorder.mainButtonSecondary:focus-visible {
+.videoTextButtonSecondary,
+.videoTextButtonSecondary:hover,
+.videoTextButtonSecondary:focus-visible {
+  border-color: rgba(255, 255, 255, 0.82) !important;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28) !important;
 }
 
