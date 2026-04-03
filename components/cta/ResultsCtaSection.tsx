@@ -93,9 +93,22 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
                 onClick={isFreePlan ? onUpgrade : onRunAnother}
                 type="button"
               >
-                <span className={styles.buttonLabel}>
+                <VideoText
+                  as="span"
+                  src="/assets/gradient-video.mp4"
+                  className={`button-video-text ${isFreePlan ? "button-video-text-cta" : styles.buttonTextWide}`}
+                  fontSize="1rem"
+                  fontWeight={700}
+                  fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  autoPlay
+                  muted
+                  loop
+                  preload="auto"
+                >
                   {isFreePlan ? "Unlock Pro" : "Run Another Analysis"}
-                </span>
+                </VideoText>
               </button>
 
               {isFreePlan ? (
@@ -104,7 +117,22 @@ export default function ResultsCtaSection({ plan, onRunAnother, onUpgrade }: Pro
                   onClick={onRunAnother}
                   type="button"
                 >
-                  <span className={styles.buttonLabel}>Run Another Analysis</span>
+                  <VideoText
+                    as="span"
+                    src="/assets/gradient-video.mp4"
+                    className={`button-video-text ${styles.buttonTextWide}`}
+                    fontSize="1rem"
+                    fontWeight={700}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    Run Another Analysis
+                  </VideoText>
                 </button>
               ) : null}
             </div>

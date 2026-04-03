@@ -1347,7 +1347,22 @@ export default function Home() {
             onClick={() => runAnalysis()}
             type="button"
           >
-            <span className={styles.buttonLabel}>Run Intelligence</span>
+            <VideoText
+              as="span"
+              src="/assets/gradient-video.mp4"
+              className="button-video-text button-video-text-run"
+              fontSize="1rem"
+              fontWeight={700}
+              fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+              textAnchor="middle"
+              dominantBaseline="middle"
+              autoPlay
+              muted
+              loop
+              preload="auto"
+            >
+              Run Intelligence
+            </VideoText>
           </button>
 
           {CLIENT_MODE === "LIVE" ? (
@@ -2124,7 +2139,22 @@ export default function Home() {
         <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
           <Drawer>
             <DrawerTrigger className={`${styles.mainButton} ${styles.mainButtonSecondary}`} type="button">
-              <span className={styles.buttonLabel}>How It Works</span>
+              <VideoText
+                as="span"
+                src="/assets/gradient-video.mp4"
+                className="button-video-text button-video-text-pipeline"
+                fontSize="1rem"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                How It Works
+              </VideoText>
             </DrawerTrigger>
 
             <DrawerContent>
