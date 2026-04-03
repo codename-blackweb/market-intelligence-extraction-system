@@ -52,6 +52,11 @@
   transform: translateY(-1px);
 }
 
+.mainButtonNoHoverBorder:hover,
+.mainButtonNoHoverBorder:focus-visible {
+  border-color: transparent !important;
+}
+
 .mainButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -73,6 +78,7 @@
 
 .mainButtonPrimary:hover,
 .mainButtonPrimary:focus-visible {
+  border-color: transparent;
   box-shadow:
     0 20px 42px color-mix(in srgb, var(--accent) 24%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -89,7 +95,7 @@
 
 .mainButtonSecondary:hover,
 .mainButtonSecondary:focus-visible {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: transparent;
   background: linear-gradient(180deg, rgba(19, 24, 29, 1), rgba(10, 13, 18, 1));
 }
 

@@ -1342,7 +1342,7 @@ export default function Home() {
           </div>
 
           <button
-            className={`mt-10 ${styles.mainButton} ${styles.mainButtonPrimary}`}
+            className={`mt-10 ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.mainButtonNoHoverBorder}`}
             disabled={loading}
             onClick={() => runAnalysis()}
             type="button"
@@ -2138,7 +2138,10 @@ export default function Home() {
       <ScrollReveal eager>
         <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
           <Drawer>
-            <DrawerTrigger className={`${styles.mainButton} ${styles.mainButtonSecondary}`} type="button">
+            <DrawerTrigger
+              className={`${styles.mainButton} ${styles.mainButtonSecondary} ${styles.mainButtonNoHoverBorder}`}
+              type="button"
+            >
               <VideoText
                 as="span"
                 src="/assets/gradient-video.mp4"
