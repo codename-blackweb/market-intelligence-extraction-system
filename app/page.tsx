@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Brain,
@@ -1321,14 +1321,17 @@ export default function Home() {
       <div className={`block md:hidden ${styles.mobileRoot}`}>
         <div className={styles.mobilePage}>
           <div className={styles.mobileTopBar}>
-            <button
-              aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
-              className={styles.mobileNavToggle}
-              onClick={() => setIsMobileNavOpen((current) => !current)}
-              type="button"
-            >
-              {isMobileNavOpen ? <X /> : <Menu />}
-            </button>
+            <Drawer onOpenChange={setIsMobileNavOpen} open={isMobileNavOpen}>
+              <DrawerTrigger asChild>
+                <button
+                  aria-label="Open navigation"
+                  className={styles.mobileNavToggle}
+                  type="button"
+                >
+                  <Menu />
+                </button>
+              </DrawerTrigger>
+            </Drawer>
 
             <div className={styles.mobileTopBarUtilities}>
               <div className="top-right-account-shell">
@@ -1338,80 +1341,63 @@ export default function Home() {
             </div>
           </div>
 
-          <AnimatePresence>
-            {isMobileNavOpen ? (
-              <motion.div
-                animate={{ opacity: 1 }}
-                className={`fixed inset-0 z-50 bg-black/95 flex flex-col justify-end p-6 ${styles.mobileNavOverlay}`}
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                onClick={() => setIsMobileNavOpen(false)}
-              >
-                <motion.div
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`bg-zinc-900 w-full rounded-3xl p-8 shadow-2xl flex flex-col gap-8 ${styles.mobileNavPanel}`}
-                  exit={{ opacity: 0, y: -16 }}
-                  initial={{ opacity: 0, y: -16 }}
-                  onClick={(event) => event.stopPropagation()}
-                  transition={{ duration: 0.24, ease: "easeOut" }}
+          <Drawer onOpenChange={setIsMobileNavOpen} open={isMobileNavOpen}>
+            <DrawerContent className={`bg-zinc-900/95 backdrop-blur-xl border-t border-white/10 p-8 shadow-2xl flex flex-col gap-8 ${styles.mobileNavPanel}`}>
+              <div className={styles.mobileNavHeader}>
+                <p className={styles.mobileNavEyebrow}>SignalForge</p>
+                <button
+                  aria-label="Close navigation"
+                  className={styles.mobileNavClose}
+                  onClick={() => setIsMobileNavOpen(false)}
+                  type="button"
                 >
-                  <div className={styles.mobileNavHeader}>
-                    <p className={styles.mobileNavEyebrow}>SignalForge</p>
-                    <button
-                      aria-label="Close navigation"
-                      className={styles.mobileNavClose}
-                      onClick={() => setIsMobileNavOpen(false)}
-                      type="button"
-                    >
-                      <X />
-                    </button>
-                  </div>
+                  <X />
+                </button>
+              </div>
 
-                  <div className={styles.mobileNavIntro}>
-                    <h2>Navigate the mobile experience.</h2>
-                    <p>Jump straight to the scene you need.</p>
-                  </div>
+              <div className={styles.mobileNavIntro}>
+                <h2>Navigate the mobile experience.</h2>
+                <p>Jump straight to the scene you need.</p>
+              </div>
 
-                  <motion.div
-                    animate="open"
-                    className={`flex flex-col gap-4 ${styles.mobileNavList}`}
-                    initial="closed"
+              <motion.div
+                animate="open"
+                className={`flex flex-col gap-4 ${styles.mobileNavList}`}
+                initial="closed"
+                variants={{
+                  open: {
+                    transition: {
+                      staggerChildren: 0.06,
+                      delayChildren: 0.04
+                    }
+                  },
+                  closed: {}
+                }}
+              >
+                {mobileNavItems.map((item) => (
+                  <motion.button
+                    className={`text-3xl font-bold flex items-center justify-between w-full py-4 border-b border-white/10 last:border-0 ${styles.mobileNavItem}`}
+                    key={item.label}
+                    onClick={item.onSelect}
+                    type="button"
                     variants={{
                       open: {
-                        transition: {
-                          staggerChildren: 0.06,
-                          delayChildren: 0.04
-                        }
+                        opacity: 1,
+                        y: 0
                       },
-                      closed: {}
+                      closed: {
+                        opacity: 0,
+                        y: 12
+                      }
                     }}
                   >
-                    {mobileNavItems.map((item) => (
-                      <motion.button
-                        className={`text-3xl font-bold flex items-center justify-between w-full py-4 border-b border-white/10 last:border-0 ${styles.mobileNavItem}`}
-                        key={item.label}
-                        onClick={item.onSelect}
-                        type="button"
-                        variants={{
-                          open: {
-                            opacity: 1,
-                            y: 0
-                          },
-                          closed: {
-                            opacity: 0,
-                            y: 12
-                          }
-                        }}
-                      >
-                        <span>{item.label}</span>
-                        <ArrowRight />
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                </motion.div>
+                    <span>{item.label}</span>
+                    <ArrowRight />
+                  </motion.button>
+                ))}
               </motion.div>
-            ) : null}
-          </AnimatePresence>
+            </DrawerContent>
+          </Drawer>
 
           <section className={`min-h-screen flex flex-col items-center justify-center py-32 px-6 ${styles.heroSection} ${styles.mobileHeroSection}`}>
             <div className={`text-center flex flex-col items-center gap-8 ${styles.heroStack} ${styles.mobileHeroShell}`}>
@@ -1426,7 +1412,7 @@ export default function Home() {
 
               <motion.h1
                 animate={{ opacity: 1, y: 0 }}
-                className={`text-6xl sm:text-7xl font-extrabold tracking-tighter leading-[1.05] text-center ${styles.mobileHeroTitle}`}
+                className={`text-5xl sm:text-6xl font-extrabold tracking-tighter leading-[1.05] text-center ${styles.mobileHeroTitle}`}
                 initial={motionPolicy.prefersReducedMotion ? false : { opacity: 0, y: 24 }}
                 transition={{ duration: 0.48, ease: "easeOut", delay: motionPolicy.prefersReducedMotion ? 0 : 0.06 }}
               >
@@ -1524,7 +1510,7 @@ export default function Home() {
             </div>
 
             <div className={`flex flex-col gap-8 w-full ${styles.mobileStack}`}>
-              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
                 <input
                   className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none"
                   ref={mobileQueryInputRef}
@@ -1534,7 +1520,7 @@ export default function Home() {
                 />
               </div>
 
-              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
                 <p className={`text-sm font-semibold uppercase tracking-wider text-white/50 mb-2 ${styles.sectionPill}`}>Market Context (Optional)</p>
                 <select
                   className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
@@ -1555,7 +1541,7 @@ export default function Home() {
                 </select>
               </div>
 
-              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
                 <select
                   className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                   value={depth}
@@ -1567,7 +1553,7 @@ export default function Home() {
                 </select>
               </div>
 
-              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
                 <textarea
                   className="w-full p-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
                   value={competitorNames}
@@ -1577,7 +1563,7 @@ export default function Home() {
                 />
               </div>
 
-              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
                 <textarea
                   className="w-full p-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
                   value={competitorUrls}
@@ -1587,7 +1573,7 @@ export default function Home() {
                 />
               </div>
 
-              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
                 <select
                   className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
                   value={niche}
@@ -1653,7 +1639,7 @@ export default function Home() {
 
           {savedRuns.length ? (
             <section className={`py-24 px-6 ${styles.recentScene}`} ref={mobileRecentAnalysesRef}>
-              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-8">
+              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-8">
                 <div className="flex flex-col gap-4">
                   <p className={`text-sm font-semibold uppercase tracking-wider text-blue-400 ${styles.sectionPill}`}>Recent Analyses</p>
                   <p className="text-lg text-white/70">
@@ -1694,7 +1680,7 @@ export default function Home() {
 
           {comparisonRuns.length === 2 ? (
             <section className={`py-24 px-6 ${styles.comparisonScene}`}>
-              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-12">
+              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-12">
                 <p className={`text-sm font-semibold uppercase tracking-wider text-purple-400 ${styles.sectionPill}`}>Compare Runs</p>
                 <div className="flex flex-col gap-8">
                   <div className="flex flex-col gap-2 p-6 rounded-2xl bg-black/30 border border-white/5">
@@ -1781,7 +1767,7 @@ export default function Home() {
               </div>
 
               <div className={`flex flex-col gap-8 ${styles.reportSceneStack}`}>
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <p className={`text-sm font-semibold uppercase tracking-wider text-blue-400 ${styles.sectionPill}`}>Source Activity</p>
                   <div className="flex flex-wrap gap-3" aria-label="Source activity">
                     <span
@@ -1808,13 +1794,13 @@ export default function Home() {
                   </div>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20 backdrop-blur-xl border border-purple-500/20 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <p className={`text-sm font-semibold uppercase tracking-wider text-purple-400 ${styles.sectionPill}`}>Dominant Narrative</p>
                   <p className="text-2xl font-semibold leading-relaxed text-white">{activeResult.dominant_narrative}</p>
                   <p className="text-sm text-white/50">{formatEvidence(activeResult.source_meta)}</p>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Market Diagnosis</h2>
                   <div className="flex flex-col gap-6">
                     <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
@@ -1836,7 +1822,7 @@ export default function Home() {
                   </div>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Signal Strength</h2>
                   <div aria-hidden="true" className="h-4 bg-black/50 rounded-full overflow-hidden border border-white/10">
                     <span
@@ -1865,7 +1851,7 @@ export default function Home() {
                   </div>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Demand Clusters</h2>
                   <div className="flex flex-col gap-6">
                     {activeResult.clusters.clusters.map((cluster) => (
@@ -1892,7 +1878,7 @@ export default function Home() {
                   </div>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Market Gaps</h2>
                   <ul className="flex flex-col gap-4">
                     {activeResult.market_gaps.map((gap) => (
@@ -1901,7 +1887,7 @@ export default function Home() {
                   </ul>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Positioning Strategy</h2>
                   <div className="flex flex-col gap-8">
                     <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/20 flex flex-col gap-4">
@@ -1931,12 +1917,12 @@ export default function Home() {
                   </div>
                 </section>
 
-                <section className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 backdrop-blur-xl border border-blue-500/30 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 backdrop-blur-xl border border-blue-500/30 p-8 rounded-3xl shadow-[0_0_40px_rgba(59,130,246,0.5)] flex flex-col gap-6">
                   <h2 className="text-3xl font-extrabold tracking-tight text-blue-100">Recommended Move</h2>
                   <p className="text-2xl font-medium leading-relaxed text-white">{activeResult.recommended_move}</p>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Executive Summary</h2>
                   <ul className="flex flex-col gap-4">
                     {activeResult.executive_summary.slice(0, 4).map((item) => (
@@ -1945,7 +1931,7 @@ export default function Home() {
                   </ul>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Market Breakdown</h2>
                   <div className="flex flex-col gap-4">
                     {classificationRows.map(([label, key]) => (
@@ -1957,12 +1943,12 @@ export default function Home() {
                   </div>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Core Constraint</h2>
                   <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.core_constraint}</p>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Customer Pains</h2>
                   <ul className="flex flex-col gap-4">
                     {activeResult.strategy?.pains?.map((pain) => (
@@ -1971,7 +1957,7 @@ export default function Home() {
                   </ul>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Hidden Objections</h2>
                   <ul className="flex flex-col gap-4">
                     {activeResult.strategy?.objections?.map((objection) => (
@@ -1980,22 +1966,22 @@ export default function Home() {
                   </ul>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Acquisition Angle</h2>
                   <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.acquisition_angle}</p>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Messaging Direction</h2>
                   <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.messaging}</p>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
                   <h2 className="text-3xl font-bold tracking-tight">Offer Positioning</h2>
                   <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.offer_positioning}</p>
                 </section>
 
-                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-8">
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col gap-8">
                   <p className={`text-sm font-semibold uppercase tracking-wider text-pink-400 ${styles.sectionPill}`}>Action Outputs</p>
                   <div className="flex flex-col gap-4">
                     {ACTION_BUTTONS.map((button) => (
@@ -2029,7 +2015,7 @@ export default function Home() {
 
           <section className={`py-24 px-6 ${styles.pricingScene}`} ref={mobilePricingSectionRef}>
             {(showInlinePricing || showPricingModal) && (
-              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-8 pricing-section-shell">
+              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full flex flex-col gap-8 pricing-section-shell">
                 <AnimatedPricingSection
                   currentPlan={usageState.plan}
                   focusState={gatedAction !== null}
@@ -2041,13 +2027,13 @@ export default function Home() {
           </section>
 
           <section className={`py-24 px-6 ${styles.faqScene}`} ref={mobileFaqSectionRef}>
-            <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full">
+            <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl w-full">
               <FaqSection />
             </div>
           </section>
 
           <section className={`py-24 px-6 flex flex-col gap-12 items-center text-center ${styles.bottomCtaScene}`}>
-            <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-10 rounded-3xl shadow-2xl w-full">
+            <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-10 rounded-2xl shadow-2xl w-full">
               <ResultsCtaSection
                 onRunAnother={scrollToMobileAnalysisInputs}
                 onUpgrade={() => void handlePlanSelection("pro")}
