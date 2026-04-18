@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowRight,
   Brain,
   Check,
   Layers3,
+  Menu,
   MessageSquare,
   Search,
   Shield,
   Star,
   TriangleAlert,
+  X,
   Zap
 } from "lucide-react";
 import AccountEntryButton from "@/components/auth/AccountEntryButton";
@@ -625,6 +629,9 @@ function buildAuthHeaders(accessToken?: string, includeJson = false) {
 export default function Home() {
   const motionPolicy = useMotionPolicy();
   const { isAuthenticated, session, setPlan: setAuthPlan } = useAuth();
+  const [isPhoneViewport, setIsPhoneViewport] = useState(false);
+  const [isExplainerOpen, setIsExplainerOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [marketType, setMarketType] = useState("");
   const [depth, setDepth] = useState("standard");
@@ -649,8 +656,13 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const analysisInputsRef = useRef<HTMLElement | null>(null);
+  const mobileAnalysisInputsRef = useRef<HTMLElement | null>(null);
   const queryInputRef = useRef<HTMLInputElement | null>(null);
+  const mobileQueryInputRef = useRef<HTMLInputElement | null>(null);
   const pricingSectionRef = useRef<HTMLElement | null>(null);
+  const mobilePricingSectionRef = useRef<HTMLElement | null>(null);
+  const mobileRecentAnalysesRef = useRef<HTMLElement | null>(null);
+  const mobileFaqSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const localRuns = loadSavedRuns();
@@ -733,15 +745,58 @@ export default function Home() {
     clearPendingAnalysisDraft();
 
     window.requestAnimationFrame(() => {
-      analysisInputsRef.current?.scrollIntoView({
+      const phoneViewport = window.matchMedia("(max-width: 767px)").matches;
+      const analysisTarget = phoneViewport
+        ? mobileAnalysisInputsRef.current
+        : analysisInputsRef.current;
+      const inputTarget = phoneViewport ? mobileQueryInputRef.current : queryInputRef.current;
+
+      analysisTarget?.scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
       window.setTimeout(() => {
-        queryInputRef.current?.focus();
+        inputTarget?.focus();
       }, 140);
     });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateViewport = () => {
+      setIsPhoneViewport(mediaQuery.matches);
+    };
+
+    updateViewport();
+    mediaQuery.addEventListener?.("change", updateViewport);
+
+    return () => {
+      mediaQuery.removeEventListener?.("change", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const mobileSideNavToggle = document.querySelector<HTMLElement>(".mobile-side-nav-toggle");
+
+    if (!mobileSideNavToggle) {
+      return;
+    }
+
+    const previousDisplay = mobileSideNavToggle.style.display;
+    mobileSideNavToggle.style.display = isPhoneViewport ? "none" : previousDisplay;
+
+    return () => {
+      mobileSideNavToggle.style.display = previousDisplay;
+    };
+  }, [isPhoneViewport]);
 
   const startUpgradeFlow = async (plan: Exclude<UserPlan, "free">) => {
     if (!STRIPE_CHECKOUT_URL) {
@@ -1180,13 +1235,15 @@ export default function Home() {
     .filter((savedRun): savedRun is SavedAnalysisRun => Boolean(savedRun));
 
   useEffect(() => {
-    if (gatedAction && activeResult && pricingSectionRef.current) {
-      pricingSectionRef.current.scrollIntoView({
+    const pricingTarget = isPhoneViewport ? mobilePricingSectionRef.current : pricingSectionRef.current;
+
+    if (gatedAction && activeResult && pricingTarget) {
+      pricingTarget.scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
     }
-  }, [activeResult, gatedAction]);
+  }, [activeResult, gatedAction, isPhoneViewport]);
 
   const handlePlanSelection = async (plan: UserPlan) => {
     if (plan === "free") {
@@ -1208,6 +1265,46 @@ export default function Home() {
     }, 250);
   };
 
+  const scrollToMobileAnalysisInputs = () => {
+    mobileAnalysisInputsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+    setIsMobileNavOpen(false);
+
+    window.setTimeout(() => {
+      mobileQueryInputRef.current?.focus();
+    }, 250);
+  };
+
+  const scrollToMobileSection = (target: HTMLElement | null) => {
+    target?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+    setIsMobileNavOpen(false);
+  };
+
+  const mobileNavItems = [
+    {
+      label: "Run Analysis",
+      onSelect: scrollToMobileAnalysisInputs
+    },
+    {
+      label: "Recent Analyses",
+      onSelect: () => scrollToMobileSection(mobileRecentAnalysesRef.current)
+    },
+    {
+      label: "Pricing",
+      onSelect: () => scrollToMobileSection(mobilePricingSectionRef.current)
+    },
+    {
+      label: "FAQ",
+      onSelect: () => scrollToMobileSection(mobileFaqSectionRef.current)
+    }
+  ];
+
   return (
     <main className={`page-shell ${styles.pageShell}`} id="home">
       {loading && (
@@ -1221,7 +1318,827 @@ export default function Home() {
         </div>
       )}
 
-      <div className="fixed top-6 right-6 z-50">
+      <div className={`block md:hidden ${styles.mobileRoot}`}>
+        <div className={styles.mobilePage}>
+          <div className={styles.mobileTopBar}>
+            <button
+              aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
+              className={styles.mobileNavToggle}
+              onClick={() => setIsMobileNavOpen((current) => !current)}
+              type="button"
+            >
+              {isMobileNavOpen ? <X /> : <Menu />}
+            </button>
+
+            <div className={styles.mobileTopBarUtilities}>
+              <div className="top-right-account-shell">
+                <AccountEntryButton />
+              </div>
+              <ToggleTheme animationType="circle-spread" />
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {isMobileNavOpen ? (
+              <motion.div
+                animate={{ opacity: 1 }}
+                className={`fixed inset-0 z-50 bg-black/95 flex flex-col justify-end p-6 ${styles.mobileNavOverlay}`}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                onClick={() => setIsMobileNavOpen(false)}
+              >
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`bg-zinc-900 w-full rounded-3xl p-8 shadow-2xl flex flex-col gap-8 ${styles.mobileNavPanel}`}
+                  exit={{ opacity: 0, y: -16 }}
+                  initial={{ opacity: 0, y: -16 }}
+                  onClick={(event) => event.stopPropagation()}
+                  transition={{ duration: 0.24, ease: "easeOut" }}
+                >
+                  <div className={styles.mobileNavHeader}>
+                    <p className={styles.mobileNavEyebrow}>SignalForge</p>
+                    <button
+                      aria-label="Close navigation"
+                      className={styles.mobileNavClose}
+                      onClick={() => setIsMobileNavOpen(false)}
+                      type="button"
+                    >
+                      <X />
+                    </button>
+                  </div>
+
+                  <div className={styles.mobileNavIntro}>
+                    <h2>Navigate the mobile experience.</h2>
+                    <p>Jump straight to the scene you need.</p>
+                  </div>
+
+                  <motion.div
+                    animate="open"
+                    className={`flex flex-col gap-4 ${styles.mobileNavList}`}
+                    initial="closed"
+                    variants={{
+                      open: {
+                        transition: {
+                          staggerChildren: 0.06,
+                          delayChildren: 0.04
+                        }
+                      },
+                      closed: {}
+                    }}
+                  >
+                    {mobileNavItems.map((item) => (
+                      <motion.button
+                        className={`text-3xl font-bold flex items-center justify-between w-full py-4 border-b border-white/10 last:border-0 ${styles.mobileNavItem}`}
+                        key={item.label}
+                        onClick={item.onSelect}
+                        type="button"
+                        variants={{
+                          open: {
+                            opacity: 1,
+                            y: 0
+                          },
+                          closed: {
+                            opacity: 0,
+                            y: 12
+                          }
+                        }}
+                      >
+                        <span>{item.label}</span>
+                        <ArrowRight />
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          <section className={`min-h-screen flex flex-col items-center justify-center py-32 px-6 ${styles.heroSection} ${styles.mobileHeroSection}`}>
+            <div className={`text-center flex flex-col items-center gap-8 ${styles.heroStack} ${styles.mobileHeroShell}`}>
+              <motion.p
+                animate={{ opacity: 1, y: 0 }}
+                className={`text-sm font-medium tracking-widest uppercase text-white/70 ${styles.mobileHeroTag}`}
+                initial={motionPolicy.prefersReducedMotion ? false : { opacity: 0, y: 18 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                Demand Intelligence, Designed for Mobile
+              </motion.p>
+
+              <motion.h1
+                animate={{ opacity: 1, y: 0 }}
+                className={`text-6xl sm:text-7xl font-extrabold tracking-tighter leading-[1.05] text-center ${styles.mobileHeroTitle}`}
+                initial={motionPolicy.prefersReducedMotion ? false : { opacity: 0, y: 24 }}
+                transition={{ duration: 0.48, ease: "easeOut", delay: motionPolicy.prefersReducedMotion ? 0 : 0.06 }}
+              >
+                TURN DEMAND
+                <br />
+                SIGNALS
+                <br />
+                INTO
+                <br />
+                PREDICTABLE
+                <br />
+                ACQUISITION
+              </motion.h1>
+
+              <motion.div
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className={styles.mobileHeroOrbiter}
+                initial={motionPolicy.prefersReducedMotion ? false : { opacity: 0, scale: 0.92, y: 22 }}
+                transition={{ duration: 0.5, ease: "easeOut", delay: motionPolicy.prefersReducedMotion ? 0 : 0.12 }}
+              >
+                <BeamCircle size={320} />
+              </motion.div>
+
+              <motion.p
+                animate={{ opacity: 1, y: 0 }}
+                className={`text-xl text-white/80 max-w-sm mx-auto leading-relaxed ${styles.mobileHeroCopy}`}
+                initial={motionPolicy.prefersReducedMotion ? false : { opacity: 0, y: 18 }}
+                transition={{ duration: 0.42, ease: "easeOut", delay: motionPolicy.prefersReducedMotion ? 0 : 0.18 }}
+              >
+                See what the market is actually telling you and move with a clear next step.
+              </motion.p>
+
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex flex-col w-full gap-4 mt-8 ${styles.mobileHeroCtaRow}`}
+                initial={motionPolicy.prefersReducedMotion ? false : { opacity: 0, y: 18 }}
+                transition={{ duration: 0.42, ease: "easeOut", delay: motionPolicy.prefersReducedMotion ? 0 : 0.24 }}
+              >
+                <button
+                  className={`w-full h-16 rounded-2xl text-lg font-bold shadow-[0_0_40px_rgba(59,130,246,0.5)] ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.videoTextButton} ${styles.videoTextButtonPrimary} ${styles.mobileHeroPrimaryButton}`}
+                  onClick={scrollToMobileAnalysisInputs}
+                  type="button"
+                >
+                  <VideoText
+                    as="span"
+                    src="/assets/gradient-video.mp4"
+                    className={`button-video-text ${styles.heroButtonWide}`}
+                    fontSize="1rem"
+                    fontWeight={700}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    Run Intelligence
+                  </VideoText>
+                </button>
+
+                <button
+                  className={`w-full h-16 rounded-2xl text-lg font-bold bg-white/5 backdrop-blur-md border border-white/10 ${styles.mainButton} ${styles.mainButtonSecondary} ${styles.videoTextButton} ${styles.videoTextButtonSecondary} ${styles.mobileHeroSecondaryButton}`}
+                  onClick={() => setIsExplainerOpen(true)}
+                  type="button"
+                >
+                  <VideoText
+                    as="span"
+                    src="/assets/gradient-video.mp4"
+                    className={`button-video-text ${styles.heroButtonCompact}`}
+                    fontSize="1rem"
+                    fontWeight={700}
+                    fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    autoPlay
+                    muted
+                    loop
+                    preload="auto"
+                  >
+                    See Pipeline
+                  </VideoText>
+                </button>
+              </motion.div>
+            </div>
+          </section>
+
+          <section className={`py-24 px-6 flex flex-col gap-12 ${styles.analysisScene}`} ref={mobileAnalysisInputsRef}>
+            <div className={`text-center flex flex-col gap-6 ${styles.mobileSceneIntro}`}>
+              <p className={`text-sm font-semibold tracking-widest uppercase text-blue-400 ${styles.mobileSceneKicker}`}>Run Analysis</p>
+              <h2 className={`text-5xl font-bold tracking-tight leading-tight ${styles.mobileSceneTitle}`}>Feed the engine a market.</h2>
+              <p className={`text-lg text-white/70 leading-relaxed ${styles.mobileSceneCopy}`}>
+                Start with a seed query, add optional market context, and let the system surface the signal.
+              </p>
+            </div>
+
+            <div className={`flex flex-col gap-8 w-full ${styles.mobileStack}`}>
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+                <input
+                  className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none"
+                  ref={mobileQueryInputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Enter seed query"
+                />
+              </div>
+
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+                <p className={`text-sm font-semibold uppercase tracking-wider text-white/50 mb-2 ${styles.sectionPill}`}>Market Context (Optional)</p>
+                <select
+                  className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                  value={marketType}
+                  onChange={(event) => setMarketType(event.target.value)}
+                  aria-label="Market Context (Optional)"
+                >
+                  <option value="">Select Market Context (Optional)</option>
+                  {MARKET_CONTEXT_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+                <select
+                  className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                  value={depth}
+                  onChange={(event) => setDepth(event.target.value)}
+                >
+                  <option value="standard">Standard Analysis</option>
+                  <option value="deep">Deep Analysis</option>
+                  <option value="aggressive">Aggressive (Max Insights)</option>
+                </select>
+              </div>
+
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+                <textarea
+                  className="w-full p-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
+                  value={competitorNames}
+                  onChange={(event) => setCompetitorNames(event.target.value)}
+                  placeholder="Optional competitor names"
+                  rows={4}
+                />
+              </div>
+
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+                <textarea
+                  className="w-full p-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none min-h-[120px]"
+                  value={competitorUrls}
+                  onChange={(event) => setCompetitorUrls(event.target.value)}
+                  placeholder="Optional competitor URLs"
+                  rows={4}
+                />
+              </div>
+
+              <div className={`bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-4 ${styles.mobileCard}`}>
+                <select
+                  className="w-full h-16 px-6 text-lg rounded-2xl bg-black/50 border border-white/10 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                  value={niche}
+                  onChange={(event) => setNiche(event.target.value)}
+                >
+                  <option value="">Optional Market / Niche</option>
+                  {NICHE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              className={`w-full h-20 mt-8 rounded-3xl text-2xl font-bold shadow-[0_0_60px_rgba(59,130,246,0.6)] ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.videoTextButton} ${styles.videoTextButtonPrimary} ${styles.analysisSubmit}`}
+              disabled={loading}
+              onClick={() => runAnalysis()}
+              type="button"
+            >
+              <VideoText
+                as="span"
+                src="/assets/gradient-video.mp4"
+                className="button-video-text button-video-text-run"
+                fontSize="1rem"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                Run Intelligence
+              </VideoText>
+            </button>
+
+            {CLIENT_MODE === "LIVE" ? (
+              <div className="usage-status-shell">
+                <p className="field-copy result-copy">
+                  Plan:{" "}
+                  {usageState.plan === "agency"
+                    ? "Agency"
+                    : usageState.plan === "pro"
+                      ? "Pro"
+                      : "Free"}{" "}
+                  •{" "}
+                  {usageState.plan === "free"
+                    ? `${usageState.freeRunsRemaining}/${FREE_LIVE_DAILY_LIMIT} LIVE runs left today`
+                    : "Unlimited LIVE analyses"}
+                </p>
+              </div>
+            ) : null}
+
+            {error ? (
+              <p className="field-copy result-copy" role="alert">
+                Error: {error}
+              </p>
+            ) : null}
+          </section>
+
+          {savedRuns.length ? (
+            <section className={`py-24 px-6 ${styles.recentScene}`} ref={mobileRecentAnalysesRef}>
+              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-8">
+                <div className="flex flex-col gap-4">
+                  <p className={`text-sm font-semibold uppercase tracking-wider text-blue-400 ${styles.sectionPill}`}>Recent Analyses</p>
+                  <p className="text-lg text-white/70">
+                    Select up to two saved runs to compare without rerunning the API.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-6">
+                  {savedRuns.map((savedRun) => (
+                    <article
+                      className={`flex flex-col gap-4 p-6 rounded-2xl border border-white/10 bg-black/20 ${
+                        selectedComparisonIds.includes(savedRun.id) ? "is-selected" : ""
+                      }`}
+                      key={`mobile-${savedRun.id}`}
+                    >
+                      <button
+                        className="flex flex-col text-left gap-2 w-full"
+                        onClick={() => restoreSavedRun(savedRun)}
+                        type="button"
+                      >
+                        <span className="text-2xl font-bold text-white">{savedRun.query}</span>
+                        <span className="text-sm text-white/50 uppercase tracking-wider">
+                          {savedRun.result.source_meta.mode} • {formatGeneratedTimestamp(savedRun.createdAt)}
+                        </span>
+                      </button>
+                      <button
+                        className={`h-14 w-full rounded-xl font-bold text-lg transition-colors ${selectedComparisonIds.includes(savedRun.id) ? "bg-blue-600 text-white" : "bg-white/10 text-white/70 hover:bg-white/20"}`}
+                        onClick={() => toggleCompareRun(savedRun.id)}
+                        type="button"
+                      >
+                        {selectedComparisonIds.includes(savedRun.id) ? "Selected" : "Compare"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {comparisonRuns.length === 2 ? (
+            <section className={`py-24 px-6 ${styles.comparisonScene}`}>
+              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-12">
+                <p className={`text-sm font-semibold uppercase tracking-wider text-purple-400 ${styles.sectionPill}`}>Compare Runs</p>
+                <div className="flex flex-col gap-8">
+                  <div className="flex flex-col gap-2 p-6 rounded-2xl bg-black/30 border border-white/5">
+                    <h3 className="text-2xl font-bold">{comparisonRuns[0].query}</h3>
+                    <p className="text-sm text-white/50">
+                      {comparisonRuns[0].result.source_meta.mode} •{" "}
+                      {formatGeneratedTimestamp(comparisonRuns[0].createdAt)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 p-6 rounded-2xl bg-black/30 border border-white/5">
+                    <h3 className="text-2xl font-bold">{comparisonRuns[1].query}</h3>
+                    <p className="text-sm text-white/50">
+                      {comparisonRuns[1].result.source_meta.mode} •{" "}
+                      {formatGeneratedTimestamp(comparisonRuns[1].createdAt)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-8">
+                  <div className="flex flex-col gap-6 p-8 rounded-2xl bg-white/5 border border-white/10">
+                    <h3 className="text-xl font-bold text-white/90">Dominant Narrative</h3>
+                    <p className={`text-sm font-bold uppercase tracking-wider px-4 py-2 rounded-lg w-fit ${comparisonRuns[0].result.dominant_narrative === comparisonRuns[1].result.dominant_narrative ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                      {comparisonRuns[0].result.dominant_narrative ===
+                      comparisonRuns[1].result.dominant_narrative
+                        ? "Consistent"
+                        : "Changed"}
+                    </p>
+                    <div className="flex flex-col gap-4">
+                      <p className="p-4 rounded-xl bg-black/40 text-lg">{comparisonRuns[0].result.dominant_narrative}</p>
+                      <p className="p-4 rounded-xl bg-black/40 text-lg">{comparisonRuns[1].result.dominant_narrative}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-6 p-8 rounded-2xl bg-white/5 border border-white/10">
+                    <h3 className="text-xl font-bold text-white/90">Recommended Move</h3>
+                    <p className={`text-sm font-bold uppercase tracking-wider px-4 py-2 rounded-lg w-fit ${comparisonRuns[0].result.recommended_move === comparisonRuns[1].result.recommended_move ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                      {comparisonRuns[0].result.recommended_move ===
+                      comparisonRuns[1].result.recommended_move
+                        ? "Consistent"
+                        : "Changed"}
+                    </p>
+                    <div className="flex flex-col gap-4">
+                      <p className="p-4 rounded-xl bg-black/40 text-lg">{comparisonRuns[0].result.recommended_move}</p>
+                      <p className="p-4 rounded-xl bg-black/40 text-lg">{comparisonRuns[1].result.recommended_move}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {activeResult ? (
+            <section className={`py-12 px-6 flex flex-col gap-12 ${styles.resultsScene}`}>
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <button className="h-14 rounded-xl bg-white/10 border border-white/10 font-bold text-lg flex items-center justify-center active:bg-white/20" onClick={exportPDF} type="button">
+                    Export PDF
+                  </button>
+                  <button
+                    className="h-14 rounded-xl bg-white/10 border border-white/10 font-bold text-lg flex items-center justify-center active:bg-white/20 disabled:opacity-50"
+                    disabled={!activeAnalysisId}
+                    onClick={() => void toggleShareVisibility()}
+                    type="button"
+                  >
+                    {activeAnalysisPublic ? "Make Private" : "Make Public"}
+                  </button>
+                  <button
+                    className="h-14 rounded-xl bg-white/10 border border-white/10 font-bold text-lg flex items-center justify-center active:bg-white/20 disabled:opacity-50"
+                    disabled={!activeAnalysisId || !activeAnalysisPublic}
+                    onClick={() => void copyShareLink()}
+                    type="button"
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    className="h-14 rounded-xl bg-white/10 border border-white/10 font-bold text-lg flex items-center justify-center active:bg-white/20 disabled:opacity-50"
+                    disabled={!activeAnalysisId || !activeAnalysisPublic}
+                    onClick={openShareLink}
+                    type="button"
+                  >
+                    Open Link
+                  </button>
+                </div>
+              </div>
+
+              <div className={`flex flex-col gap-8 ${styles.reportSceneStack}`}>
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <p className={`text-sm font-semibold uppercase tracking-wider text-blue-400 ${styles.sectionPill}`}>Source Activity</p>
+                  <div className="flex flex-wrap gap-3" aria-label="Source activity">
+                    <span
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border flex items-center gap-2 ${
+                        activeResult.source_meta.used_google ? "bg-blue-500/20 border-blue-500/30 text-blue-300" : "bg-black/40 border-white/5 text-white/30"
+                      }`}
+                    >
+                      Google <span aria-hidden="true">{activeResult.source_meta.used_google ? "●" : "○"}</span>
+                    </span>
+                    <span
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border flex items-center gap-2 ${
+                        activeResult.source_meta.used_reddit ? "bg-orange-500/20 border-orange-500/30 text-orange-300" : "bg-black/40 border-white/5 text-white/30"
+                      }`}
+                    >
+                      Reddit <span aria-hidden="true">{activeResult.source_meta.used_reddit ? "●" : "○"}</span>
+                    </span>
+                    <span
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border flex items-center gap-2 ${
+                        activeResult.source_meta.used_openai ? "bg-green-500/20 border-green-500/30 text-green-300" : "bg-black/40 border-white/5 text-white/30"
+                      }`}
+                    >
+                      OpenAI <span aria-hidden="true">{activeResult.source_meta.used_openai ? "●" : "○"}</span>
+                    </span>
+                  </div>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <p className={`text-sm font-semibold uppercase tracking-wider text-purple-400 ${styles.sectionPill}`}>Dominant Narrative</p>
+                  <p className="text-2xl font-semibold leading-relaxed text-white">{activeResult.dominant_narrative}</p>
+                  <p className="text-sm text-white/50">{formatEvidence(activeResult.source_meta)}</p>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Market Diagnosis</h2>
+                  <div className="flex flex-col gap-6">
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Type</h3>
+                      <p className="text-lg text-white/70">{activeResult.market_diagnosis.market_type}</p>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Demand</h3>
+                      <p className="text-lg text-white/70">{activeResult.market_diagnosis.demand_state}</p>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Intent</h3>
+                      <p className="text-lg text-white/70">{activeResult.market_diagnosis.intent_level}</p>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Risk</h3>
+                      <p className="text-lg text-white/70">{activeResult.market_diagnosis.risk_level}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Signal Strength</h2>
+                  <div aria-hidden="true" className="h-4 bg-black/50 rounded-full overflow-hidden border border-white/10">
+                    <span
+                      className="block h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full"
+                      style={{
+                        width: `${Math.max(
+                          0,
+                          Math.min(100, activeResult.signal_strength.confidence_score)
+                        )}%`
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-6">
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Strength</h3>
+                      <p className="text-lg text-white/70">{activeResult.signal_strength.strength}</p>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Confidence</h3>
+                      <p className="text-lg text-white/70">{activeResult.signal_strength.confidence_score}%</p>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-2">
+                      <h3 className="text-xl font-bold text-white/90">Pattern</h3>
+                      <p className="text-lg text-white/70">{activeResult.signal_strength.pattern_consistency}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Demand Clusters</h2>
+                  <div className="flex flex-col gap-6">
+                    {activeResult.clusters.clusters.map((cluster) => (
+                      <div className="p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-4" key={`mobile-cluster-${cluster.theme}`}>
+                        <h3 className="text-2xl font-bold text-white/90">
+                          {cluster.theme} — {cluster.frequency} signals
+                        </h3>
+                        <ul className="flex flex-col gap-4">
+                          {cluster.queries.map((item) => (
+                            <li className="flex flex-col gap-3 p-4 rounded-xl bg-white/5" key={`${cluster.theme}-${item}-mobile`}>
+                              <span className="text-lg text-white/80">{item}</span>
+                              <span className="flex flex-wrap gap-2">
+                                {(signalSourceMap.get(item.toLowerCase()) ?? []).map((source) => (
+                                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30" key={`${item}-${source}-mobile`}>
+                                    {source}
+                                  </span>
+                                ))}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Market Gaps</h2>
+                  <ul className="flex flex-col gap-4">
+                    {activeResult.market_gaps.map((gap) => (
+                      <li className="text-lg text-white/80 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5" key={`mobile-gap-${gap}`}>{gap}</li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Positioning Strategy</h2>
+                  <div className="flex flex-col gap-8">
+                    <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/20 flex flex-col gap-4">
+                      <h3 className="text-2xl font-bold text-green-400">Emphasize</h3>
+                      <ul className="flex flex-col gap-3">
+                        {activeResult.positioning_strategy.emphasize.map((item) => (
+                          <li className="text-lg text-white/80 leading-relaxed" key={`mobile-emphasize-${item}`}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex flex-col gap-4">
+                      <h3 className="text-2xl font-bold text-red-400">Avoid</h3>
+                      <ul className="flex flex-col gap-3">
+                        {activeResult.positioning_strategy.avoid.map((item) => (
+                          <li className="text-lg text-white/80 leading-relaxed" key={`mobile-avoid-${item}`}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-6 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-4">
+                      <h3 className="text-2xl font-bold text-purple-400">Blindspots</h3>
+                      <ul className="flex flex-col gap-3">
+                        {activeResult.positioning_strategy.competitor_blindspots.map((item) => (
+                          <li className="text-lg text-white/80 leading-relaxed" key={`mobile-blindspot-${item}`}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 backdrop-blur-xl border border-blue-500/30 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-extrabold tracking-tight text-blue-100">Recommended Move</h2>
+                  <p className="text-2xl font-medium leading-relaxed text-white">{activeResult.recommended_move}</p>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Executive Summary</h2>
+                  <ul className="flex flex-col gap-4">
+                    {activeResult.executive_summary.slice(0, 4).map((item) => (
+                      <li className="text-lg text-white/80 leading-relaxed bg-white/5 p-5 rounded-xl border border-white/5" key={`mobile-summary-${item}`}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Market Breakdown</h2>
+                  <div className="flex flex-col gap-4">
+                    {classificationRows.map(([label, key]) => (
+                      <div className="p-5 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-1" key={`mobile-${key}`}>
+                        <h3 className="text-lg font-bold text-white/50 uppercase tracking-wider">{label}</h3>
+                        <p className="text-xl text-white/90 font-medium">{activeResult.classification?.[key]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Core Constraint</h2>
+                  <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.core_constraint}</p>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Customer Pains</h2>
+                  <ul className="flex flex-col gap-4">
+                    {activeResult.strategy?.pains?.map((pain) => (
+                      <li className="text-lg text-white/80 leading-relaxed bg-white/5 p-5 rounded-xl border border-white/5" key={`mobile-pain-${pain}`}>{pain}</li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Hidden Objections</h2>
+                  <ul className="flex flex-col gap-4">
+                    {activeResult.strategy?.objections?.map((objection) => (
+                      <li className="text-lg text-white/80 leading-relaxed bg-white/5 p-5 rounded-xl border border-white/5" key={`mobile-objection-${objection}`}>{objection}</li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Acquisition Angle</h2>
+                  <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.acquisition_angle}</p>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Messaging Direction</h2>
+                  <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.messaging}</p>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-6">
+                  <h2 className="text-3xl font-bold tracking-tight">Offer Positioning</h2>
+                  <p className="text-xl text-white/80 leading-relaxed p-6 bg-white/5 rounded-2xl border border-white/5">{activeResult.strategy?.offer_positioning}</p>
+                </section>
+
+                <section className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl flex flex-col gap-8">
+                  <p className={`text-sm font-semibold uppercase tracking-wider text-pink-400 ${styles.sectionPill}`}>Action Outputs</p>
+                  <div className="flex flex-col gap-4">
+                    {ACTION_BUTTONS.map((button) => (
+                      <button
+                        className="w-full h-16 rounded-2xl bg-white/10 border border-white/10 font-bold text-lg active:bg-white/20 disabled:opacity-50"
+                        disabled={actionLoadingKind !== null}
+                        key={`mobile-${button.kind}`}
+                        onClick={() => generateActionOutput(button.kind)}
+                        type="button"
+                      >
+                        {actionLoadingKind === button.kind ? "Generating..." : button.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-8 mt-4">
+                    {ACTION_BUTTONS.filter((button) => actionOutputs[button.kind]).map((button) => (
+                      <div className="flex flex-col gap-4 p-6 rounded-2xl bg-black/40 border border-white/5" key={`mobile-output-${button.kind}`}>
+                        <h3 className="text-2xl font-bold text-white/90">{button.title}</h3>
+                        <ul className="flex flex-col gap-4">
+                          {actionOutputs[button.kind]?.outputs.map((item) => (
+                            <li className="text-lg text-white/80 leading-relaxed bg-white/5 p-4 rounded-xl" key={`${button.kind}-${item}-mobile`}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </section>
+          ) : null}
+
+          <section className={`py-24 px-6 ${styles.pricingScene}`} ref={mobilePricingSectionRef}>
+            {(showInlinePricing || showPricingModal) && (
+              <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full flex flex-col gap-8 pricing-section-shell">
+                <AnimatedPricingSection
+                  currentPlan={usageState.plan}
+                  focusState={gatedAction !== null}
+                  message={pricingMessage}
+                  onSelectPlan={(plan) => void handlePlanSelection(plan)}
+                />
+              </div>
+            )}
+          </section>
+
+          <section className={`py-24 px-6 ${styles.faqScene}`} ref={mobileFaqSectionRef}>
+            <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl w-full">
+              <FaqSection />
+            </div>
+          </section>
+
+          <section className={`py-24 px-6 flex flex-col gap-12 items-center text-center ${styles.bottomCtaScene}`}>
+            <div className="bg-card/90 backdrop-blur-xl border border-white/10 p-10 rounded-3xl shadow-2xl w-full">
+              <ResultsCtaSection
+                onRunAnother={scrollToMobileAnalysisInputs}
+                onUpgrade={() => void handlePlanSelection("pro")}
+                plan={usageState.plan}
+              />
+            </div>
+          </section>
+
+          <section className={styles.drawerScene}>
+            <Drawer onOpenChange={setIsExplainerOpen} open={isExplainerOpen}>
+              <DrawerTrigger
+                className={`w-full h-16 rounded-2xl bg-white/5 border border-white/10 font-bold text-lg text-white mb-12 ${styles.mainButton} ${styles.mainButtonSecondary} ${styles.videoTextButton} ${styles.videoTextButtonSecondary} ${styles.drawerTriggerButton}`}
+                type="button"
+              >
+                <VideoText
+                  as="span"
+                  src="/assets/gradient-video.mp4"
+                  className="button-video-text button-video-text-pipeline"
+                  fontSize="1rem"
+                  fontWeight={700}
+                  fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  autoPlay
+                  muted
+                  loop
+                  preload="auto"
+                >
+                  How It Works
+                </VideoText>
+              </DrawerTrigger>
+
+              <DrawerContent className={styles.drawerContent}>
+                <div className="drawer-grid-shell p-4">
+                  <div className="card p-6">
+                    <div className={styles.drawerHeadingPill}>
+                      <VideoText
+                        as="h2"
+                        src="/assets/gradient-video.mp4"
+                        className={`drawer-video-heading drawer-video-heading-pipeline ${styles.drawerVideoHeading} ${styles.drawerVideoHeadingPipeline}`}
+                        fontSize="clamp(1.28rem, 1.95vw, 1.58rem)"
+                        fontWeight={700}
+                        fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        autoPlay
+                        muted
+                        loop
+                        preload="auto"
+                      >
+                        Pipeline
+                      </VideoText>
+                    </div>
+                    <div className="drawer-timeline-intro">
+                      {pipelineIntroLines.map((line) => (
+                        <p key={`mobile-${line}`}>{line}</p>
+                      ))}
+                    </div>
+                    <IntelligenceTimeline steps={pipelineTimelineSteps} />
+                  </div>
+
+                  <div className="card p-6">
+                    <div className={styles.drawerHeadingPill}>
+                      <VideoText
+                        as="h2"
+                        src="/assets/gradient-video.mp4"
+                        className={`drawer-video-heading drawer-video-heading-output ${styles.drawerVideoHeading} ${styles.drawerVideoHeadingOutput}`}
+                        fontSize="clamp(1.28rem, 1.95vw, 1.58rem)"
+                        fontWeight={700}
+                        fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        autoPlay
+                        muted
+                        loop
+                        preload="auto"
+                      >
+                        Intelligence Output
+                      </VideoText>
+                    </div>
+                    <IntelligenceTimeline steps={intelligenceOutputTimelineSteps} />
+                  </div>
+                </div>
+              </DrawerContent>
+            </Drawer>
+          </section>
+        </div>
+      </div>
+
+      <div className={`hidden md:block ${styles.desktopRoot}`}>
+      <div className={`fixed top-6 right-6 z-50 ${styles.utilityDock}`}>
         <div className="flex items-center gap-3 top-right-controls">
           <div className="top-right-account-shell">
             <AccountEntryButton />
@@ -1232,11 +2149,19 @@ export default function Home() {
 
       <section className={`min-h-screen flex items-center justify-center ${styles.heroSection}`}>
         <div className={`text-center space-y-12 lg:space-y-16 hero-stack ${styles.heroStack}`}>
+          <div className={`${styles.mobileHeroLead} ${styles.mobileOnly}`}>
+            <span className={styles.mobileHeroEyebrow}>SignalForge Intelligence</span>
+            <p className={styles.mobileHeroSceneNote}>
+              Live demand mapping, competitive pressure, and strategic direction staged for mobile.
+            </p>
+          </div>
           <AuroraTextEffect
             className="hero-aurora-shell bg-transparent dark:bg-transparent"
             textClassName="hero-aurora-headline"
             fontSize={
-              motionPolicy.isMobile
+              isPhoneViewport
+                ? "clamp(3.3rem, 14vw, 5.15rem)"
+                : motionPolicy.isMobile
                 ? "clamp(1.7rem, 8vw, 3rem)"
                 : "clamp(2.85rem, 6vw, 6.2rem)"
             }
@@ -1246,20 +2171,86 @@ export default function Home() {
                 : "TURN DEMAND SIGNALS\nINTO PREDICTABLE\nACQUISITION"
             }
           />
-          <div className="hero-orbiter">
-            <BeamCircle size={motionPolicy.isMobile ? 320 : 400} />
+          <div className={styles.heroOrbiterFrame}>
+            <div className="hero-orbiter">
+              <BeamCircle size={isPhoneViewport ? 360 : motionPolicy.isMobile ? 320 : 400} />
+            </div>
           </div>
           <div className="hero-subtitle-wrap mx-auto px-4 sm:px-6">
             <p className="hero-subtitle-copy mx-auto">
               See what the market is actually telling you — and know exactly what to do next.
             </p>
           </div>
+          <div className={`${styles.mobileHeroActions} ${styles.mobileOnly}`}>
+            <button
+              className={`${styles.mainButton} ${styles.mainButtonPrimary} ${styles.videoTextButton} ${styles.videoTextButtonPrimary} ${styles.heroActionPrimary}`}
+              onClick={scrollToAnalysisInputs}
+              type="button"
+            >
+              <VideoText
+                as="span"
+                src="/assets/gradient-video.mp4"
+                className={`button-video-text ${styles.heroButtonWide}`}
+                fontSize="1rem"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                Run Intelligence
+              </VideoText>
+            </button>
+
+            <button
+              className={`${styles.mainButton} ${styles.mainButtonSecondary} ${styles.videoTextButton} ${styles.videoTextButtonSecondary} ${styles.heroActionSecondary}`}
+              onClick={() => setIsExplainerOpen(true)}
+              type="button"
+            >
+              <VideoText
+                as="span"
+                src="/assets/gradient-video.mp4"
+                className={`button-video-text ${styles.heroButtonCompact}`}
+                fontSize="1rem"
+                fontWeight={700}
+                fontFamily='"Manrope", "Avenir Next", "Inter", "Helvetica Neue", sans-serif'
+                textAnchor="middle"
+                dominantBaseline="middle"
+                autoPlay
+                muted
+                loop
+                preload="auto"
+              >
+                See Pipeline
+              </VideoText>
+            </button>
+          </div>
+          <div className={`${styles.mobileSignalTokens} ${styles.mobileOnly}`} aria-hidden="true">
+            <span className={styles.mobileSignalToken}>Demand patterns</span>
+            <span className={styles.mobileSignalToken}>Positioning gaps</span>
+            <span className={styles.mobileSignalToken}>Recommended move</span>
+          </div>
         </div>
       </section>
 
       <ScrollReveal>
-        <section className="max-w-7xl mx-auto px-6 py-20" id="run-analysis" ref={analysisInputsRef}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section
+          className={`max-w-7xl mx-auto px-6 py-20 ${styles.analysisScene}`}
+          id="run-analysis"
+          ref={analysisInputsRef}
+        >
+          <div className={`${styles.mobileSceneIntro} ${styles.mobileOnly}`}>
+            <p className={styles.mobileSceneKicker}>Run Analysis</p>
+            <h2 className={styles.mobileSceneTitle}>Feed the engine a market.</h2>
+            <p className={styles.mobileSceneCopy}>
+              Start with a seed query, layer in optional context, and let the system surface the signal.
+            </p>
+          </div>
+
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${styles.analysisPrimaryGrid}`}>
             <div className="card p-6">
               <input
                 className="surface-input"
@@ -1304,7 +2295,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 ${styles.analysisSecondaryGrid}`}>
             <div className="card p-6">
               <textarea
                 className="surface-input surface-textarea"
@@ -1342,7 +2333,7 @@ export default function Home() {
           </div>
 
           <button
-            className={`mt-10 results-cta-primary ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.videoTextButton} ${styles.videoTextButtonPrimary}`}
+            className={`mt-10 results-cta-primary ${styles.mainButton} ${styles.mainButtonPrimary} ${styles.videoTextButton} ${styles.videoTextButtonPrimary} ${styles.analysisSubmit}`}
             disabled={loading}
             onClick={() => runAnalysis()}
             type="button"
@@ -1398,7 +2389,7 @@ export default function Home() {
       <section id="recent-analyses">
         {savedRuns.length ? (
           <ScrollReveal eager>
-            <section className="max-w-7xl mx-auto px-6 pb-8 recent-analyses-shell">
+            <section className={`max-w-7xl mx-auto px-6 pb-8 recent-analyses-shell ${styles.recentScene}`}>
               <div className="card p-6">
                 <div className="recent-analyses-header">
                   <p className={`card-label ${styles.sectionPill}`}>Recent Analyses</p>
@@ -1443,7 +2434,7 @@ export default function Home() {
 
       {comparisonRuns.length === 2 ? (
         <ScrollReveal eager>
-          <section className="max-w-7xl mx-auto px-6 pb-8">
+          <section className={`max-w-7xl mx-auto px-6 pb-8 ${styles.comparisonScene}`}>
             <div className="card p-6 comparison-shell">
               <p className={`card-label ${styles.sectionPill}`}>Compare Runs</p>
               <div className="comparison-header">
@@ -1540,7 +2531,7 @@ export default function Home() {
       {activeResult && (
         <>
           <ScrollReveal eager>
-            <section className="max-w-5xl mx-auto py-20 space-y-12">
+            <section className={`max-w-5xl mx-auto py-20 space-y-12 ${styles.resultsScene}`}>
               <div className="results-toolbar">
                 <div className="results-toolbar-actions">
                   <button className="btn-secondary" onClick={exportPDF} type="button">
@@ -1589,7 +2580,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="space-y-12" id="report">
+              <div className={`space-y-12 ${styles.reportSceneStack}`} id="report">
                 <ScrollReveal eager>
                   <section className="card p-6">
                     <p className={`card-label ${styles.sectionPill}`}>Source Activity</p>
@@ -1970,7 +2961,7 @@ export default function Home() {
         </>
       )}
 
-      <section className="mt-24" id="pricing" ref={pricingSectionRef}>
+      <section className={`mt-24 ${styles.pricingScene}`} id="pricing" ref={pricingSectionRef}>
         {showInlinePricing ? (
           <ScrollReveal eager>
             <section className="max-w-5xl mx-auto px-6 pb-8">
@@ -1987,13 +2978,13 @@ export default function Home() {
         ) : null}
       </section>
 
-      <section className="mt-24 faq-visibility-shell" id="faq">
+      <section className={`mt-24 faq-visibility-shell ${styles.faqScene}`} id="faq">
         <ScrollReveal eager>
           <FaqSection />
         </ScrollReveal>
       </section>
 
-      <section className="mt-16" id="bottom-cta">
+      <section className={`mt-16 ${styles.bottomCtaScene}`} id="bottom-cta">
         <ScrollReveal eager>
           <ResultsCtaSection
             onRunAnother={scrollToAnalysisInputs}
@@ -2136,10 +3127,10 @@ export default function Home() {
       ) : null}
 
       <ScrollReveal eager>
-        <section className="max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section">
-          <Drawer>
+        <section className={`max-w-5xl mx-auto px-6 pb-24 drawer-trigger-section ${styles.drawerScene}`}>
+          <Drawer onOpenChange={setIsExplainerOpen} open={isExplainerOpen}>
             <DrawerTrigger
-              className={`results-cta-secondary ${styles.mainButton} ${styles.mainButtonSecondary} ${styles.videoTextButton} ${styles.videoTextButtonSecondary}`}
+              className={`results-cta-secondary ${styles.mainButton} ${styles.mainButtonSecondary} ${styles.videoTextButton} ${styles.videoTextButtonSecondary} ${styles.drawerTriggerButton}`}
               type="button"
             >
               <VideoText
@@ -2160,7 +3151,7 @@ export default function Home() {
               </VideoText>
             </DrawerTrigger>
 
-            <DrawerContent>
+            <DrawerContent className={styles.drawerContent}>
               <div className="drawer-grid-shell p-4">
                 <div className="card p-6">
                   <div className={styles.drawerHeadingPill}>
@@ -2215,6 +3206,7 @@ export default function Home() {
           </Drawer>
         </section>
       </ScrollReveal>
+      </div>
     </main>
   );
 }
