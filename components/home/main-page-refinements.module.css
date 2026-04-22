@@ -1328,3 +1328,605 @@
     transform: translateY(-3px);
   }
 }
+
+.cinematicHeroSection {
+  position: relative;
+  min-height: 100svh;
+  overflow: clip;
+  padding-top: clamp(5.75rem, 8vw, 7.5rem);
+  padding-bottom: clamp(3.5rem, 7vw, 5.5rem);
+}
+
+.cinematicHeroSection::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: clamp(8rem, 18vw, 14rem);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--bg) 94%, transparent)
+  );
+  pointer-events: none;
+}
+
+.cinematicHeroBackdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cinematicHeroGlowPrimary,
+.cinematicHeroGlowSecondary,
+.cinematicHeroGlowTertiary {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.cinematicHeroGlowPrimary {
+  top: 2%;
+  left: -10%;
+  width: clamp(22rem, 38vw, 40rem);
+  height: clamp(22rem, 38vw, 40rem);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    transparent 70%
+  );
+  filter: blur(70px);
+  opacity: 0.9;
+}
+
+.cinematicHeroGlowSecondary {
+  top: 8%;
+  right: -8%;
+  width: clamp(18rem, 32vw, 34rem);
+  height: clamp(18rem, 32vw, 34rem);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-2, var(--accent)) 14%, transparent),
+    transparent 72%
+  );
+  filter: blur(78px);
+  opacity: 0.72;
+}
+
+.cinematicHeroGlowTertiary {
+  inset: auto auto -10% 24%;
+  width: clamp(16rem, 28vw, 28rem);
+  height: clamp(16rem, 28vw, 28rem);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 10%, transparent),
+    transparent 74%
+  );
+  filter: blur(80px);
+  opacity: 0.55;
+}
+
+.cinematicHeroShell {
+  position: relative;
+  z-index: 1;
+  width: min(1500px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(340px, 0.98fr);
+  grid-template-areas:
+    "copy visual"
+    "support visual";
+  align-items: center;
+  column-gap: clamp(2rem, 4vw, 5rem);
+  row-gap: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.cinematicHeroCopy,
+.cinematicHeroSupport {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+}
+
+.cinematicHeroCopy {
+  grid-area: copy;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.cinematicHeroSupport {
+  grid-area: support;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.cinematicHeroVisual {
+  grid-area: visual;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.cinematicHeroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: fit-content;
+  padding: 0.72rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 76%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.cinematicHeroBadgeIcon {
+  width: 0.92rem;
+  height: 0.92rem;
+}
+
+.cinematicHeroHeadlineBlock {
+  display: grid;
+  gap: 1rem;
+}
+
+.cinematicHeroEyebrow {
+  max-width: 36rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--muted) 84%, var(--ink) 16%);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+
+.cinematicHeroHeading {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+.cinematicHeroHeadingLead {
+  max-width: 12ch;
+  font-size: clamp(3.1rem, 6vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+
+.cinematicHeroHeadingVideo {
+  display: block;
+  width: min(13ch, 100%);
+  height: clamp(3.5rem, 8vw, 6.9rem);
+  margin: 0.2rem 0 0;
+  filter: drop-shadow(0 28px 54px color-mix(in srgb, var(--accent) 16%, transparent));
+}
+
+.cinematicHeroHeadingTail {
+  max-width: 14ch;
+  color: color-mix(in srgb, var(--muted) 78%, var(--ink) 22%);
+  font-size: clamp(1.15rem, 2vw, 1.85rem);
+  font-weight: 750;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.cinematicHeroBody {
+  max-width: 37rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--muted) 82%, var(--ink) 18%);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-weight: 650;
+  line-height: 1.82;
+}
+
+.cinematicHeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.cinematicHeroPrimaryAction,
+.cinematicHeroSecondaryAction {
+  min-height: 4.5rem;
+  border-radius: 1.75rem;
+  padding: 1rem 1.2rem;
+}
+
+.cinematicHeroPrimaryAction {
+  min-width: min(100%, 18rem);
+  box-shadow:
+    0 20px 60px color-mix(in srgb, var(--accent) 24%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.cinematicHeroSecondaryAction {
+  border-color: color-mix(in srgb, var(--line-strong) 76%, transparent);
+  background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.cinematicHeroActionContent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.cinematicHeroPrimaryLabel {
+  width: 188px;
+  height: 24px;
+}
+
+.cinematicHeroSecondaryLabel {
+  width: 150px;
+  height: 24px;
+}
+
+.cinematicHeroActionIcon,
+.cinematicHeroSecondaryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-solid) 24%, rgba(255, 255, 255, 0.12));
+  color: var(--ink);
+}
+
+.cinematicHeroSecondaryIcon {
+  border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
+  background: color-mix(in srgb, var(--panel-solid) 86%, transparent);
+}
+
+.cinematicHeroProofStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.cinematicHeroProofCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.9rem;
+  padding: 1rem 1rem 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 72%, transparent);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--panel-solid) 84%, transparent),
+      color-mix(in srgb, var(--bg-accent) 84%, transparent)
+    );
+  box-shadow:
+    0 18px 38px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.cinematicHeroProofIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+}
+
+.cinematicHeroProofLabel {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.cinematicHeroProofCopy {
+  margin: 0.4rem 0 0;
+  color: color-mix(in srgb, var(--muted) 80%, var(--ink) 20%);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.68;
+}
+
+.cinematicHeroOrbitScene {
+  position: relative;
+  width: min(100%, 34rem);
+  aspect-ratio: 1 / 1.03;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cinematicHeroOrbitScene::before {
+  content: "";
+  position: absolute;
+  inset: 14% 10%;
+  border-radius: 999px;
+  background:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 14%, transparent),
+      transparent 70%
+    );
+  filter: blur(18px);
+}
+
+.cinematicHeroOrbitRing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  border: 1px solid color-mix(in srgb, var(--line-strong) 58%, transparent);
+}
+
+.cinematicHeroOrbitRingOuter {
+  width: min(100%, 33rem);
+  aspect-ratio: 1;
+}
+
+.cinematicHeroOrbitRingInner {
+  width: min(76%, 25rem);
+  aspect-ratio: 1;
+  border-color: color-mix(in srgb, var(--line-strong) 44%, transparent);
+}
+
+.cinematicHeroOrbitHalo {
+  position: absolute;
+  width: 66%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 68%
+    );
+  filter: blur(34px);
+  opacity: 0.85;
+}
+
+.cinematicHeroOrbitCore {
+  position: relative;
+  width: 72%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cinematicHeroOrbitChip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.72rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+  color: color-mix(in srgb, var(--ink) 74%, var(--accent));
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+}
+
+.cinematicHeroOrbitChipTop {
+  top: 6%;
+  right: 8%;
+}
+
+.cinematicHeroOrbitChipLeft {
+  left: 0;
+  bottom: 28%;
+}
+
+.cinematicHeroOrbitChipRight {
+  right: -2%;
+  bottom: 16%;
+}
+
+.cinematicHeroOrbitLegend {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%);
+  width: min(78%, 20rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 1rem 1.2rem 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 76%, transparent);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--panel-solid) 84%, transparent),
+      color-mix(in srgb, var(--bg-accent) 84%, transparent)
+    );
+  box-shadow:
+    0 20px 45px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  text-align: center;
+}
+
+.cinematicHeroOrbitLegendBrand {
+  width: 120px;
+  height: 18px;
+}
+
+.cinematicHeroOrbitLegend p {
+  margin: 0;
+  color: color-mix(in srgb, var(--muted) 78%, var(--ink) 22%);
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+@media (max-width: 1023px) {
+  .cinematicHeroSection {
+    padding-top: 6.15rem;
+    padding-bottom: 3rem;
+  }
+
+  .cinematicHeroShell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "copy"
+      "visual"
+      "support";
+    row-gap: 1.8rem;
+  }
+
+  .cinematicHeroCopy,
+  .cinematicHeroSupport {
+    max-width: 100%;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .cinematicHeroEyebrow,
+  .cinematicHeroBody {
+    max-width: 38rem;
+  }
+
+  .cinematicHeroHeadingLead,
+  .cinematicHeroHeadingTail {
+    max-width: none;
+  }
+
+  .cinematicHeroHeadingVideo {
+    margin-inline: auto;
+  }
+
+  .cinematicHeroActions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cinematicHeroPrimaryAction,
+  .cinematicHeroSecondaryAction {
+    width: 100%;
+  }
+
+  .cinematicHeroProofStrip {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cinematicHeroVisual {
+    margin-inline: auto;
+  }
+
+  .cinematicHeroOrbitScene {
+    width: min(100%, 30rem);
+  }
+
+  .cinematicHeroOrbitChipTop {
+    top: 4%;
+    right: 10%;
+  }
+
+  .cinematicHeroOrbitChipLeft {
+    left: 2%;
+    bottom: 28%;
+  }
+
+  .cinematicHeroOrbitChipRight {
+    right: 2%;
+    bottom: 16%;
+  }
+}
+
+@media (max-width: 767px) {
+  .cinematicHeroBadge {
+    padding-inline: 0.9rem;
+    font-size: 0.64rem;
+  }
+
+  .cinematicHeroEyebrow {
+    font-size: 0.76rem;
+    letter-spacing: 0.11em;
+  }
+
+  .cinematicHeroHeadingLead {
+    font-size: clamp(2.8rem, 13vw, 4.5rem);
+  }
+
+  .cinematicHeroHeadingVideo {
+    width: min(11.5ch, 100%);
+    height: clamp(3rem, 11vw, 4.5rem);
+  }
+
+  .cinematicHeroHeadingTail {
+    font-size: 1.02rem;
+    line-height: 1.15;
+  }
+
+  .cinematicHeroBody {
+    font-size: 0.96rem;
+    line-height: 1.78;
+  }
+
+  .cinematicHeroPrimaryLabel {
+    width: 176px;
+  }
+
+  .cinematicHeroSecondaryLabel {
+    width: 142px;
+  }
+
+  .cinematicHeroOrbitScene {
+    width: min(100%, 23rem);
+  }
+
+  .cinematicHeroOrbitChip {
+    padding: 0.58rem 0.8rem;
+    font-size: 0.62rem;
+  }
+
+  .cinematicHeroOrbitChipTop {
+    top: 6%;
+    right: 4%;
+  }
+
+  .cinematicHeroOrbitChipLeft {
+    left: 0;
+    bottom: 26%;
+  }
+
+  .cinematicHeroOrbitChipRight {
+    right: 0;
+    bottom: 14%;
+  }
+
+  .cinematicHeroOrbitLegend {
+    width: min(84%, 17rem);
+    padding-inline: 1rem;
+  }
+
+  .cinematicHeroProofCard {
+    padding-inline: 0.9rem;
+  }
+}

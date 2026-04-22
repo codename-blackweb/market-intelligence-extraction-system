@@ -1256,14 +1256,6 @@ export async function POST(request: NextRequest) {
         : "standard";
     const competitorContext = normalizeCompetitorContext(body);
 
-    console.log("MODE:", effectiveMode);
-    console.log("analyze request:", {
-      query,
-      seedQuery,
-      marketType: finalMarketType,
-      depth: finalDepth
-    });
-
     if (!finalQuery) {
       return NextResponse.json(
         { success: false, error: "Missing query" },
@@ -1365,8 +1357,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (effectiveMode === "HYBRID") {
-      console.log("ENTERED HYBRID BRANCH");
-
       const sourceBundle = await collectUnifiedSignals(finalQuery, competitorContext, "HYBRID");
 
       if (!sourceBundle.googleSignals.serpData.length) {
@@ -1387,8 +1377,6 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(await attachPersistence(result));
     }
-
-    console.log("ENTERING LIVE OPENAI BRANCH");
 
     const sourceBundle = await collectUnifiedSignals(finalQuery, competitorContext, "LIVE");
 

@@ -51,8 +51,6 @@ export default function AuthAccessShell() {
   const authCapabilities = getAuthCapabilities();
   const magicAccessEnabled = isMagicAccessEnabled();
   const passwordAuthEnabled = authCapabilities.password;
-  const googleOAuthEnv = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH;
-  const githubOAuthEnv = process.env.NEXT_PUBLIC_ENABLE_GITHUB_OAUTH;
   const providerAvailability = {
     google: isGoogleOAuthEnabled(),
     github: isGitHubOAuthEnabled()
@@ -153,14 +151,6 @@ export default function AuthAccessShell() {
       document.documentElement.style.background = previousHtmlBackground;
     };
   }, []);
-
-  useEffect(() => {
-    console.info("[AuthAccessShell] OAuth env flags", {
-      NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH: googleOAuthEnv,
-      NEXT_PUBLIC_ENABLE_GITHUB_OAUTH: githubOAuthEnv
-    });
-    console.info("[AuthAccessShell] OAuth provider visibility", providerAvailability);
-  }, [githubOAuthEnv, googleOAuthEnv, providerAvailability.github, providerAvailability.google]);
 
   const bootstrapAuthenticatedAccount = async (accessToken: string) => {
     const response = await fetch("/api/account", {

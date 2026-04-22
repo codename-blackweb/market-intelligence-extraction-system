@@ -11,18 +11,15 @@ export type AuthCapabilities = {
 const passwordEnv = process.env.NEXT_PUBLIC_ENABLE_PASSWORD_AUTH;
 const magicEnv = process.env.NEXT_PUBLIC_ENABLE_MAGIC_AUTH;
 const magicVerifiedEnv = process.env.NEXT_PUBLIC_MAGIC_AUTH_VERIFIED;
-const legacyMagicEnv = process.env.NEXT_PUBLIC_SUPABASE_MAGIC_ACCESS_ENABLED;
 const googleEnv = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH;
 const githubEnv = process.env.NEXT_PUBLIC_ENABLE_GITHUB_OAUTH;
-const legacyGoogleEnv = process.env.NEXT_PUBLIC_SUPABASE_GOOGLE_AUTH_ENABLED;
-const legacyGithubEnv = process.env.NEXT_PUBLIC_SUPABASE_GITHUB_AUTH_ENABLED;
 
 export function isPasswordAuthEnabled() {
   return passwordEnv === "false" ? false : true;
 }
 
 export function isMagicAuthRequested() {
-  return magicEnv === "true" || legacyMagicEnv === "true";
+  return magicEnv === "true";
 }
 
 export function isMagicAuthVerified() {
@@ -30,27 +27,11 @@ export function isMagicAuthVerified() {
 }
 
 export function isGoogleOAuthEnabled() {
-  if (googleEnv === "true") {
-    return true;
-  }
-
-  if (googleEnv === "false") {
-    return false;
-  }
-
-  return legacyGoogleEnv === "true";
+  return googleEnv === "true";
 }
 
 export function isGitHubOAuthEnabled() {
-  if (githubEnv === "true") {
-    return true;
-  }
-
-  if (githubEnv === "false") {
-    return false;
-  }
-
-  return legacyGithubEnv === "true";
+  return githubEnv === "true";
 }
 
 export function getAuthCapabilities(): AuthCapabilities {

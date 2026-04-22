@@ -957,7 +957,6 @@ export default function Home() {
       });
 
       const json = (await res.json()) as MarketAnalysisResponse;
-      console.log("analyze response", json);
 
       if (!json.success) {
         if ("gated" in json && json.gated && json.gate_type) {
@@ -966,7 +965,6 @@ export default function Home() {
           return;
         }
 
-        console.error("analyze error", json.error);
         setError(json.error || "Something went wrong.");
         setData(null);
         return;
@@ -1059,7 +1057,6 @@ export default function Home() {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("analyze error", message);
       setError(message || "Something went wrong.");
       setData(null);
     } finally {

@@ -1,11 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabasePublicConfigDiagnostics } from "@/lib/supabase-core";
 import {
   isSupabaseAuthConfigured,
   signInWithPassword,
   signUpWithPassword
 } from "@/lib/supabase-auth";
 
+export const runtime = "nodejs";
+
+type PasswordAuthRequest = {
+  mode?: "signin" | "signup";
+  email?: unknown;
+  password?: unknown;
+  firstName?: unknown;
+  lastName?: unknown;
+  workspaceName?: unknown;
+  useCase?: unknown;
+  teamSize?: unknown;
+  industry?: unknown;
+  inviteEmails?: unknown;
+  inviteRole?: unknown;
+};
+
+function getTrimmedString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function getNormalizedEmail(value: unknown) {
+  return getTrimmedString(value).toLowerCase();
+}
+
+function maskEmail(email: string | null) {
+  if (!email) {
+    return null;
+  }
+
+  const [localPart, domainPart] = email.split("@");
+
+  if (!localPart || !domainPart) {
+    return "[invalid-email]";
+  }
+
+  const visiblePrefix = localPart.slice(0, 2);
+  return `${visiblePrefix}${"*".repeat(Math.max(1, localPart.length - visiblePrefix.length))}@${domainPart}`;
+}
+
+function getAuthErrorStatus(error: unknown) {
+  if (error && typeof error === "object" && "status" in error) {
+    const status = error.status;
+
+    if (typeof status === "number" && status >= 400 && status < 500) {
+      return status;
+    }
+
+    if (status === 0) {
+      return 503;
+    }
+  }
+
+  if (error instanceof Error) {
+    if (error.name === "AuthRetryableFetchError" || /fetch failed/i.test(error.message)) {
+      return 503;
+    }
+  }
+
+  return 500;
+}
+
+function getAuthErrorMessage(error: unknown, status: number) {
+  if (status === 503) {
+    return "Unable to reach Supabase auth. Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Netlify.";
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Unknown auth error";
+}
+
+function logAuthError(error: unknown, context: { mode: string | null; email: string | null }) {
+  const normalizedError =
+    error instanceof Error
+      ? {
+          name: error.name,
+          message: error.message,
+          cause:
+            error.cause instanceof Error
+              ? {
+                  name: error.cause.name,
+                  message: error.cause.message
+                }
+              : error.cause ?? null
+        }
+      : {
+          value: error
+        };
+
+  console.error("[AUTH ERROR]", {
+    mode: context.mode,
+    email: maskEmail(context.email),
+    config: getSupabasePublicConfigDiagnostics(),
+    error: normalizedError
+  });
+}
+
 export async function POST(request: NextRequest) {
+  let mode: "signin" | "signup" | null = null;
+  let email: string | null = null;
+
   try {
     if (!isSupabaseAuthConfigured()) {
       return NextResponse.json(
@@ -14,31 +117,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json()) as {
-      mode?: "signin" | "signup";
-      email?: string;
-      password?: string;
-      firstName?: string;
-      lastName?: string;
-      workspaceName?: string;
-      useCase?: string;
-      teamSize?: string;
-      industry?: string;
-      inviteEmails?: string[];
-      inviteRole?: string;
-    };
+    let body: PasswordAuthRequest;
 
-    const email = body.email?.trim().toLowerCase();
-    const password = body.password?.trim();
+    try {
+      body = (await request.json()) as PasswordAuthRequest;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid auth payload." },
+        { status: 400 }
+      );
+    }
 
-    if (!email || !password || (body.mode !== "signin" && body.mode !== "signup")) {
+    mode = body.mode === "signin" || body.mode === "signup" ? body.mode : null;
+    email = getNormalizedEmail(body.email) || null;
+    const password = getTrimmedString(body.password);
+
+    if (!email || !password || !mode) {
       return NextResponse.json(
         { success: false, error: "Missing auth payload." },
         { status: 400 }
       );
     }
 
-    if (body.mode === "signin") {
+    if (mode === "signin") {
       const session = await signInWithPassword(email, password);
 
       if (!session) {
@@ -59,8 +160,8 @@ export async function POST(request: NextRequest) {
     const signupResult = await signUpWithPassword({
       email,
       password,
-      firstName: body.firstName?.trim() ?? "",
-      lastName: body.lastName?.trim() ?? "",
+      firstName: getTrimmedString(body.firstName),
+      lastName: getTrimmedString(body.lastName),
       emailRedirectTo: callbackUrl
     });
 
@@ -72,7 +173,14 @@ export async function POST(request: NextRequest) {
       emailConfirmationRequired: !signupResult.session
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown auth error";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const status = getAuthErrorStatus(error);
+    const message = getAuthErrorMessage(error, status);
+
+    logAuthError(error, {
+      mode,
+      email
+    });
+
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }

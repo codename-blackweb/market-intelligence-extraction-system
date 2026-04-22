@@ -11,12 +11,28 @@ type ServiceSupabaseConfig = PublicSupabaseConfig & {
   serviceRoleKey: string;
 };
 
+type SupabaseConfigSource = { envName: string; value: string | null };
+
+function resolveEnvValue(envName: string): SupabaseConfigSource {
+  const value = process.env[envName];
+
+  return {
+    envName,
+    value: typeof value === "string" && value.length > 0 ? value : null
+  };
+}
+
+function getSupabaseUrlSource() {
+  return resolveEnvValue("NEXT_PUBLIC_SUPABASE_URL");
+}
+
+function getSupabaseAnonKeySource() {
+  return resolveEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+}
+
 export function getSupabasePublicConfig(): PublicSupabaseConfig | null {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey =
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  const { value: url } = getSupabaseUrlSource();
+  const { value: anonKey } = getSupabaseAnonKeySource();
 
   if (!url || !anonKey) {
     return null;
@@ -48,6 +64,29 @@ export function isSupabaseConfigured() {
 
 export function isSupabaseServiceConfigured() {
   return Boolean(getSupabaseServiceConfig());
+}
+
+export function getSupabasePublicConfigDiagnostics() {
+  const urlSource = getSupabaseUrlSource();
+  const anonKeySource = getSupabaseAnonKeySource();
+  let urlHostname: string | null = null;
+
+  if (urlSource.value) {
+    try {
+      urlHostname = new URL(urlSource.value).hostname;
+    } catch {
+      urlHostname = "invalid-url";
+    }
+  }
+
+  return {
+    hasSupabaseUrl: Boolean(urlSource.value),
+    supabaseUrlSource: urlSource.envName,
+    supabaseUrlHostname: urlHostname,
+    hasSupabaseAnonKey: Boolean(anonKeySource.value),
+    supabaseAnonKeySource: anonKeySource.envName,
+    hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  };
 }
 
 export function getOAuthProviderAvailability() {

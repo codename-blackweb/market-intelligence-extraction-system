@@ -12,10 +12,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const [summary, planUsage] = await Promise.all([
-      getAccountSummary(auth.user.id, auth.accessToken),
-      getUserPlanUsage(auth.user.id, auth.accessToken)
-    ]);
+    const initialSummary = await getAccountSummary(auth.user.id, auth.accessToken);
+    const summary =
+      !initialSummary.profile ||
+      !initialSummary.subscription ||
+      !initialSummary.workspaces.length
+        ? await bootstrapAccountForUser({
+            userId: auth.user.id,
+            email: auth.user.email,
+            firstName: auth.user.first_name,
+            lastName: auth.user.last_name,
+            avatarUrl: auth.user.avatar_url ?? null,
+            accessToken: auth.accessToken
+          })
+        : initialSummary;
+    const planUsage = await getUserPlanUsage(auth.user.id, auth.accessToken);
 
     return NextResponse.json({
       success: true,
